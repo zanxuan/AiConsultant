@@ -1,0 +1,18 @@
+.vscode/
+
+# 环境变量（保留示例文件）
+.env
+.env.*
+!.env.example
+
+# Maven 构建产物
+target/
+
+# IDE
+.idea/
+*.iml
+
+# 日志与系统文件
+*.log
+.DS_Store
+Thumbs.db

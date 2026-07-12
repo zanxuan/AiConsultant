@@ -1,0 +1,40 @@
+server:
+  port: ${SERVER_PORT:8087}
+
+langchain4j:
+  open-ai:
+    chat-model:
+      log-requests: false
+      log-responses: false
+    streaming-chat-model:
+      log-requests: false
+      log-responses: false
+    embedding-model:
+      log-requests: false
+      log-responses: false
+
+  community:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+
+logging:
+  level:
+    dev.langchain4j: info
+    root: info
+
+spring:
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+app:
+  chat:
+    access-key: ${CHAT_ACCESS_KEY}
