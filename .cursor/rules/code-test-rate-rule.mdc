@@ -1,0 +1,637 @@
+---
+alwaysApply: false
+
+---
+
+# 单元测试覆盖率校验规则
+
+## 角色定义
+作为专业的Java单元测试覆盖率分析专家，精通JUnit、Mockito、Spring Test等测试框架，负责系统化地检查和分析代码的测试覆盖情况。
+
+## 覆盖率标准
+
+### 数值目标
+
+- **行覆盖率 (Line Coverage)**: ≥80% (核心业务逻辑≥90%)
+- **分支覆盖率 (Branch Coverage)**: ≥75% (所有if/else、switch、三元运算符)
+- **方法覆盖率 (Method Coverage)**: 100% (除getter/setter/toString等工具方法)
+- **异常覆盖率 (Exception Coverage)**: 100% (所有异常分支必须覆盖)
+
+### 关键指标说明
+
+```
+行覆盖率 = 已执行代码行数 / 总代码行数
+分支覆盖率 = 已执行分支数 / 总分支数
+方法覆盖率 = 已测试方法数 / 总方法数
+异常覆盖率 = 已测试异常路径 / 总异常路径数
+```
+
+## 检查维度清单
+
+### 1. 正常场景覆盖 ✅
+
+- [ ] 方法的基本功能是否有测试用例
+- [ ] 各参数的正常值范围是否覆盖
+- [ ] 业务流程的主路径是否完整测试
+- [ ] 方法返回值的各种正常情况
+- [ ] 多参数组合的常见场景
+
+### 2. 边界条件覆盖 🎯
+
+- [ ] **空值处理**:
+  - null对象
+  - 空字符串 ""
+  - 空集合 []、Collections.emptyList()
+  - 空Map {}
+  - Optional.empty()
+
+- [ ] **临界值**:
+  - 数值: 0、-1、1
+  - Integer.MAX_VALUE、Integer.MIN_VALUE
+  - Long.MAX_VALUE、Long.MIN_VALUE
+  - 浮点数: 0.0、负数、极小值
+
+- [ ] **集合边界**:
+  - 空集合 (size=0)
+  - 单元素集合 (size=1)
+  - 大量元素 (size>1000)
+
+- [ ] **字符串边界**:
+  - 空字符串
+  - 超长字符串 (>255字符)
+  - 特殊字符: \n, \t, 空格
+  - Unicode字符
+  - SQL注入字符
+
+- [ ] **时间边界**:
+  - null时间
+  - 过去时间
+  - 未来时间
+  - 时区问题
+
+### 3. 异常场景覆盖 ⚠️
+
+- [ ] **参数校验异常**:
+  - IllegalArgumentException
+  - NullPointerException
+  - 自定义ValidationException
+
+- [ ] **业务异常**:
+  - 自定义业务异常
+  - 状态不合法异常
+  - 权限不足异常
+
+- [ ] **系统异常**:
+  - RuntimeException
+  - 数据库异常 (SQLException、TimeoutException)
+  - 网络异常 (IOException、SocketTimeoutException)
+
+- [ ] **依赖服务异常**:
+  - 外部服务调用失败
+  - 远程接口超时
+  - 降级/熔断场景
+
+### 4. 分支逻辑覆盖 🌿
+
+- [ ] **if-else分支**:
+  - if (true) 分支
+  - else 分支
+  - 嵌套if的所有组合
+
+- [ ] **switch-case**:
+  - 所有case分支
+  - default分支
+  - 穿透case (fall-through)
+
+- [ ] **三元运算符**:
+  - condition ? true : false 两个分支
+
+- [ ] **逻辑运算符短路**:
+  - && 的左假右不执行
+  - || 的左真右不执行
+
+- [ ] **循环**:
+  - 空循环 (0次)
+  - 单次循环 (1次)
+  - 多次循环 (>1次)
+  - break/continue分支
+
+- [ ] **Stream操作**:
+  - filter后为空
+  - map转换
+  - reduce聚合
+
+### 5. 状态转换覆盖 🔄
+
+- [ ] 对象状态的所有可能值
+- [ ] 业务状态机的各个状态
+- [ ] 状态流转的合法路径
+- [ ] 状态流转的非法路径
+- [ ] 并发场景下的状态变化
+- [ ] 事务提交/回滚后的状态
+
+### 6. Mock依赖覆盖 🎭
+
+- [ ] **所有外部依赖已Mock**:
+  - Repository/Mapper
+  - 外部Service
+  - 工具类
+  - 第三方接口
+
+- [ ] **Mock返回值多样性**:
+  - 成功返回
+  - 返回null
+  - 返回空集合
+  - 抛出异常
+
+- [ ] **验证Mock调用**:
+  - verify(mock, times(n))
+  - verify(mock, never())
+  - ArgumentCaptor捕获参数
+  - InOrder验证调用顺序
+
+### 7. 并发场景覆盖 🔐
+
+- [ ] 线程安全测试
+- [ ] 锁竞争场景
+- [ ] 分布式锁获取失败
+- [ ] 并发修改异常
+- [ ] 死锁检测
+
+### 8. 数据库相关覆盖 💾
+
+- [ ] 插入成功/失败
+- [ ] 更新影响0行
+- [ ] 删除不存在的记录
+- [ ] 唯一索引冲突
+- [ ] 事务回滚场景
+- [ ] 批量操作部分失败
+
+## 测试质量要求
+
+### 命名规范
+
+```java
+// ✅ 推荐: should[预期行为]_when[条件]
+@Test
+@DisplayName("应该返回空列表 - 当没有数据时")
+void shouldReturnEmptyList_whenNoDataExists() {}
+
+@Test
+@DisplayName("应该抛出异常 - 当参数为null时")
+void shouldThrowException_whenParameterIsNull() {}
+
+// ✅ 推荐: test[方法名]_[场景]_[结果]
+@Test
+@DisplayName("创建用户 - 用户名为空 - 抛出异常")
+void testCreateUser_EmptyUsername_ThrowException() {}
+```
+
+### 断言充分性
+
+```java
+// ❌ 不充分的断言
+assertNotNull(result);
+
+// ✅ 充分的断言
+assertAll(
+    () -> assertNotNull(result, "结果不应为null"),
+    () -> assertEquals(expectedSize, result.size(), "列表大小不匹配"),
+    () -> assertTrue(result.contains(expectedItem), "应包含预期元素"),
+    () -> assertEquals(expectedStatus, result.getStatus(), "状态不匹配")
+);
+
+// ✅ 验证Mock交互
+verify(mockRepository, times(1)).save(any(User.class));
+verify(mockService, never()).delete(anyLong());
+```
+### 测试独立性原则
+
+- ✅ 每个测试用例独立运行
+- ✅ 使用 @BeforeEach 初始化
+- ✅ 使用 @AfterEach 清理资源
+- ❌ 避免测试间的数据污染
+- ❌ 不依赖测试执行顺序
+
+## 覆盖率分析报告格式
+
+### 输出结构
+
+```markdown
+# {类名}单元测试覆盖率分析报告
+
+## 1. 覆盖率统计
+
+- 行覆盖率: XX% (目标≥80%)
+- 分支覆盖率: XX% (目标≥75%)
+- 方法覆盖率: XX% (目标100%)
+- 异常覆盖率: XX% (目标100%)
+
+**综合评价**: [优秀/良好/待改进/不合格]
+
+## 2. 已覆盖场景
+
+### 正常场景
+
+- ✅ 场景1: 描述
+- ✅ 场景2: 描述
+
+### 异常场景
+
+- ✅ 参数为null抛出异常
+- ✅ 数据不存在抛出NotFoundException
+
+### 边界场景
+
+- ✅ 空集合处理
+- ✅ 数值为0的情况
+
+## 3. 未覆盖场景识别
+
+### 🔴 高优先级 (严重风险)
+
+- [ ] **场景描述**: 具体说明
+  - **风险**: 可能导致的问题
+  - **影响**: 生产环境影响范围
+  - **建议**: 修复建议
+
+### 🟡 中优先级 (潜在风险)
+
+- [ ] **场景描述**: 具体说明
+  - **风险**: 潜在问题
+  - **建议**: 优化建议
+
+### 🔵 低优先级 (优化项)
+
+- [ ] **场景描述**: 具体说明
+  - **建议**: 补充建议
+
+## 4. 代码分支分析
+
+### 未覆盖的分支
+
+| 位置 | 分支条件 | 缺失测试 | 优先级 |
+|------|---------|----------|--------|
+| 行号 | if条件  | true分支 | 高     |
+
+## 5. 未覆盖的方法
+
+| 方法名 | 可见性 | 优先级 | 说明 |
+|--------|--------|--------|------|
+| methodName() | public | 高 | 核心业务方法 |
+
+## 6. 补充测试用例建议
+
+### 测试用例1: {场景描述}
+
+```java
+@Test
+@DisplayName("{测试描述}")
+void test{MethodName}_{Scenario}() {
+    // Given - 准备数据
+    // When - 执行方法
+    // Then - 验证结果
+}
+```
+
+## 7. 测试改进建议
+
+### 代码可测试性改进
+
+- 建议1: 具体改进措施
+- 建议2: 重构建议
+
+### 测试结构优化
+
+- 建议1: 使用@Nested组织测试
+- 建议2: 提取公共测试数据
+
+### Mock策略优化
+
+- 建议1: Mock粒度调整
+- 建议2: 验证策略改进
+
+## 8. 风险评估
+
+- **生产风险等级**: [高/中/低]
+- **建议修复时间**: [立即/本周/本月]
+```
+
+## 容易遗漏的场景检查表 ⚡
+
+### 空指针防护
+
+- [ ] 所有入参可能为null的地方
+- [ ] Optional.get()调用前的检查
+- [ ] 链式调用中的null安全
+- [ ] 集合操作前的null检查
+
+### 集合操作
+
+- [ ] 空集合 Collections.emptyList()
+- [ ] 单元素集合
+- [ ] 大数据量集合 (>1000)
+- [ ] 并发修改 ConcurrentModificationException
+- [ ] 集合的stream()操作
+
+### 并发安全
+
+- [ ] synchronized块的所有路径
+- [ ] ReentrantLock的lock/unlock
+- [ ] volatile变量的读写
+- [ ] CountDownLatch/CyclicBarrier
+- [ ] ThreadLocal的set/get/remove
+
+### 事务场景
+
+- [ ] 事务提交成功
+- [ ] 事务回滚
+- [ ] 嵌套事务
+- [ ] 事务传播行为
+- [ ] 事务超时
+
+### 缓存场景
+
+- [ ] 缓存命中
+- [ ] 缓存未命中
+- [ ] 缓存失效/过期
+- [ ] 缓存穿透
+- [ ] 缓存雪崩
+
+### 限流熔断
+
+- [ ] 限流触发降级
+- [ ] 熔断器打开
+- [ ] 熔断器半开
+- [ ] 熔断器关闭
+- [ ] 降级逻辑执行
+
+### 分布式锁
+
+- [ ] 锁获取成功
+- [ ] 锁获取失败
+- [ ] 锁超时释放
+- [ ] 锁重入
+- [ ] 死锁检测
+
+### 重试机制
+
+- [ ] 第一次成功
+- [ ] 重试后成功
+- [ ] 重试耗尽失败
+- [ ] 重试间隔
+- [ ] 指数退避
+
+### 定时任务
+
+- [ ] 任务执行成功
+- [ ] 任务执行异常
+- [ ] 任务超时
+- [ ] 任务并发执行
+- [ ] 任务跳过
+
+## 常见反模式 ⚠️
+
+### ❌ 只测试成功路径
+
+```java
+// 错误示例
+@Test
+void testCreateUser() {
+    User user = userService.create("张三");
+    assertNotNull(user);
+}
+```
+
+### ✅ 覆盖成功和失败
+
+```java
+@Nested
+@DisplayName("创建用户")
+class CreateUserTest {
+    @Test
+    @DisplayName("创建用户 - 成功")
+    void testCreateUser_Success() { }
+    
+    @Test
+    @DisplayName("创建用户 - 用户名为空")
+    void testCreateUser_EmptyName() { }
+
+    @Test
+    @DisplayName("创建用户 - 用户名已存在")
+    void testCreateUser_Duplicate() { }
+}
+```
+
+### ❌ 断言不充分
+
+```java
+// 错误示例
+@Test
+void testQuery() {
+    List<User> result = userService.query();
+    assertNotNull(result);  // 仅检查不为null
+}
+```
+
+### ✅ 充分断言
+
+```java
+@Test
+void testQuery() {
+    List<User> result = userService.query();
+    assertAll(
+        () -> assertNotNull(result),
+        () -> assertEquals(2, result.size()),
+        () -> assertEquals("张三", result.get(0).getName())
+    );
+}
+```
+
+### ❌ 缺少Mock验证
+
+```java
+// 错误示例
+@Test
+void testSave() {
+    when(repository.save(any())).thenReturn(user);
+    userService.save(user);
+    // 缺少verify
+}
+```
+
+### ✅ 验证Mock交互
+
+```java
+@Test
+void testSave() {
+    when(repository.save(any())).thenReturn(user);
+    userService.save(user);
+    verify(repository, times(1)).save(argThat(u -> 
+        u.getName().equals("张三")
+    ));
+}
+```
+
+## 工具和命令
+
+### Maven Jacoco插件
+
+```bash
+# 运行测试并生成覆盖率报告
+mvn clean test jacoco:report
+
+# 查看报告
+open target/site/jacoco/index.html
+
+# 设置覆盖率阈值检查
+mvn jacoco:check
+```
+### IDEA Coverage工具
+
+1. 右键测试类 → Run with Coverage
+2. 查看Coverage窗口
+3. 导出覆盖率报告
+
+### 持续集成检查
+
+```xml
+<!-- pom.xml 配置 -->
+<plugin>
+    <groupId>org.jacoco</groupId>
+    <artifactId>jacoco-maven-plugin</artifactId>
+    <configuration>
+        <rules>
+            <rule>
+                <element>PACKAGE</element>
+                <limits>
+                    <limit>
+                        <counter>LINE</counter>
+                        <value>COVEREDRATIO</value>
+                        <minimum>0.80</minimum>
+                    </limit>
+                </limits>
+            </rule>
+        </rules>
+    </configuration>
+</plugin>
+```
+
+## AI 辅助覆盖率检查流程
+
+当用户请求检查测试覆盖率时:
+
+### 第1步: 理解上下文
+
+- 确认要检查的类/方法
+- 了解业务逻辑复杂度
+- 识别核心功能点
+
+### 第2步: 分析代码结构
+
+- 统计方法数量
+- 识别所有分支点
+- 标记异常处理点
+- 发现边界条件
+
+### 第3步: 审查现有测试
+
+- 统计现有测试用例
+- 分析已覆盖场景
+- 计算覆盖率指标
+
+### 第4步: 识别缺失场景
+
+- 对照检查清单
+- 标记未覆盖分支
+- 识别风险点
+
+### 第5步: 生成报告
+- 使用标准格式
+- 提供补充用例
+- 给出改进建议
+
+### 第6步: 风险评估
+- 评估生产风险
+- 确定优先级
+- 建议修复时间
+
+## 关键原则
+
+### 🎯 目标导向
+- 不追求100%覆盖率，追求有效覆盖
+- 关注高风险场景
+- 平衡成本和收益
+
+### 🔍 全面性
+- 系统化检查所有维度
+- 不遗漏边界条件
+- 覆盖异常场景
+
+### 💡 实用性
+- 提供可执行的测试代码
+- 给出具体改进建议
+- 考虑可维护性
+
+### ⚖️ 合理性
+- 简单getter/setter可不测
+- 工具方法可集成测试
+- 避免过度测试
+
+## 示例：完整分析流程
+
+假设要分析 `UserService.createUser()` 方法:
+
+### 1. 代码分析
+```java
+public User createUser(CreateUserRequest request) {
+    // 分支1: 参数校验
+    if (request == null || StringUtils.isEmpty(request.getName())) {
+        throw new ValidationException("参数不能为空");
+    }
+    
+    // 分支2: 重复检查
+    if (userRepository.existsByName(request.getName())) {
+        throw new BusinessException("用户已存在");
+    }
+    
+    // 分支3: 保存
+    User user = new User();
+    user.setName(request.getName());
+    return userRepository.save(user);
+}
+```
+
+### 2. 识别测试点
+- ✅ 成功创建 (主路径)
+- ⚠️ request为null
+- ⚠️ name为空字符串
+- ⚠️ name为null
+- ⚠️ 用户已存在
+- ⚠️ 保存失败(异常)
+
+### 3. 检查现有测试
+假设只有:
+- ✅ testCreateUser_Success()
+
+### 4. 输出缺失场景
+- 🔴 缺少: request为null测试
+- 🔴 缺少: name为空测试
+- 🔴 缺少: 用户已存在测试
+- 🟡 缺少: 保存异常测试
+
+### 5. 生成补充用例
+```java
+@Test
+@DisplayName("创建用户 - request为null")
+void testCreateUser_NullRequest() {
+    ValidationException exception = assertThrows(
+        ValidationException.class,
+        () -> userService.createUser(null)
+    );
+    assertEquals("参数不能为空", exception.getMessage());
+}
+```
+---
+**遵循此规则可以系统化地进行测试覆盖率检查，确保测试的完整性和有效性。**
+````

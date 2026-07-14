@@ -41,6 +41,25 @@
             <scope>test</scope>
         </dependency>
 
+        <!--jwt依赖-->
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-api</artifactId>
+            <version>0.12.6</version>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+            <version>0.12.6</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId>
+            <version>0.12.6</version>
+            <scope>runtime</scope>
+        </dependency>
+
         <!--dotenv依赖-->
        <dependency>
         <groupId>me.paulschwarz</groupId>
@@ -71,11 +90,13 @@
             <artifactId>langchain4j-reactor</artifactId>
             <version>1.0.1-beta6</version>
         </dependency>
+
         <!--redis依赖-->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
+
         <!--rag-easy依赖-->
         <dependency>
             <groupId>dev.langchain4j</groupId>
@@ -89,6 +110,7 @@
             <artifactId>langchain4j-document-parser-apache-pdfbox</artifactId>
             <version>1.0.1-beta6</version>
         </dependency>
+
         <!--引入langchain4j对于redis向量数据库的支持-->
         <dependency>
             <groupId>dev.langchain4j</groupId>
@@ -101,6 +123,7 @@
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
         </dependency>
+
         <!--mybatis-->
         <dependency>
             <groupId>org.mybatis.spring.boot</groupId>
@@ -119,6 +142,7 @@
             <artifactId>logback-classic</artifactId>
             <version>1.5.18</version>
         </dependency> 
+
        
 
 

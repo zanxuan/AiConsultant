@@ -1,0 +1,303 @@
+---
+alwaysApply: false
+---
+
+# Spring Boot 单元测试规范 - Cursor AI 规则
+
+## 角色定义
+
+作为专业的Java单元测试专家，精通JUnit、Mockito、Spring Test等测试框架，负责系统化地生成和检查代码的单元测试。
+
+## 测试框架
+- JUnit 5 (Jupiter)
+- Mockito 4.5.1
+- Spring Boot Test 2.7.18
+- Java 8
+
+## 测试类命名规范
+
+### 单元测试
+
+- 格式: `{被测试类名}Test`
+- 示例: `UserServiceImplTest`, `ActivityQueryServiceTest`
+
+### 集成测试
+
+- 格式: `{被测试类名}IntegrationTest`
+- 示例: `UserMapperIntegrationTest`, `TaskTriggerServiceImplIntegrationTest`
+
+## 测试类结构模板
+
+### Service层单元测试
+
+```java
+
+@DisplayName("{服务描述}单元测试")
+
+@ExtendWith(MockitoExtension.class)
+
+class XxxServiceTest {
+    @Mock
+    private XxxRepository xxxRepository;
+    @Mock
+    private YyyService yyyService;
+    @InjectMocks
+    private XxxServiceImpl xxxService;
+    
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+    }
+
+    @Test
+    @DisplayName("测试场景描述 - 预期结果")
+    void testMethodName_Scenario() {
+        // Given - 准备测试数据
+
+        // When - 执行被测试方法
+
+        // Then - 验证结果
+    }
+}
+
+```
+
+### Repository/Mapper层集成测试
+
+```java
+
+@ExtendWith(SpringExtension.class)
+@SpringBootTest(classes = Application.class)
+@Transactional(rollbackFor = Exception.class)
+@Rollback
+@DisplayName("{Mapper描述}集成测试")
+class XxxMapperTest {
+    @Resource
+    private XxxMapper xxxMapper;
+    
+    @Test
+    @DisplayName("测试场景描述")
+    void testMethodName() {
+        // Given
+
+        // When
+        
+        // Then
+    }
+}
+
+```
+
+## 测试方法命名规范
+
+### 推荐格式
+
+- `test{方法名}_{场景}_{结果}`
+
+- 示例: `testCreateUser_Success()`, `testCreateUser_EmptyName_ThrowException()`
+
+### @DisplayName 规范
+
+- **必须使用中文**描述测试目的
+
+- 格式: `"操作描述 - 场景/结果"`
+
+- 示例: `@DisplayName("创建用户 - 成功")`, `@DisplayName("查询活动 - 活动不存在抛出异常")`
+
+## Given-When-Then 结构（强制）
+
+```java
+@Test
+@DisplayName("发放奖励 - 成功")
+void testIssueReward_Success() {
+    // Given - 准备测试数据和Mock行为
+    IssueRewardRequest request = new IssueRewardRequest();
+    request.setUserId("12345");
+    when(rewardRepository.findById(anyString()))
+        .thenReturn(Optional.of(reward));
+
+    // When - 执行被测试方法
+    Response<Boolean> result = rewardService.issue(request);
+
+    // Then - 验证结果和交互
+    assertNotNull(result);
+    assertTrue(result.isSuccess());
+    verify(rewardRepository).save(any(Reward.class));
+}
+```
+
+## Mock 使用规范
+
+### 创建Mock对象
+
+```java
+// 使用 @Mock 注解（推荐）
+@Mock
+private UserRepository userRepository;
+@InjectMocks
+private UserServiceImpl userService;
+
+// 集成测试中使用 @SpyBean
+@SpyBean
+private CacheService cacheService;
+
+```
+
+### 配置Mock行为
+
+```java
+// 返回值
+when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+// 抛出异常
+when(userRepository.save(any())).thenThrow(new RuntimeException("错误"));
+
+// void方法
+doNothing().when(emailService).sendEmail(any());
+doThrow(new RuntimeException()).when(service).delete(any());
+
+// 参数匹配
+when(service.method(eq("value"))).thenReturn(result);
+when(service.method(any(Type.class), anyLong())).thenReturn(result);
+```
+
+## 断言规范
+
+### 基本断言
+
+```java
+// JUnit 5 断言
+assertNotNull(result);
+assertEquals(expected, actual);
+assertTrue(condition);
+assertFalse(condition);
+
+// 异常断言
+assertThrows(ActivityException.class, () -> 
+    service.method(param)
+);
+
+// 组合断言
+assertAll(
+    () -> assertNotNull(result),
+    () -> assertEquals("SUCCESS", result.getCode()),
+    () -> assertTrue(result.getData().size() > 0)
+);
+
+```
+
+### Verify验证
+
+```java
+// 验证调用次数
+verify(repository, times(1)).save(any());
+verify(service, never()).delete(any());
+verify(service, atLeast(1)).query(any());
+
+// 验证参数
+verify(repository).save(argThat(user -> 
+    user.getName().equals("张三")
+));
+
+// 验证顺序
+InOrder inOrder = inOrder(service1, service2);
+inOrder.verify(service1).method1();
+inOrder.verify(service2).method2();
+```
+
+## 必测场景
+
+### CRUD操作
+
+- ✅ 成功场景
+
+- ✅ 对象不存在
+
+- ✅ 参数为null
+
+- ✅ 参数校验失败
+
+### 异常处理
+
+```java
+@Test
+@DisplayName("创建用户 - 用户名为空抛出异常")
+void testCreateUser_EmptyName_ThrowException() {
+    // Given
+    CreateUserRequest request = new CreateUserRequest();
+    request.setUserName("");
+
+    // When & Then
+    ValidationException exception = assertThrows(
+        ValidationException.class,
+        () -> userService.createUser(request)
+    );
+    assertTrue(exception.getMessage().contains("用户名不能为空"));
+    verify(userRepository, never()).save(any());
+}
+```
+
+### 边界条件
+
+- 空集合
+- 最大/最小值
+- null值
+- 空字符串
+
+## 使用 @Nested 组织测试
+
+```java
+@DisplayName("用户服务测试")
+@ExtendWith(MockitoExtension.class)
+class UserServiceTest {
+    @Nested
+    @DisplayName("创建用户测试")
+    class CreateUserTest {
+        @Test
+        @DisplayName("创建用户 - 成功")
+        void testCreateUser_Success() {}
+        @Test
+        @DisplayName("创建用户 - 用户名已存在")
+        void testCreateUser_UsernameExists() {}
+    }
+
+    @Nested
+    @DisplayName("查询用户测试")
+    class QueryUserTest {
+        @Test
+        @DisplayName("根据ID查询用户 - 存在")
+        void testGetUserById_Exists() {
+            // Given
+            User user = createMockUser(1L, "张三");
+            when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+            // When
+            UserDTO result = userService.getUserById(1L);
+            // Then
+            assertNotNull(result);
+            assertEquals(1L, result.getId());
+            assertEquals("张三", result.getUserName());
+            verify(userRepository).findById(1L);
+        }
+        @Test
+        @DisplayName("根据ID查询用户 - 不存在")
+        void testGetUserById_NotExists() {
+            // Given
+            when(userRepository.findById(999L)).thenReturn(Optional.empty());
+            // When & Then
+            NotFoundException exception = assertThrows(
+                NotFoundException.class,
+                () -> userService.getUserById(999L)
+            );
+            assertTrue(exception.getMessage().contains("用户不存在"));
+        }
+    }
+    // 辅助方法
+    private User createMockUser(Long id, String name) {
+        User user = new User();
+        user.setId(id);
+        user.setUserName(name);
+        user.setPhone("13800138000");
+        return user;
+    }
+}
+```
