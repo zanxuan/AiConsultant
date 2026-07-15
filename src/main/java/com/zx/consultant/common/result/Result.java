@@ -1,4 +1,4 @@
-package com.zx.consultant.user.result;
+package com.zx.consultant.common.result;
 
 import java.io.Serializable;
 

@@ -7,7 +7,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import com.zx.consultant.user.dto.LoginRequest;
 import com.zx.consultant.user.entity.User;
-import com.zx.consultant.user.result.Result;
 import com.zx.consultant.user.vo.LoginResponse;
 import com.zx.consultant.user.vo.UserInfoVO;
 import com.zx.consultant.common.utils.JwtUtil;
@@ -15,6 +14,8 @@ import com.zx.consultant.common.utils.JwtProperties;
 import java.util.Map;
 import java.util.HashMap;
 import com.zx.consultant.common.constant.JwtClaimsConstant;
+import com.zx.consultant.common.result.Result;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import com.zx.consultant.user.service.UserService;
 
@@ -39,8 +40,6 @@ public class AuthController {
      */
     @PostMapping("/login")
     public Result<LoginResponse> login(@RequestBody LoginRequest request ) {
-        // TODO: 实现登录逻辑
-
       //@RequestBody将请求体中的参数全部传递进来【JSON形式】.@RequestBody 接收数据时，其实是反序列化
       log.info("用户登录：{}", request);
       User user = userService.login(request);

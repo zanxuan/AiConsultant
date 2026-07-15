@@ -1,14 +1,12 @@
 package com.zx.consultant.user.controller;
 
+import com.zx.consultant.common.result.Result;
 import com.zx.consultant.common.utils.BaseContext;
 import com.zx.consultant.user.dto.UserUpdateRequest;
 import com.zx.consultant.user.entity.User;
-import com.zx.consultant.user.result.Result;
 import com.zx.consultant.user.service.UserService;
 import com.zx.consultant.user.vo.UserInfoVO;
-
 import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -32,13 +30,13 @@ public class UserController {
      */
     @GetMapping("/me")
     public Result<UserInfoVO> getCurrentUser() {
-        // TODO: 实现获取当前用户信息逻辑
+
         log.info("获取当前用户信息:{}", BaseContext.getCurrentId());
-       User user = userService.getCurrentUser(BaseContext.getCurrentId());
-       UserInfoVO userInfoVO = UserInfoVO.builder()
-       .userId(user.getId())
-       .nickname(user.getNickname())
-       .build();
+        User user = userService.getCurrentUser(BaseContext.getCurrentId());
+        UserInfoVO userInfoVO = UserInfoVO.builder()
+                                .userId(user.getId())
+                                .nickname(user.getNickname())
+                                .build();
         return Result.success(userInfoVO);
     }
 

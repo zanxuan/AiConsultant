@@ -41,6 +41,13 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- SpringDoc OpenAPI (Swagger 3) 适用于 Spring Boot 3.x -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>2.5.0</version> 
+        </dependency>
+
         <!--jwt依赖-->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
@@ -124,11 +131,18 @@
             <artifactId>lombok</artifactId>
         </dependency>
 
-        <!--mybatis-->
+        <!-- mybatis
         <dependency>
             <groupId>org.mybatis.spring.boot</groupId>
             <artifactId>mybatis-spring-boot-starter</artifactId>
             <version>3.0.3</version>
+        </dependency> -->
+
+        <!-- MyBatis-Plus (专门适配 Spring Boot 3.x) -->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
+            <version>3.5.5</version> <!-- 请使用 3.5.3 及以上的版本 -->
         </dependency>
         <!--mysql-->
         <dependency>
