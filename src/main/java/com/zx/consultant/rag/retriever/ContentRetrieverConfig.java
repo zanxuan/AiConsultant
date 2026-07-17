@@ -8,6 +8,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * 内容检索器配置
+ * ContentRetrieverConfig
+ */
 @Configuration
 public class ContentRetrieverConfig {
 
@@ -16,6 +20,10 @@ public class ContentRetrieverConfig {
     @Autowired
     private RedisEmbeddingStore redisEmbeddingStore;
 
+    /**
+     * 内容检索器
+     * @return
+     */
     @Bean
     public ContentRetriever contentRetriever() {
         return EmbeddingStoreContentRetriever.builder()

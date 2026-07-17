@@ -14,6 +14,10 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
+/**
+ * 聊天访问过滤器
+ * ChatAccessFilter
+ */
 @Component
 @Profile("prod")
 @Order(1)
@@ -22,6 +26,14 @@ public class ChatAccessFilter implements Filter {
     @Value("${app.chat.access-key}")
     private String accessKey;
 
+    /**
+     * 过滤器
+     * @param request
+     * @param response
+     * @param chain
+     * @throws IOException
+     * @throws ServletException
+     */
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
