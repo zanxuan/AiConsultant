@@ -81,6 +81,21 @@
             <version>1.0.1-beta6</version>
         </dependency>
 
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-community-dashscope</artifactId>
+            <version>1.0.1-beta6</version>
+        </dependency>
+
+
+<!-- 通义千问 DashScope 专用 Tokenizer 分词器 -->
+<!-- <dependency>
+    <groupId>dev.langchain4j</groupId>
+    <artifactId>langchain4j-community-dashscope</artifactId>
+    <version>1.0.1-beta6</version>
+</dependency> -->
+
+
         <!--AiServices相关的依赖-->
         <dependency>
             <groupId>dev.langchain4j</groupId>
@@ -118,6 +133,13 @@
             <version>1.0.1-beta6</version>
         </dependency>
 
+        <!-- 未来的 V2 引入这个来解析 Word/Excel -->
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-document-parser-apache-poi</artifactId>
+            <version>1.0.1-beta6</version>
+        </dependency>
+
         <!--引入langchain4j对于redis向量数据库的支持-->
         <dependency>
             <groupId>dev.langchain4j</groupId>
@@ -131,12 +153,6 @@
             <artifactId>lombok</artifactId>
         </dependency>
 
-        <!-- mybatis
-        <dependency>
-            <groupId>org.mybatis.spring.boot</groupId>
-            <artifactId>mybatis-spring-boot-starter</artifactId>
-            <version>3.0.3</version>
-        </dependency> -->
 
         <!-- MyBatis-Plus (专门适配 Spring Boot 3.x) -->
         <dependency>
@@ -157,7 +173,13 @@
             <version>1.5.18</version>
         </dependency> 
 
-       
+        <dependency>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-all</artifactId>
+            <version>5.8.27</version>
+        </dependency>
+
+            
 
 
     </dependencies>

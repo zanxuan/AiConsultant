@@ -8,12 +8,20 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * 公共配置
+ * CommonConfig
+ */
 @Configuration
 public class CommonConfig {
 
     @Autowired
     private ChatMemoryStore redisChatMemoryStore;
 
+    /**
+     * 聊天记忆
+     * @return
+     */
     @Bean
     public ChatMemory chatMemory() {
         return MessageWindowChatMemory.builder()
@@ -21,6 +29,10 @@ public class CommonConfig {
                 .build();
     }
 
+    /**
+     * 聊天记忆提供者
+     * @return
+     */
     @Bean
     public ChatMemoryProvider chatMemoryProvider() {
         return memoryId -> MessageWindowChatMemory.builder()
