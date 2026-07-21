@@ -3,7 +3,6 @@ package com.zx.consultant.chat;
 import dev.langchain4j.service.MemoryId;
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
-import dev.langchain4j.service.V;
 import dev.langchain4j.service.spring.AiService;
 import dev.langchain4j.service.spring.AiServiceWiringMode;
 import reactor.core.publisher.Flux;
@@ -13,9 +12,8 @@ import reactor.core.publisher.Flux;
         chatModel = "openAiChatModel",//指定模型[多模型的时候一定要指定这个,否则会报错]
         streamingChatModel = "openAiStreamingChatModel",
         //chatMemory = "chatMemory",//配置会话记忆对象
-        chatMemoryProvider = "chatMemoryProvider",//配置会话记忆提供者对象
-        contentRetriever = "contentRetriever",//配置向量数据库检索对象
-        tools = "reservationTool"
+        chatMemoryProvider = "chatMemoryProvider"//配置会话记忆提供者对象
+        // contentRetriever / tools 暂未注册 Bean，待 RAG/Tool 模块就绪后再接回
 )
 //@AiService
 public interface ConsultantService {

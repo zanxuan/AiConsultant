@@ -47,6 +47,18 @@
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
             <version>2.5.0</version> 
         </dependency>
+        <!--springboot test依赖-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <version>3.5.0</version>
+        </dependency>
+
+        <!-- Jakarta Bean Validation 实现，Spring6/SpringBoot3 专用 -->
+        <dependency>
+            <groupId>org.hibernate.validator</groupId>
+            <artifactId>hibernate-validator</artifactId>
+        </dependency>
 
         <!--jwt依赖-->
         <dependency>
@@ -87,6 +99,7 @@
             <version>1.0.1-beta6</version>
         </dependency>
 
+    
 
 <!-- 通义千问 DashScope 专用 Tokenizer 分词器 -->
 <!-- <dependency>

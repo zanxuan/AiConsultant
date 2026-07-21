@@ -17,6 +17,12 @@ dashscope:
   api-key: ${API_KEY}
   embedding-model: text-embedding-v3
 
+app:
+  rag:
+    retriever:
+      max-results: 5       # 默认召回数量
+      min-score: 0.75      # 默认最低相似度阈值
+
 
 langchain4j:
   open-ai:
@@ -54,6 +60,8 @@ spring:
     redis:
       host: localhost
       port: 6379
+  main:
+    allow-bean-definition-overriding: true
 
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver

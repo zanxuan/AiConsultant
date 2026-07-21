@@ -12,4 +12,9 @@ public class BaseException extends RuntimeException {
         super(msg);
     }
 
+    // 新增：消息+原始异常，用于异常链传递，打印完整堆栈
+    public BaseException(String msg, Throwable cause) {
+        super(msg, cause);
+    }
+
 }
