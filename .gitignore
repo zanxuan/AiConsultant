@@ -8,6 +8,9 @@
 # Maven 构建产物
 target/
 
+uploads/
+.mybatis/
+
 # IDE
 .idea/
 *.iml
