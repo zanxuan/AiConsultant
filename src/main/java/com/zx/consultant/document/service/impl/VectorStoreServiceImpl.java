@@ -55,6 +55,12 @@ public class VectorStoreServiceImpl implements VectorStoreService {
         // 2. 将纯业务数据转化为 AI 框架的底层对象
         for (int i = 0; i < chunks.size(); i++) {
             Chunk chunk = chunks.get(i);
+
+                // 建议在 for 循环的开头加上文本判空
+            if (chunk.getContent() == null || chunk.getContent().isBlank()) {
+                log.warn("跳过空文本块: chunkIndex={}, documentId={}", chunk.getChunkIndex(), chunk.getDocumentId());
+                continue;
+            }
             
             // 提取 MySQL 中已经生成的 vectorId，确保 MySQL 和 Redis 里的 ID 完全一致
             if (chunk.getVectorId() == null || chunk.getVectorId().isBlank()) {
@@ -70,8 +76,11 @@ public class VectorStoreServiceImpl implements VectorStoreService {
             if (chunk.getPage() != null) {
                 metadata.put(VectorMetadataKeys.PAGE, chunk.getPage()); // 溯源：记录这是在 PDF 的哪一页
             }
+            if (chunk.getId() != null) {
+                metadata.put(VectorMetadataKeys.CHUNK_ID,chunk.getId());//业务主键 chunkId
+            }
             if (chunk.getChunkIndex() != null) {
-                metadata.put(VectorMetadataKeys.CHUNK_INDEX, chunk.getChunkIndex()); // 记录段落顺序
+                metadata.put(VectorMetadataKeys.CHUNK_INDEX, chunk.getChunkIndex()); // 记录段落顺序，后续优化检索
             }
             
             // 使用 Chunk 里的真实文本内容来构建 TextSegment
