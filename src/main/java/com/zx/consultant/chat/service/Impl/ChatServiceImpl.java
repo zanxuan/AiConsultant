@@ -2,8 +2,8 @@ package com.zx.consultant.chat.service.Impl;
 
 import com.zx.consultant.chat.dto.ChatReq;
 import com.zx.consultant.chat.dto.ChatResp;
+import com.zx.consultant.chat.entity.Message;
 import com.zx.consultant.chat.mapper.MessageMapper;
-import com.zx.consultant.rag.entity.Message;
 import com.zx.consultant.chat.service.ChatService;
 import com.zx.consultant.workflow.context.WorkflowContext;
 import com.zx.consultant.workflow.service.WorkflowService;

@@ -57,4 +57,12 @@ public interface DocumentService extends IService<Document> {
      * @return
      */
     String getStatus(Long documentId, Long userId);
+
+
+    /**
+     * 获取文档名称
+     * @param documentId
+     * @return
+     */
+    String getDocumentName(Long documentId);
 }

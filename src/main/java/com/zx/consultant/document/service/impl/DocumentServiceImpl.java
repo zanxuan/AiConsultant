@@ -150,6 +150,17 @@ public class DocumentServiceImpl extends ServiceImpl<DocumentMapper, Document> i
         return document.getStatus();
     }
 
+    /**
+     * 获取文档名称
+     * @param documentId
+     * @return
+     */
+    @Override
+    public String getDocumentName(Long documentId){
+        Document document = this.getById(documentId);
+        return document != null ? document.getFileName() : "未知文档";
+    }
+
 
     // ================== 私有辅助方法 ==================
 

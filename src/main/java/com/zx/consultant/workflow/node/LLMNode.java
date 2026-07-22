@@ -1,76 +1,55 @@
 package com.zx.consultant.workflow.node;
 
+import com.zx.consultant.llm.entity.PromptRequest;
 import com.zx.consultant.llm.service.LLMService;
-import com.zx.consultant.rag.entity.RetrievedChunk;
 import com.zx.consultant.workflow.context.WorkflowContext;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 /**
  * 大模型生成节点
+ * 负责调用底层 LLM 服务获取回答
  * @author zx
  * @date 2026-07-20
- * LLMNode
  */
+@Slf4j
 @Component
-@Order(4) // 定义节点顺序，通常在检索节点(3)之后执行
+@Order(5) // 修改顺序：排在 PromptNode (Order 4) 之后执行
 public class LLMNode implements WorkflowNode {
 
     private final LLMService llmService;
 
-    // TODO: 后期可以注入 PromptService 来专门负责模板组装
-    // private final PromptService promptService;
-
+    // 只需要注入 LLMService 即可，Prompt 的组装已经前置到了 PromptNode
     public LLMNode(LLMService llmService) {
         this.llmService = llmService;
     }
 
     @Override
     public void execute(WorkflowContext context) {
-        // 1. 获取最终要提问的 Query
-        String query = context.getRewrittenQuery() != null 
-                ? context.getRewrittenQuery() 
-                : context.getOriginalQuery();
+        log.info(">>> 执行节点: {} >>>", getName());
 
-        // 2. 获取检索节点(RetrieveNode)查出来的相关文档
-        List<RetrievedChunk> docs = context.getRetrievedDocuments();
+        // 1. 从上下文中获取已经在 PromptNode 构建好的结构化 PromptRequest
+        PromptRequest promptRequest = context.getPrompt();
+        if (promptRequest == null) {
+            throw new IllegalStateException("PromptRequest 不能为空，请检查 PromptNode 是否正确执行");
+        }
 
-        // 3. 构建 Prompt (此处做简单拼接，实际可替换为调用 promptService)
-        String prompt = buildPrompt(query, docs);
+        log.info("正在调用 LLMService 生成回答...");
 
-        // 4. 调用 LLM 获取答案
-        // 注：这里以非流式回答为例。如果是流式请求，可以调用 streamGenerateAnswer 并将 Flux 存入 context
-        String answer = llmService.generateAnswer(prompt);
+        // 2. 调用 LLM 获取答案 (直接传入结构化对象)
+        // 注：这里以非流式回答为例。流式请求可在此处调用 streamGenerateAnswer，并由 Controller 处理 SSE 响应
+        String answer = llmService.generateAnswer(promptRequest);
 
-        // 5. 将生成的答案回写到上下文，供后续节点或最终结果封装使用
-        context.setFinalAnswer(answer); 
+        // 3. 将生成的答案回写到上下文
+        context.setLlmResponse(answer); // 保存原始回答，供后续引用提取节点分析
+        context.setFinalAnswer(answer); // 设置为最终答案（后续如果有 CitationNode 可以在此基础上追加引用标记）
+
+        log.info("LLM 节点执行完毕，已生成回答。");
     }
 
     @Override
     public String getName() {
         return "LLM Generation Node";
-    }
-
-    /**
-     * 简单的 Prompt 组装逻辑（后期建议抽离到专门的 PromptService 中）
-     */
-    private String buildPrompt(String query, List<RetrievedChunk> docs) {
-        if (docs == null || docs.isEmpty()) {
-            return query;
-        }
-
-        // 将检索到的 chunk 内容拼接成上下文参考资料
-        String contextInfo = docs.stream()
-                .map(RetrievedChunk::getContent) // 假设存在 getContent() 方法获取文本
-                .collect(Collectors.joining("\n\n"));
-
-        return String.format(
-                "请根据以下参考资料回答我的问题。\n\n【参考资料】：\n%s\n\n【我的问题】：\n%s",
-                contextInfo, 
-                query
-        );
     }
 }

@@ -1,5 +1,6 @@
 package com.zx.consultant;
 
+import com.zx.consultant.llm.entity.PromptRequest;
 import com.zx.consultant.llm.service.LLMService;
 import com.zx.consultant.workflow.context.WorkflowContext;
 import com.zx.consultant.workflow.service.WorkflowService;
@@ -20,7 +21,9 @@ public class LlmMainTest {
 
         // 原有LLM普通问答测试
         LLMService llmService = context.getBean(LLMService.class);
-        String result = llmService.generateAnswer("什么是Spring Boot?");
+        PromptRequest promptRequest = new PromptRequest();
+        promptRequest.setUserQuery("什么是Spring Boot?");
+        String result = llmService.generateAnswer(promptRequest);
         System.out.println("普通LLM回答：");
         System.out.println(result);
 

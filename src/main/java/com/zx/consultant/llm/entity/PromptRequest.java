@@ -1,10 +1,10 @@
 package com.zx.consultant.llm.entity;
 
-import com.zx.consultant.rag.entity.Message;
-
 import lombok.Data;
 import java.util.List;
 import java.util.Map;
+
+import com.zx.consultant.chat.entity.Message;
 
 /**
  * 结构化的 Prompt 请求对象，与底层 LLM 框架完全解耦
@@ -15,7 +15,7 @@ public class PromptRequest {
     private String systemPrompt;
     
     // 2. 当前用户的具体提问（可能已经被 Rewrite 过）
-    private String userPrompt;
+    private String userQuery;
     
     // 3. 历史会话上下文 (可选，看你是把历史拼在 userPrompt 里，还是作为独立的 Message 传递)
     private List<Message> history;

@@ -115,6 +115,7 @@ public class DocumentProcessServiceImpl implements DocumentProcessService {
 
             updateStatus(documentId, DocumentStatus.READY);
             log.info("【AI 后台流水线】文档处理全流程成功！documentId: {}", documentId);
+            
         } catch (Exception e) {
             log.error("【AI 流水线崩溃】文档处理失败, documentId: {}", documentId, e);
             updateStatus(documentId, DocumentStatus.FAILED);

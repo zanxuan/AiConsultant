@@ -66,7 +66,6 @@ public class KnowledgeBaseController {
             @Parameter(description = "知识库ID", required = true) 
             @PathVariable("knowledgeId") Long knowledgeId) {
         
-        // TODO: 调用 Service 层获取详情
          KnowledgeBaseVO detail = knowledgeBaseService.getDetail(knowledgeId);
         return Result.success(detail);
     }
@@ -84,7 +83,6 @@ public class KnowledgeBaseController {
             @PathVariable("knowledgeId") Long knowledgeId,
             @Validated @RequestBody KnowledgeBaseReq request) {
         
-        // TODO: 调用 Service 层更新知识库
          knowledgeBaseService.update(knowledgeId, request, BaseContext.getCurrentId());
         return Result.success();
     }
@@ -100,8 +98,6 @@ public class KnowledgeBaseController {
             @Parameter(description = "知识库ID", required = true) 
             @PathVariable("knowledgeId") Long knowledgeId) {
 
-
-        // TODO: 调用 Service 层执行删除（软删除或物理删除）
         knowledgeBaseService.delete(knowledgeId, BaseContext.getCurrentId());
         return Result.success();
     }
