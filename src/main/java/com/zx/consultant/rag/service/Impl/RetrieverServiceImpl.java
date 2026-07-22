@@ -1,4 +1,4 @@
-package com.zx.consultant.rag.service.Impl;
+package com.zx.consultant.rag.service.impl;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -79,6 +79,9 @@ public class RetrieverServiceImpl implements RetrieverService {
             System.out.println(
                 "content:" + chunk.getContent()
             );    
+            System.out.println("====== Redis 吐出的原始 Metadata ======");
+           System.out.println(segment.metadata().toString());
+            System.out.println("=======================================");
             
             // 纯粹的提取逻辑，杜绝 if-else 的兼容补丁
             if(segment.metadata().containsKey(VectorMetadataKeys.CHUNK_INDEX)){
@@ -91,6 +94,10 @@ public class RetrieverServiceImpl implements RetrieverService {
             
             if (segment.metadata().containsKey(VectorMetadataKeys.CHUNK_ID)) {
                 chunk.setChunkId(segment.metadata().getLong(VectorMetadataKeys.CHUNK_ID));
+            }
+
+            if (segment.metadata().containsKey(VectorMetadataKeys.DOCUMENT_ID)) {
+                chunk.setDocumentId(segment.metadata().getLong(VectorMetadataKeys.DOCUMENT_ID));
             }
         }
 

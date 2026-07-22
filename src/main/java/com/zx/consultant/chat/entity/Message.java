@@ -1,4 +1,4 @@
-package com.zx.consultant.rag.entity;
+package com.zx.consultant.chat.entity;
 
 import lombok.Data;
 import java.time.LocalDateTime;

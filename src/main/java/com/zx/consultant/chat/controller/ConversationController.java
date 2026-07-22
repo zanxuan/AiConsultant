@@ -3,7 +3,7 @@ package com.zx.consultant.chat.controller;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.zx.consultant.chat.dto.ConversationCreateReq;
 import com.zx.consultant.chat.entity.Conversation;
-import com.zx.consultant.rag.entity.Message;
+import com.zx.consultant.chat.entity.Message;
 import com.zx.consultant.chat.service.ConversationService;
 import com.zx.consultant.chat.mapper.MessageMapper;
 import org.springframework.web.bind.annotation.*;

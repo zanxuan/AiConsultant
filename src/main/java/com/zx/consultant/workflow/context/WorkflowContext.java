@@ -1,8 +1,8 @@
 package com.zx.consultant.workflow.context;
 
 import com.zx.consultant.rag.entity.RetrievedChunk;
+import com.zx.consultant.chat.entity.Message;
 import com.zx.consultant.llm.entity.PromptRequest;
-import com.zx.consultant.rag.entity.Message;
 
 import lombok.Data;
 import java.util.List;

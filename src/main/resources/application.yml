@@ -49,6 +49,8 @@ langchain4j:
  
   community:
     redis:
+      # 关闭自动配置，改由 VectorStoreConfig 手动注册（否则会创建无 metadataKeys 的 Bean，检索时 metadata 恒为空）
+      enabled: false
       host: localhost
       port: 6379
 logging:
