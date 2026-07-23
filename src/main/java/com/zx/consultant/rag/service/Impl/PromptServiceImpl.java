@@ -9,11 +9,14 @@ import com.zx.consultant.llm.entity.PromptRequest;
 import com.zx.consultant.rag.entity.RetrievedChunk;
 import com.zx.consultant.rag.service.PromptService;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * 提示词服务实现类
  * 负责将参考文档、历史对话和当前问题封装为结构化的 PromptRequest
  */
 @Service
+@Slf4j
 public class PromptServiceImpl implements PromptService {
 
     // 优化后的系统设定：明确指出资料被包含在特定 XML 标签中
@@ -41,6 +44,7 @@ public class PromptServiceImpl implements PromptService {
         
         // 3. 设置历史对话（直接将对象塞进去，交由后续的 LLMService 处理为对应角色的 Message）
         promptRequest.setHistory(memory);
+        log.info("Prompt:\n{}", promptRequest.toString());
 
         // 4. 处理并设置检索到的参考背景知识 (Context)
         StringBuilder contextBuilder = new StringBuilder();

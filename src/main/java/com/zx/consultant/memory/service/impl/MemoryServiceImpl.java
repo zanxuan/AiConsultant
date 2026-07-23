@@ -9,16 +9,28 @@ import com.zx.consultant.chat.mapper.MessageMapper;
 import com.zx.consultant.memory.service.MemoryService;
 import com.zx.consultant.common.constant.MemoryConstant;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class MemoryServiceImpl implements MemoryService {
 
     private final MessageMapper messageMapper;
 
+    
 
+
+    /**
+     * 获取最近的N条消息
+     */
     @Override
     public List<Message> getRecentMessages(Long conversationId, int limit) {
+        log.info(
+            "加载历史消息 conversationId={}, limit={}",
+            conversationId,
+            limit
+         );
         // 从数据库按时间倒序查出最近的 N 条
         LambdaQueryWrapper<Message> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Message::getConversationId, conversationId)

@@ -1,65 +1,69 @@
 package com.zx.consultant.chat.controller;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.zx.consultant.chat.dto.ConversationCreateReq;
 import com.zx.consultant.chat.entity.Conversation;
 import com.zx.consultant.chat.entity.Message;
 import com.zx.consultant.chat.service.ConversationService;
-import com.zx.consultant.chat.mapper.MessageMapper;
+import com.zx.consultant.chat.service.MessageService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/conversations")
+@RequiredArgsConstructor
 public class ConversationController {
 
     private final ConversationService conversationService;
-    private final MessageMapper messageMapper; // 用于查询聊天记录
+    private final MessageService messageService;
 
-    public ConversationController(ConversationService conversationService, MessageMapper messageMapper) {
-        this.conversationService = conversationService;
-        this.messageMapper = messageMapper;
-    }
-
-    // 1、新建会话
+    /**
+     * 创建会话
+     * @param req
+     * @return
+     */
     @PostMapping
     public Conversation create(@RequestBody ConversationCreateReq req) {
-        Conversation conversation = new Conversation();
-        conversation.setKnowledgeId(req.getKnowledgeId());
-        conversation.setTitle(req.getTitle());
-        conversation.setCreateTime(LocalDateTime.now());
-        conversationService.save(conversation);
-        return conversation;
+        return conversationService.create(req);
     }
 
-    // 2、获取会话列表
+    /**
+     * 查询当前用户的会话列表
+     * @return
+     */
     @GetMapping
     public List<Conversation> list() {
-        // 实际业务中这里应该加上 userId 的过滤条件
-        return conversationService.list();
+        return conversationService.listByCurrentUser();
     }
 
-    // 3、获取会话详情
+    /**
+     * 查询会话详情
+     * @param conversationId
+     * @return
+     */
     @GetMapping("/{conversationId}")
     public Conversation detail(@PathVariable Long conversationId) {
-        return conversationService.getById(conversationId);
+        return conversationService.getDetail(conversationId);
     }
 
-    // 4、删除会话
+    /**
+     * 删除会话
+     * @param conversationId
+     * @return
+     */
     @DeleteMapping("/{conversationId}")
     public boolean delete(@PathVariable Long conversationId) {
-        return conversationService.removeById(conversationId);
+        return conversationService.delete(conversationId);
     }
 
-    // 6、获取聊天记录
+    /**
+     * 查询会话消息
+     * @param conversationId
+     * @return
+     */
     @GetMapping("/{conversationId}/messages")
     public List<Message> getMessages(@PathVariable Long conversationId) {
-        // 利用 MP 的 Wrapper 条件构造器查询指定会话的历史记录，并按时间排序
-        LambdaQueryWrapper<Message> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(Message::getConversationId, conversationId)
-                    .orderByAsc(Message::getCreateTime);
-        return messageMapper.selectList(queryWrapper);
+        return messageService.listByConversationId(conversationId);
     }
 }

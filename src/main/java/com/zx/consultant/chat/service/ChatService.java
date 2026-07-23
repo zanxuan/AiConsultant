@@ -8,7 +8,13 @@ import com.zx.consultant.chat.dto.ChatResp;
  */
 public interface ChatService {
 
+    /**
+     * 问答
+     * @param req
+     * @return
+     */
     public ChatResp ask(ChatReq req);
 
-    
+   
+
 }
