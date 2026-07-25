@@ -1,0 +1,16 @@
+@use './reset.scss';
+@use './variables.scss' as *;
+
+:root {
+  --color-primary: #{$color-primary};
+  --color-bg: #{$color-bg};
+  --color-text: #{$color-text};
+  --color-muted: #{$color-muted};
+}
+
+.el-button--primary {
+  --el-button-bg-color: #{$color-primary};
+  --el-button-border-color: #{$color-primary};
+  --el-button-hover-bg-color: #146677;
+  --el-button-hover-border-color: #146677;
+}

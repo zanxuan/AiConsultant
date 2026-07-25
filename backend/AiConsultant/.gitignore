@@ -1,0 +1,34 @@
+.vscode/
+
+# 环境变量（保留示例文件）
+.env
+.env.*
+!.env.example
+
+# 本地覆盖配置（容易手滑写进明文）
+application-local.yml
+application-*.local.yml
+
+# 证书 / 私钥
+*.pem
+*.key
+*.p12
+*.jks
+
+# Maven 构建产物
+target/
+
+uploads/
+.mybatis/
+
+# IDE
+.idea/
+*.iml
+
+# 日志与系统文件
+*.log
+.DS_Store
+Thumbs.db
+
+.cursorrules/
+.cursor/
