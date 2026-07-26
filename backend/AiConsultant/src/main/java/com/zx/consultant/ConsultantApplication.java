@@ -1,5 +1,6 @@
 package com.zx.consultant;
 
+import com.zx.consultant.common.config.LocalDotenvBootstrap;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.scheduling.annotation.EnableAsync;
@@ -9,6 +10,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 public class ConsultantApplication {
 
     public static void main(String[] args) {
+        LocalDotenvBootstrap.load();
         SpringApplication.run(ConsultantApplication.class, args);
     }
 
