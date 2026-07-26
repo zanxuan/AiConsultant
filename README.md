@@ -1,11 +1,11 @@
 # AI Enterprise Knowledge Platform
 
-> 基于 Vue3 + Spring Boot + RAG 的企业知识助手平台。
+> 基于 Vue3 + Spring Boot + LangChain4j + RAG 的企业知识助手平台。
 > 支持企业知识库管理、文档解析、多轮智能问答以及答案来源追踪。
 
 ## 📖 项目介绍
 
-在企业研发过程中，大量技术文档、接口文档、Wiki 等知识分散存储，研发人员难以及时获取准确的信息。
+在企业研发过程中，大量技术文档、接口文档、Wiki 等知识分散存储，传统关键词搜索难以理解用户语义，导致研发人员需要在大量文档中反复查找。
 
 本项目面向企业内部知识管理场景，构建了一套基于 RAG（Retrieval-Augmented Generation，检索增强生成）的 AI 知识助手系统。
 
@@ -26,6 +26,15 @@ LLM生成回答
 ```
 
 ---
+## ⭐ 项目亮点
+
+- 基于 RAG 构建企业知识问答链路，实现文档检索增强生成
+- 使用 Redis Stack + RediSearch Vector 实现向量检索，并结合 Metadata Filter 实现精准检索
+- 基于 Workflow 编排 RAG 问答流程，整合 Query Rewrite、Memory、Retrieval 等模块
+- 支持 Citation 来源追踪，提高回答可信度
+- 前后端分离架构，支持独立部署
+---
+
 
 ## ✨ 核心功能 (V1 已完成)
 
@@ -44,7 +53,7 @@ LLM生成回答
 - 企业文档上传
 - PDF / Markdown / TXT 文档解析
 - 文档自动分块 Chunking
-- 文档向量化存储
+- 文档 Embedding 向量化并写入 Redis Vector Store
 
 ## 🔍 RAG 检索链路
 
@@ -60,15 +69,11 @@ LLM生成回答
 - 基于知识库增强回答
 - Citation 引用来源返回
 
-
-
 ## 🔐 基础系统能力
 
 - 用户认证
 - REST API 接口设计
 - 模块化业务架构
-
----
 
 ---
 
@@ -109,8 +114,6 @@ Answer + Citation (引用来源)
 
 ---
 
-
-
 ## 📄 文档处理流程
 
 ```
@@ -135,28 +138,25 @@ Redis Vector Store
 
 ![chat](./docs/images/chat.png)
 
-
 ### 知识库管理
 
 ![knowledge](./docs/images/knowledge.png)
 
-
 ### 文档管理
+
 ![upload](./docs/images/upload.png)
 
 ---
-
-
 
 ## 🛠️ 技术栈
 
 
 | 模块          | 技术选型              |
 | ----------- | ----------------- |
-| 前端框架       | Vue3           |
-| 构建工具   | Vite           |
-| UI组件     | Element Plus   |
-| HTTP请求   | Axios          |
+| 前端框架        | Vue3              |
+| 构建工具        | Vite              |
+| UI组件        | Element Plus      |
+| HTTP请求      | Axios             |
 | 后端框架        | Spring Boot       |
 | 开发语言        | Java 17           |
 | ORM框架       | MyBatis Plus      |
@@ -165,13 +165,11 @@ Redis Vector Store
 | Embedding模型 | text-embedding-v3 |
 | 数据库         | MySQL             |
 | 缓存          | Redis             |
-| 向量检索        | Redis Vector      |
+| 向量检索 | Redis Stack + RediSearch |
 | API测试       | Postman           |
 
 
 ---
-
-
 
 ## 📂 项目结构
 
@@ -182,52 +180,51 @@ Redis Vector Store
 
 目录结构如下：
 
-
-
 ```text
-AIConsultant
+AI-Enterprise-Knowledge-Platform
 │
-├── AICONSULTANT                 # Spring Boot 后端
-│   │
-│   ├── src
-│   │   ├── main
-│   │   │   ├── java
-│   │   │   │   └── com
-│   │   │   │       └── zx
-│   │   │   │           └── consultant
-│   │   │   │               ├── chat              # 聊天模块
-│   │   │   │               ├── common            # 公共组件
-│   │   │   │               ├── document          # 文档处理
-│   │   │   │               ├── knowledge         # 知识库管理
-│   │   │   │               ├── llm               # 大模型调用
-│   │   │   │               ├── memory            # 多轮记忆
-│   │   │   │               ├── rag               # RAG检索
-│   │   │   │               ├── user              # 用户模块
-│   │   │   │               ├── workflow          # 工作流
-│   │   │   │               └── ConsultantApplication.java
-│   │   │   │
-│   │   │   └── resources
-│   │   │       ├── mapper
-│   │   │       ├── application.yml
-│   │   │       ├── application-prod.yml
-│   │   │       └── systemPrompt.txt
-│   │   │
-│   │   └── test
-│   │       └── java
-│   │
-│   ├── uploads
-│   ├── pom.xml
-│   └── .env.example
+├── backend
+│   └── AiConsultant              # Spring Boot 后端
+│       │
+│       ├── src
+│       │   ├── main
+│       │   │   ├── java
+│       │   │   │   └── com
+│       │   │   │       └── zx
+│       │   │   │           └── consultant
+│       │   │   │               ├── chat              # 聊天模块
+│       │   │   │               ├── common            # 公共组件
+│       │   │   │               ├── document          # 文档处理
+│       │   │   │               ├── knowledge         # 知识库管理
+│       │   │   │               ├── llm               # 大模型调用
+│       │   │   │               ├── memory            # 多轮记忆
+│       │   │   │               ├── rag               # RAG检索
+│       │   │   │               ├── user              # 用户模块
+│       │   │   │               ├── workflow          # 工作流
+│       │   │   │               └── ConsultantApplication.java
+│       │   │   │
+│       │   │   └── resources
+│       │   │       ├── mapper
+│       │   │       ├── application.yml
+│       │   │       ├── application-prod.yml
+│       │   │       └── systemPrompt.txt
+│       │   │
+│       │   └── test
+│       │       └── java
+│       │
+│       ├── uploads   # 本地上传文件目录（运行时生成）
+│       ├── pom.xml
+│       └── .env.example
 │
 │
-├── MY-PROJECT-WEB               # Vue3 前端
+├── frontend                    # Vue3 前端
 │   │
 │   ├── src
 │   │   ├── api                  # 接口请求
 │   │   ├── assets               # 静态资源
 │   │   ├── components           # 公共组件
 │   │   ├── composables          # Vue组合逻辑
-│   │   ├── constants             # 常量
+│   │   ├── constants            # 常量
 │   │   ├── layouts              # 页面布局
 │   │   ├── router               # 路由
 │   │   ├── stores               # 状态管理
@@ -247,13 +244,10 @@ AIConsultant
 │
 └── README.md
 ```
+
 ---
 
-
-
 ## 🚀 快速启动
-
-
 
 ### 1. 环境要求
 
@@ -261,13 +255,16 @@ AIConsultant
 - MySQL 8+
 - Redis 7+
 
-
-
 ### 2. 环境配置
 
 项目通过环境变量管理运行配置。
 
-创建 `.env` 文件：
+首次运行前，请根据 `.env.example` 创建 `.env` 文件并填写配置。
+
+参考：
+
+backend/AiConsultant/.env.example
+
 
 数据库：
 
@@ -293,25 +290,32 @@ application.yml 会自动读取对应环境变量。
 
 ### 3. 后端启动
 
-进入 AiConsultant:
+进入后端项目目录 
+```bash
+cd backend/AiConsultant
+```
 
+启动：
 ```bash
 mvn spring-boot:run
 ```
 
 ### 4. 前端启动
 
-进入 my-project-web:
-
+进入前端项目目录
+```bash
+cd frontend
+```
+安装依赖：
 ```bash
 npm install
-
+```
+启动：
+```bash
 npm run dev
 ```
 
 ---
-
-
 
 ## 🔌 API 示例
 
@@ -321,14 +325,18 @@ npm run dev
 POST /api/v1/chat
 
 **请求入参：**
+
+```json
 {
   "conversationId": 1,
   "message": "Redis有哪些持久化方式？"
 }
+```
 
 **返回结果：**
 成功返回答案以及 Citation 引用信息
 
+```json
 {
   "code": 1,
   "data": {
@@ -337,16 +345,15 @@ POST /api/v1/chat
       {
         "documentId": 2080836111764529154,
         "documentName": "redis持久化.pdf",
-        "page":1
-        "content":"redis持久化..."
+        "page": 1,
+        "content": "redis持久化..."
       }
     ]
   }
 }
+```
 
 ---
-
-
 
 ## 🧪 测试记录
 
@@ -365,8 +372,6 @@ POST /api/v1/chat
 
 ---
 
-
-
 ## 当前状态
 
 目前已完成前后端完整链路：
@@ -382,13 +387,9 @@ POST /api/v1/chat
 
 ---
 
-
-
 ## 🗺️ Roadmap
 
-
-
-### V1 阶段 (当前)
+### V1 阶段 (已完成)
 
 - [x] 用户认证
 - [x] 知识库管理
@@ -401,8 +402,6 @@ POST /api/v1/chat
 - [x] Citation引用来源
 - [x] REST API
 - [x] Vue 前端基础交互界面
-
-
 
 ### V2 阶段 (规划中)
 
