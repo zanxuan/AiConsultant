@@ -54,10 +54,14 @@ public class VectorStoreConfig {
                 VectorMetadataKeys.CHUNK_INDEX,
                 NumericField.of("$." + VectorMetadataKeys.CHUNK_INDEX).as(VectorMetadataKeys.CHUNK_INDEX));
 
+        // langchain4j-community-redis 1.0.1-beta6: password is ignored unless user is non-null
+        // (it branches on user!=null to choose JedisPooled with auth).
+        boolean hasPassword = redisPassword != null && !redisPassword.isEmpty();
         return RedisEmbeddingStore.builder()
                 .host(redisHost)
                 .port(redisPort)
-                .password(redisPassword.isEmpty() ? null : redisPassword)
+                .user(hasPassword ? "default" : null)
+                .password(hasPassword ? redisPassword : null)
                 .indexName("embedding-index")
                 .dimension(1024)
                 .metadataConfig(metadataConfig)

@@ -2,8 +2,6 @@ server:
   port: 8087
 
 
-
-
 consultant:
   jwt:
     # 设置jwt签名加密时使用的秘钥
