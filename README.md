@@ -1,3 +1,15 @@
+## 🌐 Online Demo
+
+项目已完成云服务器部署。
+
+访问地址：
+
+[http://106.55.103.123](http://106.55.103.123)
+
+由于系统涉及 AI API 调用，目前采用测试账号访问。
+
+体验账号将在面试或交流时提供，感谢理解！
+
 # AI Enterprise Knowledge Platform
 
 > 基于 Vue3 + Spring Boot + LangChain4j + RAG 的企业知识助手平台。
@@ -26,6 +38,7 @@ LLM生成回答
 ```
 
 ---
+
 ## ⭐ 项目亮点
 
 - 基于 RAG 构建企业知识问答链路，实现文档检索增强生成
@@ -33,10 +46,14 @@ LLM生成回答
 - 基于 Workflow 编排 RAG 问答流程，整合 Query Rewrite、Memory、Retrieval 等模块
 - 支持 Citation 来源追踪，提高回答可信度
 - 前后端分离架构，支持独立部署
+
 ---
 
 
+
 ## ✨ 核心功能 (V1 已完成)
+
+
 
 ## 🖥️ 前端交互
 
@@ -47,6 +64,8 @@ LLM生成回答
 - Markdown回答渲染
 - Citation引用展示
 
+
+
 ## 📄 文档与知识库管理
 
 - 知识库创建与管理
@@ -55,6 +74,8 @@ LLM生成回答
 - 文档自动分块 Chunking
 - 文档 Embedding 向量化并写入 Redis Vector Store
 
+
+
 ## 🔍 RAG 检索链路
 
 - Embedding 向量生成
@@ -62,12 +83,16 @@ LLM生成回答
 - 基于语义相似度的知识检索
 - Metadata Filter 精确过滤
 
+
+
 ## 💬 智能问答
 
 - Query Rewrite 查询重写
 - 多轮对话上下文 Memory
 - 基于知识库增强回答
 - Citation 引用来源返回
+
+
 
 ## 🔐 基础系统能力
 
@@ -114,6 +139,8 @@ Answer + Citation (引用来源)
 
 ---
 
+
+
 ## 📄 文档处理流程
 
 ```
@@ -132,44 +159,52 @@ Redis Vector Store
 
 ---
 
+
+
 ## 🎬 系统展示
+
+
 
 ### AI问答
 
-![chat](./docs/images/chat.png)
+chat
 
 ### 知识库管理
 
-![knowledge](./docs/images/knowledge.png)
+knowledge
 
 ### 文档管理
 
-![upload](./docs/images/upload.png)
+upload
 
 ---
+
+
 
 ## 🛠️ 技术栈
 
 
-| 模块          | 技术选型              |
-| ----------- | ----------------- |
-| 前端框架        | Vue3              |
-| 构建工具        | Vite              |
-| UI组件        | Element Plus      |
-| HTTP请求      | Axios             |
-| 后端框架        | Spring Boot       |
-| 开发语言        | Java 17           |
-| ORM框架       | MyBatis Plus      |
-| AI框架        | LangChain4j       |
-| 大语言模型       | Qwen              |
-| Embedding模型 | text-embedding-v3 |
-| 数据库         | MySQL             |
-| 缓存          | Redis             |
-| 向量检索 | Redis Stack + RediSearch |
-| API测试       | Postman           |
+| 模块          | 技术选型                     |
+| ----------- | ------------------------ |
+| 前端框架        | Vue3                     |
+| 构建工具        | Vite                     |
+| UI组件        | Element Plus             |
+| HTTP请求      | Axios                    |
+| 后端框架        | Spring Boot              |
+| 开发语言        | Java 17                  |
+| ORM框架       | MyBatis Plus             |
+| AI框架        | LangChain4j              |
+| 大语言模型       | Qwen                     |
+| Embedding模型 | text-embedding-v3        |
+| 数据库         | MySQL                    |
+| 缓存          | Redis                    |
+| 向量检索        | Redis Stack + RediSearch |
+| API测试       | Postman                  |
 
 
 ---
+
+
 
 ## 📂 项目结构
 
@@ -247,13 +282,88 @@ AI-Enterprise-Knowledge-Platform
 
 ---
 
+
+
+## 🚀 Production Deployment
+
+项目已完成云服务器部署，并通过公网访问验证。
+
+### 部署环境
+
+
+| 模块        | 技术选型                    |
+| --------- | ----------------------- |
+| 操作系统      | Ubuntu 22.04 LTS        |
+| 容器化       | Docker + Docker Compose |
+| 后端服务      | Spring Boot             |
+| 前端服务      | Vue3 + Nginx            |
+| 数据库       | MySQL 8.0               |
+| 缓存 / 向量存储 | Redis Stack             |
+| 部署方式      | 云服务器部署                  |
+
+
+
+
+### 系统部署架构
+
+服务器环境准备
+↓
+Docker 安装
+↓
+Docker Compose 启动 MySQL / Redis
+↓
+Spring Boot 后端部署
+↓
+Vue3 前端构建部署
+↓
+公网访问验证
+
+### 已完成部署能力
+
+- [x] 云服务器部署
+- [x] Docker 容器化运行 MySQL
+- [x] Docker 容器化运行 Redis Stack
+- [x] Spring Boot 后端线上运行
+- [x] Vue3 前端线上部署
+- [x] RAG 核心链路生产环境验证
+- [x] 数据库持久化配置
+- [x] Redis Vector Store 正常运行
+
+
+
+### 生产环境说明
+
+项目通过环境变量管理生产环境配置：
+
+包含：
+
+- 数据库连接配置
+- Redis连接配置
+- AI模型 API Key
+- JWT安全配置
+
+敏感配置不会提交到 GitHub。
+
+请参考：
+backend/AiConsultant/.env.example
+
+创建对应 `.env` 文件后运行。
+
+---
+
+
+
 ## 🚀 快速启动
+
+
 
 ### 1. 环境要求
 
 - Java 17+
 - MySQL 8+
 - Redis 7+
+
+
 
 ### 2. 环境配置
 
@@ -264,7 +374,6 @@ AI-Enterprise-Knowledge-Platform
 参考：
 
 backend/AiConsultant/.env.example
-
 
 数据库：
 
@@ -291,31 +400,42 @@ application.yml 会自动读取对应环境变量。
 ### 3. 后端启动
 
 进入后端项目目录 
+
 ```bash
 cd backend/AiConsultant
 ```
 
 启动：
+
 ```bash
 mvn spring-boot:run
 ```
 
+
+
 ### 4. 前端启动
 
 进入前端项目目录
+
 ```bash
 cd frontend
 ```
+
 安装依赖：
+
 ```bash
 npm install
 ```
+
 启动：
+
 ```bash
 npm run dev
 ```
 
 ---
+
+
 
 ## 🔌 API 示例
 
@@ -355,6 +475,8 @@ POST /api/v1/chat
 
 ---
 
+
+
 ## 🧪 测试记录
 
 完整 RAG 链路测试记录：
@@ -372,6 +494,8 @@ POST /api/v1/chat
 
 ---
 
+
+
 ## 当前状态
 
 目前已完成前后端完整链路：
@@ -387,7 +511,11 @@ POST /api/v1/chat
 
 ---
 
+
+
 ## 🗺️ Roadmap
+
+
 
 ### V1 阶段 (已完成)
 
@@ -402,6 +530,8 @@ POST /api/v1/chat
 - [x] Citation引用来源
 - [x] REST API
 - [x] Vue 前端基础交互界面
+
+
 
 ### V2 阶段 (规划中)
 
