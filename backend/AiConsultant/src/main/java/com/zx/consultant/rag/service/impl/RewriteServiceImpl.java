@@ -30,16 +30,24 @@ public class RewriteServiceImpl implements RewriteService {
             return originalQuery;
         }
 
-        // 2. 拼接带有角色标识的历史记录 (直接使用传入的 memory，由 MemoryService 保证长度安全)
+        // 2. 拼接历史：system 摘要作为上下文，user/assistant 为真实对话轮次
         StringBuilder historyBuilder = new StringBuilder();
         for (Message msg : memory) {
-            if (MessageRole.USER.equalsIgnoreCase(msg.getRole())) {
+            if (msg == null || msg.getContent() == null || msg.getContent().isBlank()) {
+                continue;
+            }
+            if (MessageRole.SYSTEM.equalsIgnoreCase(msg.getRole())) {
+                historyBuilder.append(msg.getContent()).append("\n");
+            } else if (MessageRole.USER.equalsIgnoreCase(msg.getRole())) {
                 historyBuilder.append("用户: ").append(msg.getContent()).append("\n");
             } else if (MessageRole.ASSISTANT.equalsIgnoreCase(msg.getRole())) {
                 historyBuilder.append("助手: ").append(msg.getContent()).append("\n");
             }
         }
         String history = historyBuilder.toString().trim();
+        if (history.isEmpty()) {
+            return originalQuery;
+        }
 
         // 3. 使用 Java 17 文本块设计 Prompt
         String template = """

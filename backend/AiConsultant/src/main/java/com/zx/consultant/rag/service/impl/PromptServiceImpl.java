@@ -58,9 +58,9 @@ public class PromptServiceImpl implements PromptService {
                 </reference_document>
                 """;
             
-            // 安全防御：强制按 score 降序排序，确保高相关度文档优先，同时避免修改原集合
+            // 安全防御：按融合分优先排序；未融合时用向量分（勿拿 bm25Score 与 vectorScore 直接比）
             List<RetrievedChunk> sortedDocs = docs.stream()
-                    .sorted(Comparator.comparing(RetrievedChunk::getScore, Comparator.nullsLast(Double::compareTo)).reversed())
+                    .sorted(Comparator.comparing(this::rankingScore, Comparator.nullsLast(Double::compareTo)).reversed())
                     .toList();
 
             // 在循环中：处理 null 值，避免直接输出 "null" 让 LLM 困惑，可以替换为 "unknown"
@@ -84,5 +84,22 @@ public class PromptServiceImpl implements PromptService {
         // 5. variables 动态字典由于当前场景暂未使用，可以保留为 null 或在需要时初始化
         
         return promptRequest;
+    }
+
+    /**
+     * Hybrid 后用 finalScore；单通道阶段用对应通道分。
+     * 不会把 bm25Score 与 vectorScore 混成同一比较键。
+     */
+    private Double rankingScore(RetrievedChunk chunk) {
+        if (chunk.getFinalScore() != null) {
+            return chunk.getFinalScore();
+        }
+        if (chunk.getVectorScore() != null) {
+            return chunk.getVectorScore();
+        }
+        if (chunk.getBm25Score() != null) {
+            return chunk.getBm25Score();
+        }
+        return chunk.getScore();
     }
 }

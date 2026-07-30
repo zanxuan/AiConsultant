@@ -17,8 +17,11 @@ public class PromptRequest {
     // 2. 当前用户的具体提问（可能已经被 Rewrite 过）
     private String userQuery;
     
-    // 3. 历史会话上下文 (可选，看你是把历史拼在 userPrompt 里，还是作为独立的 Message 传递)
+    // 3. 历史会话上下文（滑动窗口原文）
     private List<Message> history;
+
+    // 3.1 窗口外历史的滚动摘要
+    private String summary;
     
     // 4. 检索到的参考背景知识
     private String context;

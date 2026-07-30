@@ -9,6 +9,7 @@ import java.sql.SQLIntegrityConstraintViolationException;
 import com.zx.consultant.common.result.Result;
 import com.zx.consultant.common.exception.BaseException;
 import com.zx.consultant.common.constant.MessageConstant;
+import com.zx.consultant.common.exception.MaxUploadSizeExceededException;
 
 /**
  * 全局异常处理器，处理项目中抛出的业务异常与系统异常
@@ -55,4 +56,12 @@ public class GlobalExceptionHandler {
         log.error("系统内核未捕获异常：", e); 
         return Result.error(MessageConstant.UNKNOWN_ERROR);
     }
+
+    /**
+     * 捕获上传文件超出大小限制异常
+     */
+    // @ExceptionHandler(MaxUploadSizeExceededException.class)
+    // public Result<?> handleUploadLimit(MaxUploadSizeExceededException e) {
+    //     return Result.error("上传文件超出大小限制，最大支持50MB");
+    // }
 }

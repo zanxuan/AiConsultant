@@ -40,11 +40,12 @@ public class WorkflowService {
         log.info("=== 开始执行 RAG 工作流，ConversationID: {} ===", context.getConversationId());
         long startTime = System.currentTimeMillis();
 
-        // 【新增逻辑】：在节点流转之前，提前加载历史对话并放入上下文中
+        // 节点流转前：从 Redis 加载短期记忆（摘要 + 滑动窗口），供 Rewrite / Prompt 使用
         if (context.getConversationId() != null) {
-            List<Message> historyMessages = memoryService.getRecentMessages(context.getConversationId(),MemoryConstant.MAX_HISTORY_MESSAGES);
-            // 将历史消息装载进上下文，供后续的 RewriteNode 和 PromptNode 使用
-            context.setMemory(historyMessages); 
+            List<Message> historyMessages = memoryService.getRecentMessages(
+                    context.getConversationId(),
+                    MemoryConstant.MAX_HISTORY_MESSAGES);
+            context.setMemory(historyMessages);
         }
 
         for (WorkflowNode node : nodes) {
@@ -56,6 +57,17 @@ public class WorkflowService {
             long cost = System.currentTimeMillis() - nodeStartTime;
             
             log.debug("节点 [{}] 执行耗时: {} ms", node.getName(), cost);
+        }
+
+        // 工作流结束后：把本轮「用户问题 + AI 回答」写入 Redis；超限时由 MemoryService 触发摘要压缩
+        if (context.getConversationId() != null
+                && context.getOriginalQuery() != null
+                && context.getFinalAnswer() != null
+                && !context.getFinalAnswer().isBlank()) {
+            memoryService.appendTurn(
+                    context.getConversationId(),
+                    context.getOriginalQuery(),
+                    context.getFinalAnswer());
         }
 
         log.info("=== RAG 工作流执行完毕，总耗时: {} ms ===", System.currentTimeMillis() - startTime);

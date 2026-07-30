@@ -3,6 +3,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.zx.consultant.common.exception.BaseException;
+import com.zx.consultant.common.exception.MaxUploadSizeExceededException;
 import com.zx.consultant.common.result.PageResult;
 import com.zx.consultant.document.entity.Document;
 import com.zx.consultant.document.enums.DocumentStatus;
@@ -31,6 +32,9 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class DocumentServiceImpl extends ServiceImpl<DocumentMapper, Document> implements DocumentService {
 
+    /** 单文件上传大小上限：50MB */
+    private static final long MAX_UPLOAD_SIZE_BYTES = 50L * 1024 * 1024;
+
     private final DocumentProcessService documentProcessService;
     private final KnowledgeBaseMapper knowledgeBaseMapper; // 用于越权校验
     private final KnowledgeBaseService knowledgeBaseService;
@@ -49,21 +53,30 @@ public class DocumentServiceImpl extends ServiceImpl<DocumentMapper, Document> i
         // 1. 越权校验：判断知识库是否属于当前用户
         checkKnowledgeOwnership(knowledgeId, userId);
 
-        // 2. 将文件保存到本地磁盘（或 OSS）
+        // 2. 文件大小校验：超过 50MB 拒绝上传
+        if (file == null || file.isEmpty()) {
+            throw new BaseException("上传文件不能为空");
+        }
+        if (file.getSize() > MAX_UPLOAD_SIZE_BYTES) {
+            throw new MaxUploadSizeExceededException(
+                    "上传文件超出大小限制，最大支持50MB，当前文件大小: " + file.getSize() + " 字节");
+        }
+
+        // 3. 将文件保存到本地磁盘（或 OSS）
         String originalFilename = file.getOriginalFilename();
         String fileExtension = getFileExtension(originalFilename);
         String storagePath = saveFileToDisk(file); // 抽取出的存文件方法
 
-        // 3. 构建并保存 Document 实体
+        // 4. 构建并保存 Document 实体
         Long documentId = saveDocumentRecord(knowledgeId, originalFilename, fileExtension, file.getSize(), storagePath);
 
         /*注意这里将保存document抽离为了另一个方法，以此保证插入数据的事务提交了之后，
         才调用异步方法，进行查询，此时数据一定在数据库中保存了 */
 
-        // 4. 关键：调用 ProcessService 异步执行 AI 解析入库流程
+        // 5. 关键：调用 ProcessService 异步执行 AI 解析入库流程
         documentProcessService.processDocumentAsync(documentId);
 
-        // 5. 立即返回文档ID给前端，前端可轮询状态
+        // 6. 立即返回文档ID给前端，前端可轮询状态
         return documentId;
     }
 

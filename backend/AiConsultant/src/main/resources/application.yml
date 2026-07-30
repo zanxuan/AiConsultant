@@ -17,9 +17,11 @@ dashscope:
 
 app:
   rag:
+    redis:
+      index-name: embedding-index   # 与 Vector / BM25 共用；可按环境改为 embedding-index-dev / -prod
     retriever:
       max-results: 8       # 默认召回数量
-      min-score: 0.75      # 默认最低相似度阈值
+      min-score: 0.75      # 默认最低相似度阈值（仅向量通道）
 
 
 langchain4j:
@@ -68,6 +70,13 @@ spring:
     url: jdbc:mysql://localhost:3306/ai_consultant?serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
     username: ${DB_USERNAME}  
     password: ${DB_PASSWORD} 
+
+  servlet:
+    multipart:
+      # 单个文件最大 50MB
+      max-file-size: 50MB
+      # 单次请求所有文件总大小
+      max-request-size: 50MB
 
 mybatis:
   configuration:

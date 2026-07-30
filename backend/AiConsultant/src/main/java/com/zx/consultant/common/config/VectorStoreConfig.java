@@ -26,6 +26,9 @@ public class VectorStoreConfig {
     @Value("${spring.data.redis.password:}")
     private String redisPassword;
 
+    @Value("${app.rag.redis.index-name:embedding-index}")
+    private String indexName;
+
     /**
      * 手动接管 EmbeddingStore。
      * <p>
@@ -62,7 +65,7 @@ public class VectorStoreConfig {
                 .port(redisPort)
                 .user(hasPassword ? "default" : null)
                 .password(hasPassword ? redisPassword : null)
-                .indexName("embedding-index")
+                .indexName(indexName)
                 .dimension(1024)
                 .metadataConfig(metadataConfig)
                 .build();

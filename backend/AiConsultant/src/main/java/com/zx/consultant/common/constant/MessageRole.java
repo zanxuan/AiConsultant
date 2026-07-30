@@ -1,11 +1,11 @@
 package com.zx.consultant.common.constant;
 
-public  final class MessageRole {
+public final class MessageRole {
 
-       // 私有化构造器，防止被实例化
-       private MessageRole() {}
+    private MessageRole() {}
 
-       public static final String USER = "user";
-       public static final String ASSISTANT = "assistant";
-    
+    public static final String USER = "user";
+    public static final String ASSISTANT = "assistant";
+    /** 系统上下文（如历史摘要），不是模型对用户的回复 */
+    public static final String SYSTEM = "system";
 }

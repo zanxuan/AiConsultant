@@ -42,13 +42,18 @@ public class LLMServiceImpl implements LLMService {
             messages.add(SystemMessage.from(request.getSystemPrompt()));
         }
 
-        // 2. 注入历史对话 (区分 User 和 AI 角色)
+        // 2. 注入历史对话（system=摘要上下文；user/assistant=真实轮次）
         if (request.getHistory() != null && !request.getHistory().isEmpty()) {
             for (var msg : request.getHistory()) {
-                if (MessageRole.USER.equalsIgnoreCase(msg.getRole())) {
+                if (msg == null || msg.getContent() == null || msg.getContent().isBlank()) {
+                    continue;
+                }
+                if (MessageRole.SYSTEM.equalsIgnoreCase(msg.getRole())) {
+                    messages.add(SystemMessage.from(msg.getContent()));
+                } else if (MessageRole.USER.equalsIgnoreCase(msg.getRole())) {
                     messages.add(UserMessage.from(msg.getContent()));
                 } else if (MessageRole.ASSISTANT.equalsIgnoreCase(msg.getRole())) {
-                    messages.add(AiMessage.from(msg.getContent())); // 注意：LangChain4j 里叫 AiMessage
+                    messages.add(AiMessage.from(msg.getContent()));
                 }
             }
         }
