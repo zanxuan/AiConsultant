@@ -43,7 +43,8 @@ export function setupPermission(router: Router) {
         try {
           await userStore.fetchProfile()
         } catch {
-          await userStore.logout()
+          // Token 失效时仅清本地态，避免再调 logout 接口
+          userStore.resetAuth()
           next({
             name: 'login',
             query: { redirect: to.fullPath },

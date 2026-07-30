@@ -80,6 +80,9 @@ const active = computed(() => {
 
   width: var(--sidebar-w);
   flex-shrink: 0;
+  height: 100%;
+  align-self: stretch;
+  overflow: hidden;
   background: #0f4c5c;
   display: flex;
   flex-direction: column;

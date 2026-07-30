@@ -23,7 +23,8 @@ const isChat = computed(() => route.name === 'chat')
 <style scoped lang="scss">
 .main-layout {
   display: flex;
-  min-height: 100vh;
+  height: 100%;
+  overflow: hidden;
   background: #f3f6f8;
 
   &__body {
@@ -31,6 +32,8 @@ const isChat = computed(() => route.name === 'chat')
     display: flex;
     flex-direction: column;
     min-width: 0;
+    min-height: 0;
+    overflow: hidden;
   }
 
   &__content {

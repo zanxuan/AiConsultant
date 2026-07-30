@@ -40,14 +40,8 @@ declare module 'vue' {
     ElTag: typeof import('element-plus/es')['ElTag']
     ElUpload: typeof import('element-plus/es')['ElUpload']
     EmptyState: typeof import('./components/common/EmptyState.vue')['default']
-    HelloWorld: typeof import('./components/HelloWorld.vue')['default']
     HistoryItem: typeof import('./components/history/HistoryItem.vue')['default']
     HistoryList: typeof import('./components/history/HistoryList.vue')['default']
-    IconCommunity: typeof import('./components/icons/IconCommunity.vue')['default']
-    IconDocumentation: typeof import('./components/icons/IconDocumentation.vue')['default']
-    IconEcosystem: typeof import('./components/icons/IconEcosystem.vue')['default']
-    IconSupport: typeof import('./components/icons/IconSupport.vue')['default']
-    IconTooling: typeof import('./components/icons/IconTooling.vue')['default']
     KnowledgeCard: typeof import('./components/knowledge/KnowledgeCard.vue')['default']
     KnowledgeForm: typeof import('./components/knowledge/KnowledgeForm.vue')['default']
     KnowledgeSelect: typeof import('./components/knowledge/KnowledgeSelect.vue')['default']
@@ -58,8 +52,6 @@ declare module 'vue' {
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     SourcePanel: typeof import('./components/chat/SourcePanel.vue')['default']
-    TheWelcome: typeof import('./components/TheWelcome.vue')['default']
-    WelcomeItem: typeof import('./components/WelcomeItem.vue')['default']
   }
   export interface ComponentCustomProperties {
     vLoading: typeof import('element-plus/es')['ElLoadingDirective']

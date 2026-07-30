@@ -1,8 +1,11 @@
 import axios from 'axios'
 import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
 import { ElMessage } from 'element-plus'
-import { getToken, clearAuthStorage } from '@/utils/auth'
+import { getToken } from '@/utils/auth'
 import { getApiMessage, isApiSuccess, type ApiResult } from '@/types/api'
+
+/** 防止并发 401 重复提示与重复跳转 */
+let isHandlingUnauthorized = false
 
 /**
  * Java 雪花 ID 超过 Number.MAX_SAFE_INTEGER，JSON.parse 会丢精度。
@@ -54,12 +57,27 @@ service.interceptors.response.use(
     const status = error.response?.status
     const data = error.response?.data as ApiResult | undefined
     if (status === 401) {
-      clearAuthStorage()
-      ElMessage.error('登录已过期，请重新登录')
-      const { default: router } = await import('@/router')
-      const redirect = router.currentRoute.value.fullPath
-      if (router.currentRoute.value.name !== 'login') {
-        router.push({ name: 'login', query: { redirect } })
+      if (!isHandlingUnauthorized) {
+        isHandlingUnauthorized = true
+        try {
+          const { useUserStore } = await import('@/stores/user')
+          useUserStore().resetAuth()
+
+          ElMessage.error('登录已过期，请重新登录')
+
+          const { default: router } = await import('@/router')
+          const current = router.currentRoute.value
+          const onLogin =
+            current.name === 'login' || current.name === 'login-page' || current.path.startsWith('/login')
+          if (!onLogin) {
+            await router.replace({
+              name: 'login',
+              query: { redirect: current.fullPath },
+            })
+          }
+        } finally {
+          isHandlingUnauthorized = false
+        }
       }
     } else {
       ElMessage.error(getApiMessage(data) || error.message || '网络异常')

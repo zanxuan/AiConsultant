@@ -73,8 +73,10 @@ async function onSend(message: string) {
 <style scoped lang="scss">
 .chat-window {
   --chat-max: 960px;
+  flex: 1;
   height: 100%;
   min-height: 0;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   background:

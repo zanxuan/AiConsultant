@@ -86,6 +86,7 @@ withDefaults(
     showKnowledge?: boolean
   }>(),
   {
+    loading: false,
     showKnowledge: true,
   },
 )

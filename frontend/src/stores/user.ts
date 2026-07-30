@@ -37,15 +37,20 @@ export const useUserStore = defineStore('user', () => {
     return profile
   }
 
+  /** 仅清理本地登录态（不请求后端），用于 JWT 过期等场景 */
+  function resetAuth() {
+    token.value = null
+    userInfo.value = null
+    clearAuthStorage()
+  }
+
   async function logout() {
     try {
       await logoutApi()
     } catch {
       // 即便后端登出失败，前端仍清理本地态
     } finally {
-      token.value = null
-      userInfo.value = null
-      clearAuthStorage()
+      resetAuth()
     }
   }
 
@@ -65,6 +70,7 @@ export const useUserStore = defineStore('user', () => {
     isLoggedIn,
     login,
     logout,
+    resetAuth,
     fetchProfile,
     hydrateFromStorage,
     setUserInfo,
