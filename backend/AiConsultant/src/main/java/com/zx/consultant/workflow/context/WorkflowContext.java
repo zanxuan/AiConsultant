@@ -3,9 +3,11 @@ package com.zx.consultant.workflow.context;
 import com.zx.consultant.rag.entity.RetrievedChunk;
 import com.zx.consultant.rag.dto.CitationDTO;
 import com.zx.consultant.chat.entity.Message;
+import com.zx.consultant.common.trace.NodeSpan;
 import com.zx.consultant.llm.entity.PromptRequest;
 
 import lombok.Data;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -17,6 +19,12 @@ public class WorkflowContext {
     /** 会话绑定的知识库 ID，检索必须按此隔离 */
     private Long knowledgeId;
     private String originalQuery; // 用户原始提问
+
+    /** 当前请求的 TraceId，与 HTTP Header / MDC 保持一致 */
+    private String traceId;
+
+    /** 本次工作流各节点的 Trace 记录 */
+    private List<NodeSpan> nodeSpans = new ArrayList<>();
     
     // 流程流转状态
     private String intent; // 意图识别结果

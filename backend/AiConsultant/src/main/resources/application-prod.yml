@@ -19,6 +19,8 @@ langchain4j:
       port: ${REDIS_PORT:6379}
 
 logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%X{traceId}] [%thread] %-5level %logger{36} - %msg%n"
   level:
     dev.langchain4j: info
     root: info

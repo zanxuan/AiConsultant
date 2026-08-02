@@ -49,11 +49,7 @@ LLM生成回答
 
 ---
 
-
-
 ## ✨ 核心功能 (V1 已完成)
-
-
 
 ## 🖥️ 前端交互
 
@@ -64,8 +60,6 @@ LLM生成回答
 - Markdown回答渲染
 - Citation引用展示
 
-
-
 ## 📄 文档与知识库管理
 
 - 知识库创建与管理
@@ -74,16 +68,12 @@ LLM生成回答
 - 文档自动分块 Chunking
 - 文档 Embedding 向量化并写入 Redis Vector Store
 
-
-
 ## 🔍 RAG 检索链路
 
 - Embedding 向量生成
 - Redis Vector 向量数据库存储
 - 基于语义相似度的知识检索
 - Metadata Filter 精确过滤
-
-
 
 ## 💬 智能问答
 
@@ -92,8 +82,6 @@ LLM生成回答
 - 基于知识库增强回答
 - Citation 引用来源返回
 
-
-
 ## 🔐 基础系统能力
 
 - 用户认证
@@ -101,8 +89,6 @@ LLM生成回答
 - 模块化业务架构
 
 ---
-
-
 
 ## 🏗️ 系统架构
 
@@ -139,8 +125,6 @@ Answer + Citation (引用来源)
 
 ---
 
-
-
 ## 📄 文档处理流程
 
 ```
@@ -159,27 +143,20 @@ Redis Vector Store
 
 ---
 
-
-
 ## 🎬 系统展示
-
-
 
 ### AI问答
 
-chat
+![chat](./docs/images/chat.png)
 
 ### 知识库管理
 
-knowledge
+![knowledge](./docs/images/knowledge.png)
 
 ### 文档管理
 
-upload
-
+![upload](./docs/images/upload.png)
 ---
-
-
 
 ## 🛠️ 技术栈
 
@@ -203,8 +180,6 @@ upload
 
 
 ---
-
-
 
 ## 📂 项目结构
 
@@ -282,8 +257,6 @@ AI-Enterprise-Knowledge-Platform
 
 ---
 
-
-
 ## 🚀 Production Deployment
 
 项目已完成云服务器部署，并通过公网访问验证。
@@ -300,8 +273,6 @@ AI-Enterprise-Knowledge-Platform
 | 数据库       | MySQL 8.0               |
 | 缓存 / 向量存储 | Redis Stack             |
 | 部署方式      | 云服务器部署                  |
-
-
 
 
 ### 系统部署架构
@@ -329,8 +300,6 @@ Vue3 前端构建部署
 - [x] 数据库持久化配置
 - [x] Redis Vector Store 正常运行
 
-
-
 ### 生产环境说明
 
 项目通过环境变量管理生产环境配置：
@@ -351,19 +320,13 @@ backend/AiConsultant/.env.example
 
 ---
 
-
-
 ## 🚀 快速启动
-
-
 
 ### 1. 环境要求
 
 - Java 17+
 - MySQL 8+
 - Redis 7+
-
-
 
 ### 2. 环境配置
 
@@ -411,8 +374,6 @@ cd backend/AiConsultant
 mvn spring-boot:run
 ```
 
-
-
 ### 4. 前端启动
 
 进入前端项目目录
@@ -434,8 +395,6 @@ npm run dev
 ```
 
 ---
-
-
 
 ## 🔌 API 示例
 
@@ -475,8 +434,6 @@ POST /api/v1/chat
 
 ---
 
-
-
 ## 🧪 测试记录
 
 完整 RAG 链路测试记录：
@@ -494,8 +451,6 @@ POST /api/v1/chat
 
 ---
 
-
-
 ## 当前状态
 
 目前已完成前后端完整链路：
@@ -511,11 +466,7 @@ POST /api/v1/chat
 
 ---
 
-
-
 ## 🗺️ Roadmap
-
-
 
 ### V1 阶段 (已完成)
 
@@ -530,8 +481,6 @@ POST /api/v1/chat
 - [x] Citation引用来源
 - [x] REST API
 - [x] Vue 前端基础交互界面
-
-
 
 ### V2 阶段 (规划中)
 

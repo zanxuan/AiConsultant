@@ -10,6 +10,7 @@ import com.zx.consultant.chat.mapper.MessageMapper;
 import com.zx.consultant.chat.service.ChatService;
 import com.zx.consultant.chat.service.ConversationService;
 import com.zx.consultant.common.exception.BaseException;
+import com.zx.consultant.common.trace.TraceContext;
 import com.zx.consultant.rag.dto.CitationDTO;
 import com.zx.consultant.workflow.context.WorkflowContext;
 import com.zx.consultant.workflow.service.WorkflowService;
@@ -39,7 +40,7 @@ public class ChatServiceImpl implements ChatService {
     }
 
     public ChatResp ask(ChatReq req) {
-        log.info("用户提问：{}", req.getMessage());
+        log.info("用户提问：{}, traceId={}", req.getMessage(), TraceContext.getTraceId());
 
         Conversation conversation = conversationService.getById(req.getConversationId());
         if (conversation == null) {
@@ -57,7 +58,9 @@ public class ChatServiceImpl implements ChatService {
         messageMapper.insert(userMessage);
 
         // 2. 触发 Workflow 核心引擎（带上知识库隔离 ID）
-        log.info("触发 Workflow 核心引擎, knowledgeId={}", conversation.getKnowledgeId());
+        // traceId 已由 TraceIdFilter 在请求入口写入 MDC / TraceContext
+        log.info("触发 Workflow 核心引擎, knowledgeId={}, traceId={}",
+                conversation.getKnowledgeId(), TraceContext.getTraceId());
         WorkflowContext context = new WorkflowContext();
         context.setConversationId(req.getConversationId());
         context.setKnowledgeId(conversation.getKnowledgeId());

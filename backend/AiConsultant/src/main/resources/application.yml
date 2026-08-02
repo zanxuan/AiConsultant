@@ -54,6 +54,9 @@ langchain4j:
       host: localhost
       port: 6379
 logging:
+  # [%X{traceId}] 从 MDC 读取，由 TraceIdFilter 在请求入口写入
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%X{traceId}] [%thread] %-5level %logger{36} - %msg%n"
   level:
     dev.langchain4j: debug
 
