@@ -58,14 +58,20 @@ public class CitationNode implements WorkflowNode {
             return;
         }
 
-        // 3. 从原始回答中提取结构化引用列表（与 answer 分离）
+        // 3. 从原始回答提取 cite；若模型未打标，则用本次检索结果去重兜底（与 answer 分离）
         List<CitationDTO> citationList = citationService.extractCitations(llmResponse, docs);
         context.setCitations(citationList);
 
         if (!citationList.isEmpty()) {
-            log.info("成功提取 {} 个文献引用，answer / references 已分离。", citationList.size());
+            boolean hasCiteMark = llmResponse != null
+                    && CITE_MARK_PATTERN.matcher(llmResponse).find();
+            if (hasCiteMark) {
+                log.info("成功提取 {} 个文献引用，answer / references 已分离。", citationList.size());
+            } else {
+                log.info("模型未打 cite 标记，已用检索结果兜底返回 {} 个引用。", citationList.size());
+            }
         } else {
-            log.info("未从回答中提取到有效的文献引用。");
+            log.info("未生成有效的文献引用。");
         }
     }
 

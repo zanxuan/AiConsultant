@@ -40,40 +40,49 @@ public class CitationServiceImpl implements CitationService {
     public List<CitationDTO> extractCitations(String llmResponse, List<RetrievedChunk> retrievedChunks) {
         List<CitationDTO> citations = new ArrayList<>();
 
-        // 1. 如果大模型回答没内容，或者根本没有检索到资料，直接返回空
-        if (llmResponse == null || retrievedChunks == null || retrievedChunks.isEmpty()) {
+        // 1. 没有检索资料则无法构建引用
+        if (retrievedChunks == null || retrievedChunks.isEmpty()) {
             return citations;
         }
 
-        // 2. 用正则从大模型回答中提取所有被引用的 documentId
+        // 2. 优先从回答中的 <cite id="..."/> 提取被引用的 documentId
         Set<Long> citedDocIds = new HashSet<>();
-        Matcher matcher = CITATION_PATTERN.matcher(llmResponse);
-        while (matcher.find()) {
-            try {
-                citedDocIds.add(Long.parseLong(matcher.group(1)));
-            } catch (NumberFormatException e) {
-                // 忽略解析错误的 ID
+        if (llmResponse != null && !llmResponse.isBlank()) {
+            Matcher matcher = CITATION_PATTERN.matcher(llmResponse);
+            while (matcher.find()) {
+                try {
+                    citedDocIds.add(Long.parseLong(matcher.group(1)));
+                } catch (NumberFormatException e) {
+                    // 忽略解析错误的 ID
+                }
             }
         }
 
-        // 3. 将提取到的 ID 与本次检索的 Chunks 进行匹配，生成给前端的对象
-        Set<Long> processedDocIds = new HashSet<>(); // 去重，避免同一个文档多次出现在底部参考列表中
+        // 3. 有 cite 标记：返回被点名文档下、本次检索到的各页；无标记：兜底返回全部检索结果
+        // 去重键为 documentId + page，避免同文档多页被压成「只剩第 1 页」
+        boolean fallbackAll = citedDocIds.isEmpty();
+        Set<String> processedKeys = new HashSet<>();
 
         for (RetrievedChunk chunk : retrievedChunks) {
             Long docId = chunk.getDocumentId();
-
-            // 如果这个 chunk 的 docId 被大模型引用了，且还没有被加入到返回列表中
-            if (citedDocIds.contains(docId) && !processedDocIds.contains(docId)) {
-
-                String docName = documentService.getDocumentName(docId);
-
-                citations.add(new CitationDTO(
-                        docId,
-                        docName,
-                        chunk.getPage(),
-                        chunk.getContent()));
-                processedDocIds.add(docId);
+            if (docId == null) {
+                continue;
             }
+            if (!fallbackAll && !citedDocIds.contains(docId)) {
+                continue;
+            }
+
+            String dedupeKey = docId + ":" + (chunk.getPage() != null ? chunk.getPage() : "null");
+            if (!processedKeys.add(dedupeKey)) {
+                continue;
+            }
+
+            String docName = documentService.getDocumentName(docId);
+            citations.add(new CitationDTO(
+                    docId,
+                    docName,
+                    chunk.getPage(),
+                    chunk.getContent()));
         }
 
         return citations;

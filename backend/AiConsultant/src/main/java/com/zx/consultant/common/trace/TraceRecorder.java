@@ -27,6 +27,9 @@ public final class TraceRecorder {
         try {
             action.run();
             long end = System.currentTimeMillis();
+            boolean llmSpan = TraceContext.getModelUsed() != null
+                    || TraceContext.isFallbackTriggered()
+                    || TraceContext.getFallbackReason() != null;
             NodeSpan span = NodeSpan.builder()
                     .nodeName(nodeName)
                     .traceId(traceId)
@@ -34,11 +37,20 @@ public final class TraceRecorder {
                     .endTime(end)
                     .costMs(end - start)
                     .status(NodeStatus.SUCCESS)
+                    .modelUsed(TraceContext.getModelUsed())
+                    .fallbackTriggered(llmSpan ? TraceContext.isFallbackTriggered() : null)
+                    .fallbackReason(TraceContext.getFallbackReason())
                     .build();
             TraceContext.addSpan(span);
-            log.info("[Trace] node={} cost={}ms status={}", nodeName, span.getCostMs(), span.getStatus());
+            clearLlmTraceFieldsIfPresent(span);
+            log.info("[Trace] node={} cost={}ms status={} model={} fallback={}",
+                    nodeName, span.getCostMs(), span.getStatus(),
+                    span.getModelUsed(), span.getFallbackTriggered());
         } catch (RuntimeException e) {
             long end = System.currentTimeMillis();
+            boolean llmSpan = TraceContext.getModelUsed() != null
+                    || TraceContext.isFallbackTriggered()
+                    || TraceContext.getFallbackReason() != null;
             NodeSpan span = NodeSpan.builder()
                     .nodeName(nodeName)
                     .traceId(traceId)
@@ -47,12 +59,29 @@ public final class TraceRecorder {
                     .costMs(end - start)
                     .status(NodeStatus.FAILED)
                     .errorMessage(e.getMessage())
+                    .modelUsed(TraceContext.getModelUsed())
+                    .fallbackTriggered(llmSpan ? TraceContext.isFallbackTriggered() : null)
+                    .fallbackReason(TraceContext.getFallbackReason())
                     .build();
             TraceContext.addSpan(span);
-            log.error("[Trace] node={} cost={}ms status={} error={}",
-                    nodeName, span.getCostMs(), span.getStatus(), span.getErrorMessage());
+            clearLlmTraceFieldsIfPresent(span);
+            log.error("[Trace] node={} cost={}ms status={} error={} model={} fallback={}",
+                    nodeName, span.getCostMs(), span.getStatus(), span.getErrorMessage(),
+                    span.getModelUsed(), span.getFallbackTriggered());
             throw e;
         }
+    }
+
+    /** LLM 字段只落在产生它们的那个 Span 上，避免后续节点误继承 */
+    private static void clearLlmTraceFieldsIfPresent(NodeSpan span) {
+        if (span.getModelUsed() == null
+                && span.getFallbackTriggered() == null
+                && span.getFallbackReason() == null) {
+            return;
+        }
+        TraceContext.setModelUsed(null);
+        TraceContext.setFallbackTriggered(false);
+        TraceContext.setFallbackReason(null);
     }
 
     /**

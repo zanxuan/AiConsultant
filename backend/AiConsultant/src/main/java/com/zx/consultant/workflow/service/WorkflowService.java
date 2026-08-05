@@ -64,8 +64,10 @@ public class WorkflowService {
             });
 
             for (WorkflowNode node : nodes) {
-                // 后续可在此处添加 Evaluate Node 判断是否需要阻断或跳过
-                // 例如：if (context.isEarlyStop()) break;
+                if (context.isEarlyStop()) {
+                    log.info("工作流 earlyStop，跳过后续节点: {}", node.getName());
+                    break;
+                }
                 TraceRecorder.record(node.getName(), () -> node.execute(context));
             }
 

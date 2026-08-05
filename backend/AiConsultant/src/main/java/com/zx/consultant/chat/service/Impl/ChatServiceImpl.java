@@ -65,26 +65,37 @@ public class ChatServiceImpl implements ChatService {
         context.setConversationId(req.getConversationId());
         context.setKnowledgeId(conversation.getKnowledgeId());
         context.setOriginalQuery(req.getMessage());
-        // TODO(V2): 增加异常处理, fallback 机制
-        context = workflowService.run(context);
 
-        List<CitationDTO> references = context.getCitations() != null
-                ? context.getCitations()
-                : Collections.emptyList();
+        String answer;
+        List<CitationDTO> references;
+        try {
+            // LLM 双模型降级在 LLMServiceImpl（主失败 → 副模型），此处只编排 Workflow
+            context = workflowService.run(context);
+            answer = context.getFinalAnswer();
+            references = context.getCitations() != null
+                    ? context.getCitations()
+                    : Collections.emptyList();
+        } catch (Exception e) {
+            // Chat 层兜底：不把异常细节抛给用户，返回友好回复
+            log.error("Workflow 执行失败, conversationId={}, traceId={}",
+                    req.getConversationId(), TraceContext.getTraceId(), e);
+            answer = "当前智能问答服务暂时不可用，请稍后重试";
+            references = Collections.emptyList();
+        }
 
         // 3. 落库 AI 回答（content 存纯回答，reference 存结构化引用 JSON）
         log.info("落库 AI 回答");
         Message aiMessage = new Message();
         aiMessage.setConversationId(req.getConversationId());
         aiMessage.setRole("assistant");
-        aiMessage.setContent(context.getFinalAnswer());
+        aiMessage.setContent(answer);
         aiMessage.setReference(serializeReferences(references));
         messageMapper.insert(aiMessage);
 
         // 4. 组装并返回：answer 与 references 同级分离
         log.info("组装并返回标准格式");
         ChatResp resp = new ChatResp();
-        resp.setAnswer(context.getFinalAnswer());
+        resp.setAnswer(answer);
         resp.setReferences(references);
         return resp;
     }

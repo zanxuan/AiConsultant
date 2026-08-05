@@ -36,6 +36,9 @@ public class TraceServiceImpl implements TraceService {
             entity.setCostTime(span.getCostMs());
             entity.setStatus(span.getStatus() != null ? span.getStatus().name() : null);
             entity.setErrorMessage(truncate(span.getErrorMessage()));
+            entity.setModelUsed(span.getModelUsed());
+            entity.setFallbackTriggered(span.getFallbackTriggered());
+            entity.setFallbackReason(truncate(span.getFallbackReason()));
             traceSpanMapper.insert(entity);
         }
         log.info("Trace spans persisted: traceId={}, count={}", traceId, spans.size());
@@ -61,6 +64,9 @@ public class TraceServiceImpl implements TraceService {
                         .costTime(row.getCostTime())
                         .status(row.getStatus())
                         .errorMessage(row.getErrorMessage())
+                        .modelUsed(row.getModelUsed())
+                        .fallbackTriggered(row.getFallbackTriggered())
+                        .fallbackReason(row.getFallbackReason())
                         .createTime(row.getCreateTime())
                         .build())
                 .toList();

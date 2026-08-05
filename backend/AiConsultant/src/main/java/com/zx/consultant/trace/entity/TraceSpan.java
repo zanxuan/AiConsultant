@@ -33,4 +33,10 @@ public class TraceSpan {
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
+
+    private String modelUsed;
+
+    private Boolean fallbackTriggered;
+
+    private String fallbackReason;
 }

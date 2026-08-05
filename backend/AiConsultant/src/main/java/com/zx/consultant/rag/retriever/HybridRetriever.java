@@ -5,6 +5,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import com.zx.consultant.rag.entity.RetrievedChunk;
@@ -16,6 +17,8 @@ import lombok.extern.slf4j.Slf4j;
  * <p>
  * RRF 只依赖名次，不比较 vectorScore 与 bm25Score（二者量纲不同）。
  * {@code finalScore(d) = Σ 1 / (k + rank_i(d))}
+ * <p>
+ * 融合后做简单相关性判断（无结果 / 最高向量分过低），由 RetrieveNode 短路友好回复，不进 LLM。
  */
 @Slf4j
 @Component
@@ -32,6 +35,10 @@ public class HybridRetriever {
     @Value("${app.rag.retriever.rrf-k:60}")
     private Integer rrfK;
 
+    /** 与向量通道一致的最低相似度；用于 Hybrid 后的最高分门槛 */
+    @Value("${app.rag.retriever.min-score:0.75}")
+    private Double minScore;
+
     public List<RetrievedChunk> retrieve(String query, Long knowledgeId) {
         List<RetrievedChunk> vectorHits = vectorRetriever.retrieve(query, knowledgeId);
         List<RetrievedChunk> bm25Hits = bm25Retriever.retrieve(query, knowledgeId);
@@ -39,7 +46,44 @@ public class HybridRetriever {
         log.info("Hybrid 检索开始, knowledgeId={}, vectorHits={}, bm25Hits={}, rrfK={}, topK={}",
                 knowledgeId, vectorHits.size(), bm25Hits.size(), rrfK, maxResults);
 
-        return fuseWithRrf(vectorHits, bm25Hits);
+        List<RetrievedChunk> ranked = fuseWithRrf(vectorHits, bm25Hits);
+
+        // 情况1 / 情况2 仅做简单判断与日志；友好回复由 RetrieveNode 短路，避免空资料进 LLM
+        if (ranked.isEmpty()) {
+            log.info("Hybrid 情况1: 无召回结果, knowledgeId={}", knowledgeId);
+        } else if (isScoreTooLow(ranked)) {
+            log.info("Hybrid 情况2: 最高分过低, knowledgeId={}, maxVectorScore={}, minScore={}",
+                    knowledgeId, maxVectorScore(ranked), minScore);
+        } else {
+            log.info("Hybrid 召回通过, knowledgeId={}, size={}, maxVectorScore={}",
+                    knowledgeId, ranked.size(), maxVectorScore(ranked));
+        }
+        return ranked;
+    }
+
+    /** 结果是否为空（情况1） */
+    public boolean isEmpty(List<RetrievedChunk> docs) {
+        return docs == null || docs.isEmpty();
+    }
+
+    /**
+     * 最高向量分是否低于阈值（情况2）。
+     * 无 vectorScore 时按 0 处理（例如仅 BM25 命中）。
+     */
+    public boolean isScoreTooLow(List<RetrievedChunk> docs) {
+        if (isEmpty(docs)) {
+            return false;
+        }
+        return maxVectorScore(docs) < minScore;
+    }
+
+    private double maxVectorScore(List<RetrievedChunk> docs) {
+        return docs.stream()
+                .map(RetrievedChunk::getVectorScore)
+                .filter(Objects::nonNull)
+                .mapToDouble(Double::doubleValue)
+                .max()
+                .orElse(0.0);
     }
 
     /**

@@ -30,4 +30,13 @@ public class NodeSpan {
 
     /** 失败时的异常信息，成功则为 null */
     private String errorMessage;
+
+    /** 实际使用的模型名（仅 LLM 节点有值） */
+    private String modelUsed;
+
+    /** 是否触发主→副降级（仅 LLM 节点有值） */
+    private Boolean fallbackTriggered;
+
+    /** 降级原因，如 PRIMARY_LLM_FAILED */
+    private String fallbackReason;
 }

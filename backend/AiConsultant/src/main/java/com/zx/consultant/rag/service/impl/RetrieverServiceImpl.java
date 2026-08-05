@@ -20,7 +20,7 @@ public class RetrieverServiceImpl implements RetrieverService {
 
     @Override
     public List<RetrievedChunk> retrieve(String query, Long knowledgeId) {
-        // TODO(V2)：增加 Rerank 重排序
+        // TODO(V3)：增加 Rerank 重排序
         return hybridRetriever.retrieve(query, knowledgeId);
     }
 }

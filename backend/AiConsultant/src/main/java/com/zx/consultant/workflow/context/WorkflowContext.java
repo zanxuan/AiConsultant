@@ -37,4 +37,7 @@ public class WorkflowContext {
     
     // 最终返回结果（纯回答正文，不含参考文件信息）
     private String finalAnswer;
+
+    /** 为 true 时跳过后续节点（如检索无相关知识时短路，不再调用 LLM） */
+    private boolean earlyStop;
 }

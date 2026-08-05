@@ -1,0 +1,302 @@
+[
+  {
+    "id": 1,
+    "query": "Redis有哪些持久化方式？",
+    "expectedDocIds": ["2084569201779298306"],
+    "type": "easy"
+  },
+  {
+    "id": 2,
+    "query": "什么是MySQL的MVCC？",
+    "expectedDocIds": ["2084569065988706305"],
+    "type": "easy"
+  },
+  {
+    "id": 3,
+    "query": "创建线程有哪几种方式？",
+    "expectedDocIds": ["2084619495913455617"],
+    "type": "easy"
+  },
+  {
+    "id": 4,
+    "query": "Spring IOC是什么？",
+    "expectedDocIds": ["2084619207727022082"],
+    "type": "easy"
+  },
+  {
+    "id": 5,
+    "query": "什么是AOP面向切面编程？",
+    "expectedDocIds": ["2084619224890114049"],
+    "type": "easy"
+  },
+  {
+    "id": 6,
+    "query": "RocketMQ是什么？",
+    "expectedDocIds": ["2084619301536825345"],
+    "type": "easy"
+  },
+  {
+    "id": 7,
+    "query": "什么是CAS算法？",
+    "expectedDocIds": ["2084619386102382593"],
+    "type": "easy"
+  },
+  {
+    "id": 8,
+    "query": "synchronized关键字的作用是什么？",
+    "expectedDocIds": ["2084619447859314689"],
+    "type": "easy"
+  },
+  {
+    "id": 9,
+    "query": "ThreadLocal是什么？",
+    "expectedDocIds": ["2084619513584058369"],
+    "type": "easy"
+  },
+  {
+    "id": 10,
+    "query": "MySQL索引有哪些类型？",
+    "expectedDocIds": ["2084569119692574722"],
+    "type": "easy"
+  },
+  {
+    "id": 11,
+    "query": "Redis高可用有哪些方案？",
+    "expectedDocIds": ["2084569223350603778"],
+    "type": "easy"
+  },
+  {
+    "id": 12,
+    "query": "什么是缓存击穿、缓存穿透和缓存雪崩？",
+    "expectedDocIds": ["2084569172121374722"],
+    "type": "easy"
+  },
+  {
+    "id": 13,
+    "query": "Bean的生命周期有哪些阶段？",
+    "expectedDocIds": ["2084619188655521793"],
+    "type": "easy"
+  },
+  {
+    "id": 14,
+    "query": "线程池的核心参数有哪些？",
+    "expectedDocIds": ["2084619470403698689"],
+    "type": "easy"
+  },
+  {
+    "id": 15,
+    "query": "MySQL事务的ACID特性是什么？",
+    "expectedDocIds": ["2084569101686427649"],
+    "type": "easy"
+  },
+  {
+    "id": 16,
+    "query": "服务器异常关闭后，之前的数据如何恢复？",
+    "expectedDocIds": ["2084569201779298306"],
+    "type": "semantic"
+  },
+  {
+    "id": 17,
+    "query": "数据库突然断电，已经提交的事务如何保证不丢失？",
+    "expectedDocIds": ["2084569050411061249", "2084569084238123010"],
+    "type": "semantic"
+  },
+  {
+    "id": 18,
+    "query": "如何保证一条消息只被消费一次？",
+    "expectedDocIds": ["2084619350895394818"],
+    "type": "semantic"
+  },
+  {
+    "id": 19,
+    "query": "消息发送失败了怎么办，系统如何保证消息不丢？",
+    "expectedDocIds": ["2084619334139150338"],
+    "type": "semantic"
+  },
+  {
+    "id": 20,
+    "query": "多个消费者按顺序处理同一业务单号的消息，该怎么设计？",
+    "expectedDocIds": ["2084619318028828673"],
+    "type": "semantic"
+  },
+  {
+    "id": 21,
+    "query": "缓存里有脏数据时，如何和数据库保持一致？",
+    "expectedDocIds": ["2084569251997700097"],
+    "type": "semantic"
+  },
+  {
+    "id": 22,
+    "query": "大量请求同时打到一个热点key上，缓存失效瞬间会发生什么？如何应对？",
+    "expectedDocIds": ["2084569172121374722"],
+    "type": "semantic"
+  },
+  {
+    "id": 23,
+    "query": "查询一个根本不存在的key，为什么会把压力打到数据库？",
+    "expectedDocIds": ["2084569172121374722"],
+    "type": "semantic"
+  },
+  {
+    "id": 24,
+    "query": "主节点挂了之后，集群如何继续对外提供服务？",
+    "expectedDocIds": ["2084569223350603778"],
+    "type": "semantic"
+  },
+  {
+    "id": 25,
+    "query": "一条select语句从客户端发出后，经历了哪些内部处理步骤？",
+    "expectedDocIds": ["2084569136654340097"],
+    "type": "semantic"
+  },
+  {
+    "id": 26,
+    "query": "为什么给常用查询字段建B+树能加快查找？",
+    "expectedDocIds": ["2084569119692574722"],
+    "type": "semantic"
+  },
+  {
+    "id": 27,
+    "query": "两个事务同时改同一行数据，如何做到互不干扰地看到各自版本？",
+    "expectedDocIds": ["2084569065988706305"],
+    "type": "semantic"
+  },
+  {
+    "id": 28,
+    "query": "undo log和redo log分别解决什么问题？",
+    "expectedDocIds": ["2084569084238123010"],
+    "type": "semantic"
+  },
+  {
+    "id": 29,
+    "query": "如何在不改业务代码的情况下统一加日志或权限校验？",
+    "expectedDocIds": ["2084619224890114049"],
+    "type": "semantic"
+  },
+  {
+    "id": 30,
+    "query": "Spring容器是如何创建并管理对象依赖的？",
+    "expectedDocIds": ["2084619207727022082"],
+    "type": "semantic"
+  },
+  {
+    "id": 31,
+    "query": "一个Bean从被实例化到销毁，中间会经历哪些回调？",
+    "expectedDocIds": ["2084619188655521793"],
+    "type": "semantic"
+  },
+  {
+    "id": 32,
+    "query": "如何在多线程环境下安全地累加一个计数器且尽量少加锁？",
+    "expectedDocIds": ["2084619386102382593"],
+    "type": "semantic"
+  },
+  {
+    "id": 33,
+    "query": "同一时刻只允许一个线程进入关键代码段，该用什么机制？",
+    "expectedDocIds": ["2084619447859314689"],
+    "type": "semantic"
+  },
+  {
+    "id": 34,
+    "query": "如何避免线程之间互相污染对方的用户上下文数据？",
+    "expectedDocIds": ["2084619513584058369"],
+    "type": "semantic"
+  },
+  {
+    "id": 35,
+    "query": "任务很多时，如何复用线程而不是每次都新建？",
+    "expectedDocIds": ["2084619470403698689"],
+    "type": "semantic"
+  },
+  {
+    "id": 36,
+    "query": "系统宕机后，常见的数据恢复机制有哪些？",
+    "expectedDocIds": ["2084569201779298306", "2084569050411061249", "2084569084238123010"],
+    "type": "cross"
+  },
+  {
+    "id": 37,
+    "query": "如何同时保证缓存不丢数据和数据库事务不丢已提交结果？",
+    "expectedDocIds": ["2084569201779298306", "2084569084238123010"],
+    "type": "cross"
+  },
+  {
+    "id": 38,
+    "query": "消息发送成功但消费者宕机，以及数据库宕机，各自如何保证数据不丢？",
+    "expectedDocIds": ["2084619334139150338", "2084569084238123010"],
+    "type": "cross"
+  },
+  {
+    "id": 39,
+    "query": "高并发下如何用缓存扛流量，同时避免击穿把数据库打挂？",
+    "expectedDocIds": ["2084569172121374722", "2084569187866791938"],
+    "type": "cross"
+  },
+  {
+    "id": 40,
+    "query": "写库后再更新缓存失败，和消息重复消费，分别如何处理一致性问题？",
+    "expectedDocIds": ["2084569251997700097", "2084619350895394818"],
+    "type": "cross"
+  },
+  {
+    "id": 41,
+    "query": "线程安全和消息顺序消费，各自依赖什么机制保证？",
+    "expectedDocIds": ["2084619447859314689", "2084619318028828673"],
+    "type": "cross"
+  },
+  {
+    "id": 42,
+    "query": "Spring如何管理对象生命周期，线程池又如何管理线程生命周期？",
+    "expectedDocIds": ["2084619188655521793", "2084619470403698689"],
+    "type": "cross"
+  },
+  {
+    "id": 43,
+    "query": "无锁更新计数和有锁保护临界区，分别对应哪些并发手段？",
+    "expectedDocIds": ["2084619386102382593", "2084619447859314689"],
+    "type": "cross"
+  },
+  {
+    "id": 44,
+    "query": "一条SQL如何执行，以及相关索引如何帮助加速查询？",
+    "expectedDocIds": ["2084569136654340097", "2084569119692574722"],
+    "type": "cross"
+  },
+  {
+    "id": 45,
+    "query": "IOC负责组装依赖，AOP负责横切逻辑，它们各自解决什么问题？",
+    "expectedDocIds": ["2084619207727022082", "2084619224890114049"],
+    "type": "cross"
+  },
+  {
+    "id": 46,
+    "query": "事务隔离级别有哪些？",
+    "expectedDocIds": ["2084569101686427649"],
+    "type": "confusing"
+  },
+  {
+    "id": 47,
+    "query": "事务的四种隔离级别分别能解决什么问题？",
+    "expectedDocIds": ["2084569101686427649"],
+    "type": "confusing"
+  },
+  {
+    "id": 48,
+    "query": "缓存穿透和缓存击穿有什么区别？",
+    "expectedDocIds": ["2084569172121374722"],
+    "type": "confusing"
+  },
+  {
+    "id": 49,
+    "query": "redo log和undo log分别用在什么场景？",
+    "expectedDocIds": ["2084569084238123010"],
+    "type": "confusing"
+  },
+  {
+    "id": 50,
+    "query": "消息可靠性投递和消息幂等消费有什么区别？",
+    "expectedDocIds": ["2084619334139150338"],
+    "type": "confusing"
+  }
+]

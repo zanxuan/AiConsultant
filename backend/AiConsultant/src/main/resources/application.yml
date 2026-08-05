@@ -16,17 +16,32 @@ dashscope:
   embedding-model: text-embedding-v3
 
 app:
+  storage:
+    # 相对路径会解析到 AiConsultant 模块下（见 DocumentServiceImpl），勿依赖 user.dir
+    local-dir: uploads
   rag:
     redis:
       index-name: embedding-index   # 与 Vector / BM25 共用；可按环境改为 embedding-index-dev / -prod
     retriever:
       max-results: 8       # 默认召回数量
       min-score: 0.75      # 默认最低相似度阈值（仅向量通道）
+    eval:
+      # 启动参数加 --eval 时必填：--app.rag.eval.knowledge-id=<知识库ID>
+      # knowledge-id:
+      golden-set-path: docs/eval/golden-set.json
+  # 副模型：主模型（langchain4j.open-ai.chat-model）失败时由 LLMService 降级调用
+  llm:
+    secondary:
+      base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
+      api-key: ${SECONDARY_API_KEY:${API_KEY}}
+      model-name: ${SECONDARY_MODEL_NAME:qwen-turbo}
+      log-requests: true
+      log-responses: true
 
 
 langchain4j:
   open-ai:
-    chat-model:
+    chat-model: # 主模型
       base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
       api-key: ${API_KEY}
       model-name: qwen-plus
@@ -40,7 +55,7 @@ langchain4j:
       log-responses: true
     embedding-model:
       base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
-      api-key: ${API_KEY}
+      api-key: ${EMBEDDING_API_KEY}
       model-name: text-embedding-v3
       log-requests: true
       log-responses: true

@@ -29,6 +29,9 @@ public class TraceDetailResp {
         private Long costTime;
         private String status;
         private String errorMessage;
+        private String modelUsed;
+        private Boolean fallbackTriggered;
+        private String fallbackReason;
         private LocalDateTime createTime;
     }
 }

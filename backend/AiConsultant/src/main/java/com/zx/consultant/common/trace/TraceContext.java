@@ -18,6 +18,12 @@ public final class TraceContext {
     //调用 .get() 的时候，如果该线程还没有绑定数据，自动执行新建一个空 ArrayList 返回
     //每个线程，拥有独立一份 List<NodeSpan>，线程之间互不干扰
     private static final ThreadLocal<List<NodeSpan>> SPANS = ThreadLocal.withInitial(ArrayList::new);
+    /** 本次请求实际产出回答的模型名 */
+    private static final ThreadLocal<String> MODEL_USED = new ThreadLocal<>();
+    /** 本次请求是否触发了主模型 → 副模型降级 */
+    private static final ThreadLocal<Boolean> FALLBACK_TRIGGERED = ThreadLocal.withInitial(() -> false);
+    /** 降级原因，如 PRIMARY_LLM_FAILED */
+    private static final ThreadLocal<String> FALLBACK_REASON = new ThreadLocal<>();
 
     private TraceContext() {
     }
@@ -34,9 +40,37 @@ public final class TraceContext {
                 : incomingTraceId.trim();
         TRACE_ID.set(traceId);
         SPANS.set(new ArrayList<>());
+        MODEL_USED.remove();
+        FALLBACK_TRIGGERED.set(false);
+        FALLBACK_REASON.remove();
         //MDC 是专门给日志系统用的 ThreadLocal，把 traceId 写入 MDC，方便后续日志打印时带上 traceId
         MDC.put(TraceConstants.MDC_KEY, traceId);
         return traceId;
+    }
+
+    public static void setModelUsed(String modelUsed) {
+        MODEL_USED.set(modelUsed);
+    }
+
+    public static String getModelUsed() {
+        return MODEL_USED.get();
+    }
+
+    public static void setFallbackTriggered(boolean triggered) {
+        FALLBACK_TRIGGERED.set(triggered);
+    }
+
+    public static boolean isFallbackTriggered() {
+        Boolean value = FALLBACK_TRIGGERED.get();
+        return value != null && value;
+    }
+
+    public static void setFallbackReason(String reason) {
+        FALLBACK_REASON.set(reason);
+    }
+
+    public static String getFallbackReason() {
+        return FALLBACK_REASON.get();
     }
 
     public static String getTraceId() {
@@ -71,6 +105,9 @@ public final class TraceContext {
     public static void clear() {
         TRACE_ID.remove();
         SPANS.remove();
+        MODEL_USED.remove();
+        FALLBACK_TRIGGERED.remove();
+        FALLBACK_REASON.remove();
         MDC.remove(TraceConstants.MDC_KEY);
     }
 

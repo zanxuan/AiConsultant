@@ -4,12 +4,12 @@
     <ul class="source-panel__list">
       <li
         v-for="(item, index) in displaySources"
-        :key="`${item.documentName}-${item.page}-${index}`"
+        :key="`${item.documentName}-${index}`"
         class="source-panel__item"
       >
-        <span class="source-panel__name">{{ item.documentName || '未知文档' }}</span>
-        <span v-if="item.page != null && item.page !== ''" class="source-panel__page">
-          第 {{ item.page }} 页
+        <span class="source-panel__name">{{ item.documentName }}</span>
+        <span v-if="item.pagesLabel" class="source-panel__page">
+          第 {{ item.pagesLabel }} 页
         </span>
       </li>
     </ul>
@@ -24,19 +24,43 @@ const props = defineProps<{
   sources: CiteSource[]
 }>()
 
-/** 按「文档名 + 页码」去重展示，不暴露 id */
+interface DisplaySource {
+  documentName: string
+  /** 合并后的页码文案，如 1、3、5；无页码时为空 */
+  pagesLabel?: string
+}
+
+/**
+ * 仅按「文档名完全一致」合并为一行，页码去重后汇总展示。
+ * 名称不同（哪怕差一个字）仍分行。
+ */
 const displaySources = computed(() => {
-  const seen = new Set<string>()
-  const result: CiteSource[] = []
+  const order: string[] = []
+  const pagesByName = new Map<string, Set<string>>()
+
   for (const item of props.sources) {
     const name = item.documentName || '未知文档'
-    const page = item.page ?? ''
-    const key = `${name}::${page}`
-    if (seen.has(key)) continue
-    seen.add(key)
-    result.push({ documentName: name, page: item.page })
+    if (!pagesByName.has(name)) {
+      pagesByName.set(name, new Set())
+      order.push(name)
+    }
+    if (item.page != null && item.page !== '') {
+      pagesByName.get(name)!.add(String(item.page))
+    }
   }
-  return result
+
+  return order.map((documentName): DisplaySource => {
+    const pages = [...(pagesByName.get(documentName) ?? [])].sort((a, b) => {
+      const na = Number(a)
+      const nb = Number(b)
+      if (!Number.isNaN(na) && !Number.isNaN(nb)) return na - nb
+      return a.localeCompare(b)
+    })
+    return {
+      documentName,
+      pagesLabel: pages.length ? pages.join('、') : undefined,
+    }
+  })
 })
 </script>
 

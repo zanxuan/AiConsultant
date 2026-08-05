@@ -16,11 +16,15 @@ import com.zx.consultant.knowledge.mapper.KnowledgeBaseMapper;
 import com.zx.consultant.knowledge.service.KnowledgeBaseService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.UUID;
 
 /**
@@ -34,6 +38,10 @@ public class DocumentServiceImpl extends ServiceImpl<DocumentMapper, Document> i
 
     /** 单文件上传大小上限：50MB */
     private static final long MAX_UPLOAD_SIZE_BYTES = 50L * 1024 * 1024;
+
+    /** 相对路径时固定落到 AiConsultant 模块下，避免随启动 cwd 漂到仓库根目录 */
+    @Value("${app.storage.local-dir:uploads}")
+    private String localStorageDir;
 
     private final DocumentProcessService documentProcessService;
     private final KnowledgeBaseMapper knowledgeBaseMapper; // 用于越权校验
@@ -215,18 +223,35 @@ public class DocumentServiceImpl extends ServiceImpl<DocumentMapper, Document> i
     private String saveFileToDisk(MultipartFile file) {
         // TODO(V2): 替换为你实际的存储逻辑 (本地路径或阿里云OSS)
         try {
-            String dirPath = System.getProperty("user.dir") + "/uploads/";
-            File dir = new File(dirPath);
-            if (!dir.exists()) dir.mkdirs();
-            
+            Path dir = resolveUploadDir();
+            Files.createDirectories(dir);
+
             String fileName = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
-            File dest = new File(dirPath + fileName);
+            Path dest = dir.resolve(fileName);
             file.transferTo(dest);
-            return dest.getAbsolutePath();
+            return dest.toAbsolutePath().normalize().toString();
         } catch (IOException e) {
             log.error("文件存储失败", e);
             throw new BaseException("文件上传失败");
         }
+    }
+
+    /**
+     * 解析本地上传目录：绝对路径直接用；相对路径优先落到 AiConsultant 模块，
+     * 避免从仓库根目录启动时写到仓库根 uploads/。
+     */
+    private Path resolveUploadDir() {
+        Path configured = Paths.get(localStorageDir);
+        if (configured.isAbsolute()) {
+            return configured.normalize();
+        }
+
+        Path cwd = Paths.get(System.getProperty("user.dir")).toAbsolutePath().normalize();
+        Path modulePom = cwd.resolve("backend/AiConsultant/pom.xml");
+        if (Files.exists(modulePom)) {
+            return cwd.resolve("backend/AiConsultant").resolve(configured).normalize();
+        }
+        return cwd.resolve(configured).normalize();
     }
 
     /**

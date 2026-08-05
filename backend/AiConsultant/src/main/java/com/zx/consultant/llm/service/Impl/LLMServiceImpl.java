@@ -2,6 +2,7 @@ package com.zx.consultant.llm.service.Impl;
 
 import com.zx.consultant.common.constant.MessageRole;
 import com.zx.consultant.common.exception.LLMException;
+import com.zx.consultant.common.trace.TraceContext;
 import com.zx.consultant.llm.entity.PromptRequest;
 import com.zx.consultant.llm.service.LLMService;
 import dev.langchain4j.data.message.AiMessage;
@@ -13,6 +14,9 @@ import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
+import dev.langchain4j.model.openai.OpenAiChatModel;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
@@ -20,15 +24,37 @@ import reactor.core.publisher.Sinks;
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @Service
 public class LLMServiceImpl implements LLMService {
 
-    private final ChatModel chatModel;
+    private final ChatModel primaryModel;
+    private final ChatModel secondaryModel;
     private final StreamingChatModel streamingChatModel;
+    private final String primaryModelName;
+    private final String secondaryModelName;
 
-    public LLMServiceImpl(ChatModel chatModel, StreamingChatModel streamingChatModel) {
-        this.chatModel = chatModel;
+    public LLMServiceImpl(
+            ChatModel chatModel,
+            StreamingChatModel streamingChatModel,
+            @Value("${langchain4j.open-ai.chat-model.model-name}") String primaryModelName,
+            @Value("${app.llm.secondary.base-url}") String secondaryBaseUrl,
+            @Value("${app.llm.secondary.api-key}") String secondaryApiKey,
+            @Value("${app.llm.secondary.model-name}") String secondaryModelName,
+            @Value("${app.llm.secondary.log-requests:true}") boolean secondaryLogRequests,
+            @Value("${app.llm.secondary.log-responses:true}") boolean secondaryLogResponses) {
+        this.primaryModel = chatModel;
         this.streamingChatModel = streamingChatModel;
+        this.primaryModelName = primaryModelName;
+        this.secondaryModelName = secondaryModelName;
+        // 副模型单独构建，避免再注册 ChatModel Bean 与主模型注入冲突
+        this.secondaryModel = OpenAiChatModel.builder()
+                .baseUrl(secondaryBaseUrl)
+                .apiKey(secondaryApiKey)
+                .modelName(secondaryModelName)
+                .logRequests(secondaryLogRequests)
+                .logResponses(secondaryLogResponses)
+                .build();
     }
 
     /**
@@ -66,25 +92,49 @@ public class LLMServiceImpl implements LLMService {
     }
 
     /**
-     * 非流式完整回答
+     * 非流式完整回答：主模型最多试 2 次，仍失败再降级到副模型
      */
     @Override
     public String generateAnswer(PromptRequest promptRequest) {
-        try {
-            // 组装结构化消息
-            List<ChatMessage> messages = buildChatMessages(promptRequest);
+        List<ChatMessage> messages = buildChatMessages(promptRequest);
+        ChatRequest chatRequest = ChatRequest.builder()
+                .messages(messages)
+                .build();
 
-            // 构建 ChatRequest
-            ChatRequest chatRequest = ChatRequest.builder()
-                    .messages(messages)
-                    .build();
-                    
-            // 调用大模型
-            ChatResponse chatResponse = chatModel.chat(chatRequest);
+        try {
+            ChatResponse chatResponse = callPrimary(chatRequest);
+            TraceContext.setModelUsed(primaryModelName);
+            TraceContext.setFallbackTriggered(false);
+            TraceContext.setFallbackReason(null);
             return chatResponse.aiMessage().text();
-        } catch(Exception e){
-            throw new LLMException("模型调用失败: " + e.getMessage(), e);
+        } catch (Exception primaryEx) {
+            log.warn("主模型({})两次均失败，降级到副模型({}): {}",
+                    primaryModelName, secondaryModelName, primaryEx.getMessage());
+            TraceContext.setFallbackTriggered(true);
+            TraceContext.setFallbackReason("PRIMARY_LLM_FAILED: " + primaryEx.getMessage());
+            try {
+                ChatResponse chatResponse = secondaryModel.chat(chatRequest);
+                TraceContext.setModelUsed(secondaryModelName);
+                return chatResponse.aiMessage().text();
+            } catch (Exception secondaryEx) {
+                TraceContext.setModelUsed(secondaryModelName);
+                throw new LLMException("主/副模型均调用失败: " + secondaryEx.getMessage(), secondaryEx);
+            }
         }
+    }
+
+    /** 主模型最多调用 2 次（首次 + 1 次重试），都失败则抛出最后一次异常 */
+    private ChatResponse callPrimary(ChatRequest request) throws Exception {
+        Exception lastException = null;
+        for (int i = 0; i < 2; i++) {
+            try {
+                return primaryModel.chat(request);
+            } catch (Exception e) {
+                lastException = e;
+                log.warn("主模型({})第{}次调用失败: {}", primaryModelName, i + 1, e.getMessage());
+            }
+        }
+        throw lastException;
     }
 
     /**
