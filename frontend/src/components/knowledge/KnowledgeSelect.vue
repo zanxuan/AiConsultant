@@ -25,6 +25,7 @@
 import { onMounted, computed } from 'vue'
 import { Folder } from '@element-plus/icons-vue'
 import { useKnowledgeStore } from '@/stores/knowledge'
+import { useAuth } from '@/composables/useAuth'
 
 defineProps<{
   modelValue: number | string | null
@@ -35,15 +36,18 @@ defineEmits<{
 }>()
 
 const knowledgeStore = useKnowledgeStore()
+const { isLoggedIn } = useAuth()
 const options = computed(() => knowledgeStore.list)
 
 onMounted(() => {
-  knowledgeStore.fetchList()
+  if (isLoggedIn.value) {
+    knowledgeStore.fetchList()
+  }
 })
 
 /** 每次展开下拉都刷新，避免新建知识库后选项仍是旧缓存 */
 function onVisibleChange(visible: boolean) {
-  if (visible) {
+  if (visible && isLoggedIn.value) {
     knowledgeStore.fetchList()
   }
 }

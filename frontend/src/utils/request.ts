@@ -61,19 +61,21 @@ service.interceptors.response.use(
         isHandlingUnauthorized = true
         try {
           const { useUserStore } = await import('@/stores/user')
-          useUserStore().resetAuth()
-
-          ElMessage.error('登录已过期，请重新登录')
-
+          const userStore = useUserStore()
           const { default: router } = await import('@/router')
           const current = router.currentRoute.value
-          const onLogin =
-            current.name === 'login' || current.name === 'login-page' || current.path.startsWith('/login')
-          if (!onLogin) {
-            await router.replace({
-              name: 'login',
-              query: { redirect: current.fullPath },
-            })
+
+          userStore.resetAuth()
+          ElMessage.error('登录已过期，请重新登录')
+          // 游客可停留的页面：只提示，不强制弹窗/跳转
+          const guestStay =
+            current.name === 'chat' ||
+            current.name === 'knowledge' ||
+            current.name === 'document' ||
+            current.name === 'history'
+          if (!guestStay) {
+            userStore.openLoginDialog(current.fullPath)
+            await router.replace({ name: 'chat' })
           }
         } finally {
           isHandlingUnauthorized = false

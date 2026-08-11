@@ -15,8 +15,20 @@ import {
 export const useUserStore = defineStore('user', () => {
   const token = ref<string | null>(getToken())
   const userInfo = ref<UserInfo | null>(getStoredUserInfo())
+  /** 全局登录弹窗：未登录时不跳 /login，弹窗承接 */
+  const loginDialogVisible = ref(false)
+  const loginRedirect = ref<string | null>(null)
 
   const isLoggedIn = computed(() => Boolean(token.value))
+
+  function openLoginDialog(redirect?: string | null) {
+    loginRedirect.value = redirect || null
+    loginDialogVisible.value = true
+  }
+
+  function closeLoginDialog() {
+    loginDialogVisible.value = false
+  }
 
   async function login(form: LoginForm) {
     const result = await loginApi(form)
@@ -68,6 +80,10 @@ export const useUserStore = defineStore('user', () => {
     token,
     userInfo,
     isLoggedIn,
+    loginDialogVisible,
+    loginRedirect,
+    openLoginDialog,
+    closeLoginDialog,
     login,
     logout,
     resetAuth,

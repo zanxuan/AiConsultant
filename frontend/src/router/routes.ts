@@ -25,13 +25,13 @@ export const routes: RouteRecordRaw[] = [
         path: 'chat',
         name: 'chat',
         component: () => import('@/views/chat/index.vue'),
-        meta: { title: 'AI 聊天', requiresAuth: true },
+        meta: { title: 'AI 聊天', requiresAuth: false },
       },
       {
         path: 'knowledge',
         name: 'knowledge',
         component: () => import('@/views/knowledge/index.vue'),
-        meta: { title: '知识库管理', requiresAuth: true },
+        meta: { title: '知识库管理', requiresAuth: false },
       },
       {
         path: 'knowledge/:id',
@@ -43,13 +43,13 @@ export const routes: RouteRecordRaw[] = [
         path: 'document',
         name: 'document',
         component: () => import('@/views/document/index.vue'),
-        meta: { title: '文档管理', requiresAuth: true },
+        meta: { title: '文档管理', requiresAuth: false },
       },
       {
         path: 'history',
         name: 'history',
         component: () => import('@/views/history/index.vue'),
-        meta: { title: '对话历史', requiresAuth: true },
+        meta: { title: '对话历史', requiresAuth: false },
       },
       {
         path: 'profile',

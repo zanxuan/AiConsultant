@@ -7,6 +7,14 @@
         v-html="renderedHtml"
       />
       <div v-else class="message-item__content">{{ message.content || '...' }}</div>
+      <a
+        v-if="message.showLoginLink"
+        href="#"
+        class="message-item__login-link"
+        @click.prevent="userStore.openLoginDialog()"
+      >
+        立即登录
+      </a>
       <SourcePanel v-if="message.sources?.length" :sources="message.sources" />
     </div>
   </div>
@@ -18,10 +26,13 @@ import type { ChatMessage } from '@/types/chat'
 import { MessageRole } from '@/constants/enum'
 import { renderMarkdown } from '@/utils/markdown'
 import SourcePanel from './SourcePanel.vue'
+import { useUserStore } from '@/stores/user'
 
 const props = defineProps<{
   message: ChatMessage
 }>()
+
+const userStore = useUserStore()
 
 const roleKey = computed(() => String(props.message.role || '').toUpperCase())
 
@@ -70,6 +81,20 @@ const renderedHtml = computed(() => {
     border-radius: 12px;
     line-height: 1.6;
     word-break: break-word;
+  }
+
+  &__login-link {
+    display: inline-block;
+    margin-top: 8px;
+    font-size: 14px;
+    color: #2563eb;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+
+    &:hover {
+      color: #1d4ed8;
+    }
   }
 
   &__content--md {

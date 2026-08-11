@@ -18,14 +18,20 @@ import HistoryList from '@/components/history/HistoryList.vue'
 import { useHistoryStore } from '@/stores/history'
 import { useChatStore } from '@/stores/chat'
 import { useKnowledgeStore } from '@/stores/knowledge'
+import { useAuth } from '@/composables/useAuth'
 import { getConversationMessagesApi, getHistoryDetailApi } from '@/api/history'
 
 const router = useRouter()
 const historyStore = useHistoryStore()
 const chatStore = useChatStore()
 const knowledgeStore = useKnowledgeStore()
+const { hasToken } = useAuth()
 
 async function onSelect(id: number) {
+  if (!hasToken()) {
+    ElMessage.warning('请先登录后再查看对话')
+    return
+  }
   const [detail, messages] = await Promise.all([
     getHistoryDetailApi(id),
     getConversationMessagesApi(id),
@@ -40,6 +46,10 @@ async function onSelect(id: number) {
 }
 
 async function onDelete(id: number) {
+  if (!hasToken()) {
+    ElMessage.warning('请先登录后再操作')
+    return
+  }
   await ElMessageBox.confirm('确认删除该对话？', '提示', { type: 'warning' })
   await historyStore.remove(id)
   if (chatStore.conversationId === id) {
@@ -48,5 +58,11 @@ async function onDelete(id: number) {
   ElMessage.success('已删除')
 }
 
-onMounted(() => historyStore.fetchList())
+onMounted(() => {
+  if (!hasToken()) {
+    historyStore.list = []
+    return
+  }
+  historyStore.fetchList()
+})
 </script>

@@ -2,7 +2,15 @@
   <header class="app-header">
     <div class="app-header__title">{{ pageTitle }}</div>
     <div class="app-header__actions">
-      <el-dropdown trigger="click" @command="onCommand">
+      <button
+        v-if="!userStore.isLoggedIn"
+        type="button"
+        class="app-header__login"
+        @click="userStore.openLoginDialog()"
+      >
+        登录
+      </button>
+      <el-dropdown v-else trigger="click" @command="onCommand">
         <span class="app-header__user">
           <el-avatar :size="32">{{ avatarText }}</el-avatar>
           <span class="app-header__name">{{ displayName }}</span>
@@ -40,7 +48,7 @@ async function onCommand(command: string) {
   }
   if (command === 'logout') {
     await userStore.logout()
-    router.push({ name: 'login' })
+    router.push({ name: 'chat' })
   }
 }
 </script>
@@ -59,6 +67,26 @@ async function onCommand(command: string) {
     font-size: 16px;
     font-weight: 600;
     color: #1f2d3d;
+  }
+
+  &__login {
+    appearance: none;
+    border: 1px solid rgba(15, 76, 92, 0.35);
+    background: #0f4c5c;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 7px 16px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition:
+      background 0.15s ease,
+      border-color 0.15s ease;
+
+    &:hover {
+      background: #136377;
+      border-color: #136377;
+    }
   }
 
   &__user {

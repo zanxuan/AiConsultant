@@ -1,19 +1,33 @@
+# AI Enterprise Knowledge Platform
+
+基于 RAG + Workflow 架构的企业级知识助手平台。
+
+面向企业内部技术文档、Wiki、接口文档等知识管理场景，
+实现从文档解析、向量检索、上下文管理到大模型生成的完整 AI 应用链路。
+
+核心能力：
+
+- RAG 知识增强问答
+- Workflow 流程编排
+- 多轮上下文 Memory
+- Citation 来源追踪
+- Trace 链路观测
+- LLM Fallback 降级
+---
+
 ## 🌐 Online Demo
 
 项目已完成云服务器部署。
 
 访问地址：
 
-[http://106.55.103.123](http://106.55.103.123)
+[Online Demo（点击访问）](http://106.55.103.123)
 
-由于系统涉及 AI API 调用，目前采用测试账号访问。
+由于系统依赖第三方 LLM API 服务，Demo 暂未开放公开注册。
 
-体验账号将在面试或交流时提供，感谢理解！
+测试账号将在面试或技术交流时提供。
 
-# AI Enterprise Knowledge Platform
-
-> 基于 Vue3 + Spring Boot + LangChain4j + RAG 的企业知识助手平台。
-> 支持企业知识库管理、文档解析、多轮智能问答以及答案来源追踪。
+---
 
 ## 📖 项目介绍
 
@@ -41,17 +55,17 @@ LLM生成回答
 
 ## ⭐ 项目亮点
 
-- 基于 RAG 构建企业知识问答链路，实现文档检索增强生成
-- 使用 Redis Stack + RediSearch Vector 实现向量检索，并结合 Metadata Filter 实现精准检索
-- 基于 Workflow 编排 RAG 问答流程，整合 Query Rewrite、Memory、Retrieval 等模块
-- 支持 Citation 来源追踪，提高回答可信度
-- 前后端分离架构，支持独立部署
+- 基于 RAG + Workflow 构建企业知识问答链路，实现从文档解析、检索增强到 LLM 生成的完整 AI Pipeline
+- 基于 Redis Stack + RediSearch Vector 实现向量检索，并结合 Metadata Filter 实现知识库级别的数据隔离
+- 设计 WorkflowContext 管理 Query Rewrite、Memory、Retrieval、Generation 等节点状态，降低多节点流程耦合
+- 实现 Citation 来源追踪，提高生成结果可解释性
+- 实现 Trace 链路追踪、RAG Evaluation、LLM Fallback，提高系统可观测性与稳定性
 
 ---
 
 ## ✨ 核心功能 (V1 已完成)
 
-## 🖥️ 前端交互
+### 🖥️ 前端交互
 
 - Vue3 前端页面
 - 知识库管理界面
@@ -60,7 +74,7 @@ LLM生成回答
 - Markdown回答渲染
 - Citation引用展示
 
-## 📄 文档与知识库管理
+### 📄 文档与知识库管理
 
 - 知识库创建与管理
 - 企业文档上传
@@ -68,21 +82,21 @@ LLM生成回答
 - 文档自动分块 Chunking
 - 文档 Embedding 向量化并写入 Redis Vector Store
 
-## 🔍 RAG 检索链路
+### 🔍 RAG 检索链路
 
 - Embedding 向量生成
 - Redis Vector 向量数据库存储
 - 基于语义相似度的知识检索
 - Metadata Filter 精确过滤
 
-## 💬 智能问答
+### 💬 智能问答
 
 - Query Rewrite 查询重写
 - 多轮对话上下文 Memory
 - 基于知识库增强回答
 - Citation 引用来源返回
 
-## 🔐 基础系统能力
+### 🔐 基础系统能力
 
 - 用户认证
 - REST API 接口设计
@@ -93,34 +107,23 @@ LLM生成回答
 ## 🏗️ 系统架构
 
 ```
-用户问题
-  │
-  ▼
-Vue3 前端
-  │
-  ▼
-Spring Boot API
-  │
-  ▼
-Workflow (工作流编排)
-  │
-  ▼
-Memory (历史上下文)
-  │
-  ▼
-Query Rewrite (查询重写)
-  │
-  ▼
-Vector Retrieval (Vector Search)
-  │
-  ▼
-Prompt Assembly
-  │
-  ▼
-LLM (大模型生成)
-  │
-  ▼
-Answer + Citation (引用来源)
+                    User
+                     |
+                    Vue3
+                     |
+             Spring Boot API
+                     |
+             Workflow Engine
+                     |
+   +-----------------+----------------+
+   |                 |                |
+Memory Node     Retrieval Node    Generate Node
+   |                 |                |
+ Redis          Vector Store        LLM
+                     |
+                 Citation
+                     
+        Trace System (贯穿全链路)
 ```
 
 ---
@@ -147,16 +150,15 @@ Redis Vector Store
 
 ### AI问答
 
-![chat](./docs/images/chat.png)
+![AI问答](docs/images/chat.png)
 
 ### 知识库管理
 
-![knowledge](./docs/images/knowledge.png)
+![知识库管理](docs/images/knowledge.png)
 
 ### 文档管理
 
-![upload](./docs/images/upload.png)
----
+![文档管理](docs/images/upload.png)
 
 ## 🛠️ 技术栈
 
@@ -181,6 +183,21 @@ Redis Vector Store
 
 ---
 
+## 📊 Project Statistics
+
+- Backend: Spring Boot 3 + Java 17
+- Frontend: Vue3 + TypeScript
+- AI Pipeline: RAG + Workflow
+- Storage: MySQL + Redis Stack
+- Deployment: Cloud Server + Docker
+- Modules: 10+
+- Supported Documents:
+  - PDF
+  - Markdown
+  - TXT
+
+---
+
 ## 📂 项目结构
 
 本项目采用前后端分离架构：
@@ -192,68 +209,78 @@ Redis Vector Store
 
 ```text
 AI-Enterprise-Knowledge-Platform
-│
 ├── backend
-│   └── AiConsultant              # Spring Boot 后端
-│       │
-│       ├── src
-│       │   ├── main
-│       │   │   ├── java
-│       │   │   │   └── com
-│       │   │   │       └── zx
-│       │   │   │           └── consultant
-│       │   │   │               ├── chat              # 聊天模块
-│       │   │   │               ├── common            # 公共组件
-│       │   │   │               ├── document          # 文档处理
-│       │   │   │               ├── knowledge         # 知识库管理
-│       │   │   │               ├── llm               # 大模型调用
-│       │   │   │               ├── memory            # 多轮记忆
-│       │   │   │               ├── rag               # RAG检索
-│       │   │   │               ├── user              # 用户模块
-│       │   │   │               ├── workflow          # 工作流
-│       │   │   │               └── ConsultantApplication.java
-│       │   │   │
-│       │   │   └── resources
-│       │   │       ├── mapper
-│       │   │       ├── application.yml
-│       │   │       ├── application-prod.yml
-│       │   │       └── systemPrompt.txt
-│       │   │
-│       │   └── test
-│       │       └── java
-│       │
-│       ├── uploads   # 本地上传文件目录（运行时生成）
-│       ├── pom.xml
-│       └── .env.example
+│   └── AiConsultant
+│       ├── common
+│       ├── chat
+│       ├── document
+│       ├── knowledge
+│       ├── llm
+│       ├── memory
+│       ├── rag
+│       └── workflow
 │
+├── frontend
+│   ├── views
+│   ├── components
+│   ├── api
+│   └── stores
 │
-├── frontend                    # Vue3 前端
-│   │
-│   ├── src
-│   │   ├── api                  # 接口请求
-│   │   ├── assets               # 静态资源
-│   │   ├── components           # 公共组件
-│   │   ├── composables          # Vue组合逻辑
-│   │   ├── constants            # 常量
-│   │   ├── layouts              # 页面布局
-│   │   ├── router               # 路由
-│   │   ├── stores               # 状态管理
-│   │   ├── types                # TS类型
-│   │   ├── utils                # 工具类
-│   │   └── views                # 页面
-│   │
-│   ├── package.json
-│   ├── vite.config.ts
-│   └── tsconfig.json
-│
-│
-├── docs                         # 项目文档
-│   ├── images                   # README展示图片
-│   └── test
-│       └── V1-test.md
-│
+├── docs
 └── README.md
 ```
+
+---
+
+## 🧩 Engineering Challenges
+
+### 1. 多节点流程参数管理
+
+**问题**：
+RAG流程包含：Query Rewrite、Memory、Retrieval、Generation 多个节点，节点之间需要共享流转数据。
+
+**方案**：
+设计 `WorkflowContext` 上下文对象，统一承载全流程流转数据。
+
+```
+WorkflowContext
+- query
+- rewriteQuery
+- history
+- documents
+- traceId
+- response
+```
+
+### 2. LLM 稳定性
+
+**问题**：
+调用第三方大模型服务，存在超时、限流、报错等服务失败风险。
+
+**方案**：
+实现主模型+降级模型的容错链路，失败自动重试，重试失败切换兜底模型，同时记录降级链路 Trace 用于问题排查。
+
+```
+Primary Model
+      |
+失败重试
+      |
+Fallback Model
+```
+
+### 3. 检索效果评估
+
+**问题**：
+RAG 效果不能只靠人工肉眼观察主观判断，需要可量化指标做客观评测。
+
+**方案**：
+构建标准测试集 `golden dataset`，通过检索指标量化召回质量。
+
+计算指标：
+
+- Recall@K
+- MRR
+- Hit Rate
 
 ---
 
@@ -277,6 +304,7 @@ AI-Enterprise-Knowledge-Platform
 
 ### 系统部署架构
 
+```
 服务器环境准备
 ↓
 Docker 安装
@@ -288,6 +316,7 @@ Spring Boot 后端部署
 Vue3 前端构建部署
 ↓
 公网访问验证
+```
 
 ### 已完成部署能力
 
@@ -296,27 +325,23 @@ Vue3 前端构建部署
 - [x] Docker 容器化运行 Redis Stack
 - [x] Spring Boot 后端线上运行
 - [x] Vue3 前端线上部署
-- [x] RAG 核心链路生产环境验证
+- [x] RAG 核心链路线上环境验证
 - [x] 数据库持久化配置
 - [x] Redis Vector Store 正常运行
 
 ### 生产环境说明
 
-项目通过环境变量管理生产环境配置：
+生产环境需显式启用 `prod` profile：
 
-包含：
+```bash
+SPRING_PROFILES_ACTIVE=prod
+```
 
-- 数据库连接配置
-- Redis连接配置
-- AI模型 API Key
-- JWT安全配置
+此时会加载 `application.yml` + `application-prod.yml`（后者覆盖 Redis / DB 等连接配置）。
 
-敏感配置不会提交到 GitHub。
+敏感配置通过服务器环境变量注入（不要依赖仓库里的 `.env`），变量名可参考：
 
-请参考：
-backend/AiConsultant/.env.example
-
-创建对应 `.env` 文件后运行。
+`backend/AiConsultant/.env.example`
 
 ---
 
@@ -326,39 +351,28 @@ backend/AiConsultant/.env.example
 
 - Java 17+
 - MySQL 8+
-- Redis 7+
+- Redis 7+（本地向量检索建议 Redis Stack）
 
 ### 2. 环境配置
 
-项目通过环境变量管理运行配置。
+**Clone 后默认走本地配置**：只加载 `application.yml`（MySQL / Redis 默认 `localhost`），**不会**自动启用 `application-prod.yml`。
 
-首次运行前，请根据 `.env.example` 创建 `.env` 文件并填写配置。
+首次本地运行前，复制并填写 `.env`：
 
-参考：
+```bash
+cd backend/AiConsultant
+cp .env.example .env
+```
 
-backend/AiConsultant/.env.example
+本地 `.env` 至少填写：
 
-数据库：
+- `API_KEY` / `EMBEDDING_API_KEY`
+- `DB_USERNAME` / `DB_PASSWORD`
+- `JWT_SECRET_KEY`
 
-- DB_URL
-- DB_USERNAME
-- DB_PASSWORD
+启动时 `LocalDotenvBootstrap` 会把 `.env` 读入环境，供 `application.yml` 中的 `${...}` 占位符使用。
 
-Redis：
-
-- REDIS_HOST
-- REDIS_PORT
-- REDIS_PASSWORD
-
-AI服务：
-
-- API_KEY
-
-安全配置：
-
-- JWT_SECRET_KEY
-
-application.yml 会自动读取对应环境变量。
+本地 `.env` 中**不要**设置 `SPRING_PROFILES_ACTIVE=prod`，否则会按生产配置连接远程库。
 
 ### 3. 后端启动
 
@@ -401,7 +415,10 @@ npm run dev
 当前提供 REST API，可通过 Postman 调试。
 
 **请求接口：**
+
+```http
 POST /api/v1/chat
+```
 
 **请求入参：**
 
@@ -451,7 +468,7 @@ POST /api/v1/chat
 
 ---
 
-## 当前状态
+## ✅ 当前状态
 
 目前已完成前后端完整链路：
 
@@ -468,7 +485,7 @@ POST /api/v1/chat
 
 ## 🗺️ Roadmap
 
-### V1 阶段 (已完成)
+### V1.0 - RAG 基础能力 ✅
 
 - [x] 用户认证
 - [x] 知识库管理
@@ -482,10 +499,18 @@ POST /api/v1/chat
 - [x] REST API
 - [x] Vue 前端基础交互界面
 
-### V2 阶段 (规划中)
+### V2 阶段 (进行中)
 
-- [ ] Trace 链路日志追踪
-- [ ] RAG Evaluation 检索效果评估
-- [ ] Fallback 大模型降级策略
+- [x] Trace 链路日志追踪
+- [x] RAG Evaluation 检索效果评估
+- [x] Fallback 大模型降级策略
 - [ ] Long-term Memory 长期记忆
-- [ ] Docker Compose 部署优化
+- [ ] 完善 Docker Compose 部署方案
+
+### V3.0 - Advanced AI Application （计划）🚀
+
+- [ ] Semantic Chunking 语义切片优化
+- [ ] Hybrid Retrieval Optimization 混合检索优化
+- [ ] Online Evaluation 在线效果监控
+- [ ] Prompt Management 提示词管理
+- [ ] Agent Workflow 探索

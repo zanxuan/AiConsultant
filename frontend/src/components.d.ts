@@ -9,6 +9,7 @@ declare module 'vue' {
   export interface GlobalComponents {
     AppHeader: typeof import('./components/common/AppHeader.vue')['default']
     AppSidebar: typeof import('./components/common/AppSidebar.vue')['default']
+    AuthPanel: typeof import('./components/auth/AuthPanel.vue')['default']
     ChatInput: typeof import('./components/chat/ChatInput.vue')['default']
     ChatWindow: typeof import('./components/chat/ChatWindow.vue')['default']
     DocumentTable: typeof import('./components/document/DocumentTable.vue')['default']
@@ -45,6 +46,8 @@ declare module 'vue' {
     KnowledgeCard: typeof import('./components/knowledge/KnowledgeCard.vue')['default']
     KnowledgeForm: typeof import('./components/knowledge/KnowledgeForm.vue')['default']
     KnowledgeSelect: typeof import('./components/knowledge/KnowledgeSelect.vue')['default']
+    LoginDialog: typeof import('./components/auth/LoginDialog.vue')['default']
+    LoginForm: typeof import('./components/auth/LoginForm.vue')['default']
     MessageItem: typeof import('./components/chat/MessageItem.vue')['default']
     MessageList: typeof import('./components/chat/MessageList.vue')['default']
     PageContainer: typeof import('./components/common/PageContainer.vue')['default']

@@ -55,9 +55,11 @@ import { createKnowledgeApi, getKnowledgeListApi } from '@/api/knowledge'
 import type { KnowledgeBase } from '@/types/knowledge'
 import { usePagination } from '@/composables/usePagination'
 import { useKnowledgeStore } from '@/stores/knowledge'
+import { useAuth } from '@/composables/useAuth'
 
 const router = useRouter()
 const knowledgeStore = useKnowledgeStore()
+const { hasToken } = useAuth()
 const list = ref<KnowledgeBase[]>([])
 const loading = ref(false)
 const keyword = ref('')
@@ -67,6 +69,11 @@ const formRef = ref<InstanceType<typeof KnowledgeForm>>()
 const { pagination, setTotal, resetPage } = usePagination(12)
 
 async function fetchList() {
+  if (!hasToken()) {
+    list.value = []
+    setTotal(0)
+    return
+  }
   loading.value = true
   try {
     const res = await getKnowledgeListApi({
@@ -87,6 +94,10 @@ function onSearch() {
 }
 
 function openCreate() {
+  if (!hasToken()) {
+    ElMessage.warning('请先登录后再新建知识库')
+    return
+  }
   dialogVisible.value = true
 }
 

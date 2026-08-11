@@ -1,10 +1,14 @@
 <template>
-  <div class="doc-uploader" :class="{ 'is-disabled': !knowledgeId || uploading }">
+  <div
+    class="doc-uploader"
+    :class="{ 'is-disabled': uploadDisabled }"
+    @click.capture="onAreaClick"
+  >
     <el-upload
       drag
       :auto-upload="false"
       :show-file-list="false"
-      :disabled="uploading || !knowledgeId"
+      :disabled="uploading || !isLoggedIn"
       accept=".pdf,.md,.txt"
       class="doc-uploader__upload"
       @change="onChange"
@@ -18,14 +22,15 @@
         </p>
         <p class="doc-uploader__hint">
           支持 PDF / Markdown / TXT 格式
-          <span v-if="!knowledgeId"> · 请先选择知识库</span>
+          <span v-if="!isLoggedIn"> · 登录后可上传</span>
+          <span v-else-if="!knowledgeId"> · 请先选择知识库</span>
           <span v-else-if="uploading"> · 上传进度 {{ percent }}%</span>
         </p>
         <el-button
           type="primary"
           class="doc-uploader__btn"
           :loading="uploading"
-          :disabled="!knowledgeId"
+          :disabled="isLoggedIn && !knowledgeId"
         >
           <el-icon class="el-icon--left"><Upload /></el-icon>
           选择文件
@@ -43,10 +48,12 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { Upload, UploadFilled } from '@element-plus/icons-vue'
 import type { UploadFile } from 'element-plus'
 import { ElMessage } from 'element-plus'
 import { useUpload } from '@/composables/useUpload'
+import { useAuth } from '@/composables/useAuth'
 
 const props = defineProps<{
   knowledgeId: number | string | null
@@ -57,8 +64,24 @@ const emit = defineEmits<{
 }>()
 
 const { percent, uploading, isAllowedFile, upload } = useUpload()
+const { isLoggedIn, hasToken } = useAuth()
+
+const uploadDisabled = computed(
+  () => uploading.value || !isLoggedIn.value || !props.knowledgeId,
+)
+
+function onAreaClick(event: MouseEvent) {
+  if (hasToken()) return
+  event.preventDefault()
+  event.stopPropagation()
+  ElMessage.warning('请先登录后再上传文档')
+}
 
 async function onChange(uploadFile: UploadFile) {
+  if (!hasToken()) {
+    ElMessage.warning('请先登录后再上传文档')
+    return
+  }
   if (!props.knowledgeId) {
     ElMessage.warning('请先选择知识库')
     return

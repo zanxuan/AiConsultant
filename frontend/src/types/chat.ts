@@ -16,6 +16,8 @@ export interface ChatMessage {
   content: string
   sources?: CiteSource[]
   createdAt?: string
+  /** 游客引导：在助手消息下方展示「立即登录」链接 */
+  showLoginLink?: boolean
 }
 
 /** POST /api/v1/chat 请求体 */

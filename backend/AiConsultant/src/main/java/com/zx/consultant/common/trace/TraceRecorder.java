@@ -46,6 +46,7 @@ public final class TraceRecorder {
             log.info("[Trace] node={} cost={}ms status={} model={} fallback={}",
                     nodeName, span.getCostMs(), span.getStatus(),
                     span.getModelUsed(), span.getFallbackTriggered());
+                    
         } catch (RuntimeException e) {
             long end = System.currentTimeMillis();
             boolean llmSpan = TraceContext.getModelUsed() != null

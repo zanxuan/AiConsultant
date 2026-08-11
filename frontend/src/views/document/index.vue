@@ -73,6 +73,7 @@ import {
 import type { DocumentItem } from '@/types/document'
 import { DocumentStatus } from '@/constants/enum'
 import { usePagination } from '@/composables/usePagination'
+import { useAuth } from '@/composables/useAuth'
 
 const PENDING_STATUSES = new Set([
   DocumentStatus.UPLOADING,
@@ -81,6 +82,7 @@ const PENDING_STATUSES = new Set([
 ])
 
 const route = useRoute()
+const { hasToken } = useAuth()
 const knowledgeId = ref<number | string | null>(
   route.query.kbId ? String(route.query.kbId) : null,
 )
@@ -98,7 +100,7 @@ const filteredList = computed(() => {
 })
 
 async function fetchList() {
-  if (!knowledgeId.value) {
+  if (!hasToken() || !knowledgeId.value) {
     list.value = []
     setTotal(0)
     stopStatusPolling()

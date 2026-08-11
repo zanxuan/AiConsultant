@@ -6,7 +6,15 @@
         <span class="chat-window__hint">AI 生成可能有误，请注意核实</span>
       </div>
       <div class="chat-window__top-actions">
-        <KnowledgeSelect v-model="knowledgeId" class="chat-window__kb" />
+        <KnowledgeSelect v-if="isLoggedIn" v-model="knowledgeId" class="chat-window__kb" />
+        <button
+          v-if="!isLoggedIn"
+          type="button"
+          class="chat-window__login"
+          @click="userStore.openLoginDialog()"
+        >
+          登录
+        </button>
         <button type="button" class="chat-window__new" @click="onNewChat">新对话</button>
       </div>
     </header>
@@ -14,7 +22,7 @@
     <MessageList :messages="chatStore.messages" />
 
     <div class="chat-window__composer">
-      <ChatInput :disabled="chatStore.isStreaming || !knowledgeId" @send="onSend" />
+      <ChatInput :disabled="chatStore.isStreaming || (isLoggedIn && !knowledgeId)" @send="onSend" />
     </div>
   </div>
 </template>
@@ -27,37 +35,111 @@ import MessageList from './MessageList.vue'
 import ChatInput from './ChatInput.vue'
 import { useChatStore } from '@/stores/chat'
 import { useKnowledgeStore } from '@/stores/knowledge'
+import { useUserStore } from '@/stores/user'
 import { useChatStream } from '@/composables/useChatStream'
+import { useAuth } from '@/composables/useAuth'
+import { MessageRole } from '@/constants/enum'
+
+const GUEST_ASSISTANT_TIP = '登录后解锁完整 AI 能力'
 
 const chatStore = useChatStore()
 const knowledgeStore = useKnowledgeStore()
+const userStore = useUserStore()
 const { send } = useChatStream()
+const { isLoggedIn, hasToken } = useAuth()
 
 const knowledgeId = ref<number | string | null>(knowledgeStore.currentId)
+const pendingMessage = ref<string | null>(null)
+/** 游客「思考」延迟定时器，复用空助手消息的 ... 占位 */
+let guestThinkTimer: ReturnType<typeof setTimeout> | null = null
 
 const sessionLabel = computed(() =>
   chatStore.messages.length ? '当前对话' : '新对话',
 )
 
+function clearGuestThink(resetStreaming = true) {
+  if (guestThinkTimer != null) {
+    clearTimeout(guestThinkTimer)
+    guestThinkTimer = null
+  }
+  if (resetStreaming && !isLoggedIn.value) {
+    chatStore.isStreaming = false
+  }
+}
+
 onMounted(() => {
-  knowledgeStore.fetchList()
-  if (knowledgeStore.currentId) {
-    knowledgeId.value = knowledgeStore.currentId
+  if (isLoggedIn.value) {
+    loadKnowledge()
   }
 })
 
 watch(knowledgeId, (id, prev) => {
   knowledgeStore.setCurrentId(id)
   if (prev != null && id !== prev) {
+    clearGuestThink()
     chatStore.reset()
   }
 })
 
+// 登录成功后：拉取知识库，并续发暂存消息
+watch(isLoggedIn, async (loggedIn) => {
+  if (!loggedIn) return
+  clearGuestThink()
+  await knowledgeStore.fetchList()
+  if (knowledgeStore.currentId) {
+    knowledgeId.value = knowledgeStore.currentId
+  }
+  const message = pendingMessage.value
+  pendingMessage.value = null
+  if (message) {
+    chatStore.reset()
+    await doSend(message)
+  }
+})
+
+function loadKnowledge() {
+  knowledgeStore.fetchList()
+  if (knowledgeStore.currentId) {
+    knowledgeId.value = knowledgeStore.currentId
+  }
+}
+
 function onNewChat() {
+  clearGuestThink()
   chatStore.reset()
+  pendingMessage.value = null
 }
 
 async function onSend(message: string) {
+  if (!hasToken()) {
+    if (chatStore.isStreaming) return
+    pendingMessage.value = message
+    chatStore.appendMessage({
+      role: MessageRole.USER,
+      content: message,
+    })
+    // 与真实问答一致：先挂空助手消息显示 ...，短暂缓冲后再填内容
+    clearGuestThink()
+    chatStore.appendMessage({
+      role: MessageRole.ASSISTANT,
+      content: '',
+    })
+    chatStore.isStreaming = true
+    guestThinkTimer = setTimeout(() => {
+      guestThinkTimer = null
+      const last = chatStore.messages[chatStore.messages.length - 1]
+      if (last?.role === MessageRole.ASSISTANT && !last.content) {
+        last.content = GUEST_ASSISTANT_TIP
+        last.showLoginLink = true
+      }
+      chatStore.isStreaming = false
+    }, 700)
+    return
+  }
+  await doSend(message)
+}
+
+async function doSend(message: string) {
   if (!knowledgeId.value) {
     ElMessage.warning('请先选择知识库')
     return
@@ -127,6 +209,7 @@ async function onSend(message: string) {
     width: 180px;
   }
 
+  &__login,
   &__new {
     appearance: none;
     border: 1px solid #e2e8f0;
@@ -144,6 +227,17 @@ async function onSend(message: string) {
     &:hover {
       background: #f0f7f8;
       border-color: rgba(15, 76, 92, 0.28);
+    }
+  }
+
+  &__login {
+    border-color: rgba(15, 76, 92, 0.35);
+    background: #0f4c5c;
+    color: #fff;
+
+    &:hover {
+      background: #136377;
+      border-color: #136377;
     }
   }
 

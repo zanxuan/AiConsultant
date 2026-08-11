@@ -1,6 +1,6 @@
 <template>
   <PageContainer title="用户信息" desc="查看与修改个人资料">
-    <el-card shadow="never" style="max-width: 560px">
+    <el-card shadow="never" class="profile-card">
       <el-form ref="formRef" :model="form" label-width="88px">
         <el-form-item label="用户 ID">
           <el-input :model-value="userStore.userInfo?.userId" disabled />
@@ -64,3 +64,14 @@ onMounted(async () => {
   syncForm()
 })
 </script>
+
+<style scoped lang="scss">
+.profile-card {
+  max-width: 560px;
+  border: 1px solid rgba(15, 76, 92, 0.06);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 6px 18px rgba(15, 45, 60, 0.06);
+  overflow: hidden;
+}
+</style>

@@ -20,7 +20,6 @@ import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-
 @Service
 public class ChatServiceImpl implements ChatService {
 
@@ -39,6 +38,11 @@ public class ChatServiceImpl implements ChatService {
         this.objectMapper = objectMapper;
     }
 
+    /**
+     * 用户提问
+     * @param req
+     * @return
+     */
     public ChatResp ask(ChatReq req) {
         log.info("用户提问：{}, traceId={}", req.getMessage(), TraceContext.getTraceId());
 
