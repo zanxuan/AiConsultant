@@ -43,10 +43,10 @@ public class RetrieveNode implements WorkflowNode {
         }
 
         // 情况2：最高向量分低于 min-score → 视为无相关知识
-        if (hybridRetriever.isScoreTooLow(docs)) {
-            earlyStop(context, MSG_LOW_SCORE);
-            return;
-        }
+        // if (hybridRetriever.isScoreTooLow(docs)) {
+        //     earlyStop(context, MSG_LOW_SCORE);
+        //     return;
+        // }
 
         context.setRetrievedDocuments(docs);
     }

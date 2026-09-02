@@ -36,11 +36,16 @@ public class RagEvalService {
     @Value("${app.rag.eval.golden-set-path:docs/eval/golden-set.json}")
     private String goldenSetPath;
 
+    /**
+     * 评估
+     * @return 评估结果
+     */
     public EvalResult evaluate() {
         if (knowledgeId == null) {
             throw new IllegalStateException("请配置 app.rag.eval.knowledge-id（评测知识库 ID）");
         }
 
+        // 解析黄金集文件
         File goldenFile = resolveGoldenSetFile();
         List<EvalCase> goldenSet = loadGoldenSet(goldenFile);
         if (goldenSet.isEmpty()) {
@@ -52,6 +57,7 @@ public class RagEvalService {
         double mrrSum = 0.0;
         List<FailedCase> failedCases = new ArrayList<>();
 
+        // 遍历黄金集
         for (EvalCase evalCase : goldenSet) {
             String query = evalCase.getQuery();
             List<RetrievedChunk> chunks = hybridRetriever.retrieve(query, knowledgeId);
@@ -73,6 +79,7 @@ public class RagEvalService {
             mrrSum += reciprocalRank(retrievedDocIds, evalCase.getExpectedDocIds());
         }
 
+        // 计算评估结果
         int total = goldenSet.size();
         EvalResult result = new EvalResult();
         result.setTotal(total);
@@ -81,11 +88,18 @@ public class RagEvalService {
         result.setMrr(mrrSum / total);
         result.setFailedCases(failedCases);
 
+        // 打印报告
         printReport(goldenFile.getName(), result);
+        // 写报告
         evalReportWriter.write(result);
         return result;
     }
 
+    /**
+     * 获取最高得分
+     * @param chunks 检索到的片段
+     * @return 最高得分
+     */
     private Double topScore(List<RetrievedChunk> chunks) {
         if (chunks == null || chunks.isEmpty()) {
             return null;
@@ -150,6 +164,11 @@ public class RagEvalService {
         return 0.0;
     }
 
+    /**
+     * 加载黄金集
+     * @param file 文件
+     * @return 黄金集
+     */
     private List<EvalCase> loadGoldenSet(File file) {
         try {
             return objectMapper.readValue(file, new TypeReference<List<EvalCase>>() {});
@@ -158,6 +177,10 @@ public class RagEvalService {
         }
     }
 
+    /**
+     * 解析黄金集文件
+     * @return 黄金集文件
+     */
     private File resolveGoldenSetFile() {
         File direct = new File(goldenSetPath);
         if (direct.isFile()) {
@@ -177,6 +200,11 @@ public class RagEvalService {
                 "找不到 golden-set: " + goldenSetPath + "（cwd=" + new File(".").getAbsolutePath() + "）");
     }
 
+    /**
+     * 打印报告
+     * @param datasetName 数据集名称
+     * @param result 评估结果
+     */
     private void printReport(String datasetName, EvalResult result) {
         String report = """
                 
@@ -198,6 +226,11 @@ public class RagEvalService {
         System.out.print(report);
     }
 
+    /**
+     * 格式化百分比
+     * @param ratio 比例
+     * @return 百分比
+     */
     private String formatPercent(double ratio) {
         return Math.round(ratio * 100) + "%";
     }
