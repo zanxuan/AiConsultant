@@ -470,16 +470,19 @@ POST /api/v1/chat
 
 ## ✅ 当前状态
 
-目前已完成前后端完整链路：
+目前已完成前后端完整链路，并完成 V2 生产部署：
 
 - 企业知识库管理
 - 文档解析与向量化
-- RAG增强检索
-- 多轮对话Memory
-- Citation引用返回
-- Vue前端交互页面
+- RAG 增强检索（向量 + BM25 Hybrid / RRF）
+- 多轮对话 Memory
+- Citation 引用返回
+- Trace 链路观测
+- LLM Fallback 降级
+- RAG Evaluation 检索评测
+- Vue 前端交互页面（支持游客浏览）
 
-支持本地部署运行。
+支持本地部署与云服务器生产环境运行。
 
 ---
 
@@ -499,11 +502,13 @@ POST /api/v1/chat
 - [x] REST API
 - [x] Vue 前端基础交互界面
 
-### V2 阶段 (进行中)
+### V2.0 - 可观测性与生产部署 ✅
 
 - [x] Trace 链路日志追踪
 - [x] RAG Evaluation 检索效果评估
 - [x] Fallback 大模型降级策略
+- [x] Hybrid Retrieval（向量 + BM25 + RRF）
+- [x] 游客浏览与登录弹窗
 - [ ] Long-term Memory 长期记忆
 - [ ] 完善 Docker Compose 部署方案
 
