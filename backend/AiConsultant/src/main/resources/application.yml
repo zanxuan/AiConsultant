@@ -29,6 +29,9 @@ app:
       # 启动参数加 --eval 时必填：--app.rag.eval.knowledge-id=<知识库ID>
       # knowledge-id:
       golden-set-path: docs/eval/golden-set.json
+  summary:
+    short-text-threshold: 3000   # 与 document.file_size（字节）比较，不超过则直接加载原文总结
+    group-size: 5                # 阶段性总结每次合并的已有块数
   # 副模型：主模型（langchain4j.open-ai.chat-model）失败时由 LLMService 降级调用
   llm:
     secondary:

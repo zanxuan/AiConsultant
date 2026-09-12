@@ -40,4 +40,13 @@ public class WorkflowContext {
 
     /** 为 true 时跳过后续节点（如检索无相关知识时短路，不再调用 LLM） */
     private boolean earlyStop;
+
+    /** 为 true 时需要澄清文档名称 */
+    private boolean needsClarification;
+
+     /**
+     * 需要澄清时回传的候选文件名，供编排层写入 PendingTask。
+     * 仅请求期内有效，不是对外 API。
+     */
+     private List<String> clarificationCandidates;
 }

@@ -13,14 +13,14 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * 提示词服务实现类
- * 负责将参考文档、历史对话和当前问题封装为结构化的 PromptRequest
+ * 按场景组装 PromptRequest：RAG 注入知识库资料，CHAT 仅使用问题与短期记忆
  */
 @Service
 @Slf4j
 public class PromptServiceImpl implements PromptService {
 
-    // 优化后的系统设定：明确指出资料被包含在特定 XML 标签中
-    private static final String SYSTEM_PROMPT = """
+    // RAG 系统设定：明确指出资料被包含在特定 XML 标签中
+    private static final String RAG_SYSTEM_PROMPT = """
             你是企业知识库智能助手。
             你的任务是严格根据下方 <reference_document> 标签内的企业内部资料回答【用户问题】。
             
@@ -33,12 +33,28 @@ public class PromptServiceImpl implements PromptService {
             6. 历史对话仅用于理解上下文，不作为事实依据。
             """;
 
+    // CHAT 系统设定：日常对话，不绑定知识库资料与引用标记
+    private static final String CHAT_SYSTEM_PROMPT = """
+            你是企业智能助手，负责与用户进行自然、友好的日常对话。
+            
+            【回答规则】:
+            1. 根据当前用户问题和历史对话进行回答，不要编造企业知识库资料。
+            2. 不要输出文档名称、文档ID、页码、来源或 <cite> 引用标记。
+            3. 历史对话仅用于理解上下文。
+            4. 回答尽量简洁、清晰、自然。
+            """;
+
     @Override
     public PromptRequest buildPrompt(String query, List<Message> memory, List<RetrievedChunk> docs) {
+        return buildRagPrompt(query, memory, docs);
+    }
+
+    @Override
+    public PromptRequest buildRagPrompt(String query, List<Message> memory, List<RetrievedChunk> docs) {
         PromptRequest promptRequest = new PromptRequest();
         
         // 1. 设置系统人设
-        promptRequest.setSystemPrompt(SYSTEM_PROMPT);
+        promptRequest.setSystemPrompt(RAG_SYSTEM_PROMPT);
         
         // 2. 设置用户当前问题
         promptRequest.setUserQuery(query);
@@ -83,6 +99,18 @@ public class PromptServiceImpl implements PromptService {
 
         // 5. variables 动态字典由于当前场景暂未使用，可以保留为 null 或在需要时初始化
         
+        return promptRequest;
+    }
+
+    @Override
+    public PromptRequest buildChatPrompt(String query, List<Message> memory) {
+        PromptRequest promptRequest = new PromptRequest();
+        promptRequest.setSystemPrompt(CHAT_SYSTEM_PROMPT);
+        promptRequest.setUserQuery(query);
+        promptRequest.setHistory(memory);
+        // LLMService 会拼接 context + 用户问题；CHAT 无知识库资料，置空避免出现 "null"
+        promptRequest.setContext("");
+        log.info("Chat Prompt:\n{}", promptRequest);
         return promptRequest;
     }
 

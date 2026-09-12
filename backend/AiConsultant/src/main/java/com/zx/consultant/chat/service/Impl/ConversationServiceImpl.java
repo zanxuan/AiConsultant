@@ -7,12 +7,19 @@ import com.zx.consultant.chat.entity.Conversation;
 import com.zx.consultant.chat.mapper.ConversationMapper;
 import com.zx.consultant.chat.service.ConversationService;
 import com.zx.consultant.common.utils.BaseContext;
+import com.zx.consultant.pending.service.PendingTaskService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
 public class ConversationServiceImpl extends ServiceImpl<ConversationMapper, Conversation> implements ConversationService {
+
+    private final PendingTaskService pendingTaskService;
+
+    public ConversationServiceImpl(PendingTaskService pendingTaskService) {
+        this.pendingTaskService = pendingTaskService;
+    }
 
     /**
      * 创建会话
@@ -58,6 +65,8 @@ public class ConversationServiceImpl extends ServiceImpl<ConversationMapper, Con
      */
     @Override
     public boolean delete(Long conversationId) {
+        //删除任务
+        pendingTaskService.delete(conversationId);
         return removeById(conversationId);
     }
 }

@@ -11,6 +11,7 @@ import com.zx.consultant.chat.service.ChatService;
 import com.zx.consultant.chat.service.ConversationService;
 import com.zx.consultant.common.exception.BaseException;
 import com.zx.consultant.common.trace.TraceContext;
+import com.zx.consultant.orchestrator.Orchestrator;
 import com.zx.consultant.rag.dto.CitationDTO;
 import com.zx.consultant.workflow.context.WorkflowContext;
 import com.zx.consultant.workflow.service.WorkflowService;
@@ -23,16 +24,16 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 public class ChatServiceImpl implements ChatService {
 
-    private final WorkflowService workflowService;
+    private final Orchestrator orchestrator;
     private final MessageMapper messageMapper;
     private final ConversationService conversationService;
     private final ObjectMapper objectMapper;
 
-    public ChatServiceImpl(WorkflowService workflowService,
+    public ChatServiceImpl(Orchestrator orchestrator,
                            MessageMapper messageMapper,
                            ConversationService conversationService,
                            ObjectMapper objectMapper) {
-        this.workflowService = workflowService;
+        this.orchestrator = orchestrator;
         this.messageMapper = messageMapper;
         this.conversationService = conversationService;
         this.objectMapper = objectMapper;
@@ -50,9 +51,7 @@ public class ChatServiceImpl implements ChatService {
         if (conversation == null) {
             throw new BaseException("会话不存在");
         }
-        if (conversation.getKnowledgeId() == null) {
-            throw new BaseException("会话未绑定知识库，无法检索");
-        }
+
 
         // 1. 落库用户提问
         Message userMessage = new Message();
@@ -74,7 +73,7 @@ public class ChatServiceImpl implements ChatService {
         List<CitationDTO> references;
         try {
             // LLM 双模型降级在 LLMServiceImpl（主失败 → 副模型），此处只编排 Workflow
-            context = workflowService.run(context);
+            context = orchestrator.dispatch(context);
             answer = context.getFinalAnswer();
             references = context.getCitations() != null
                     ? context.getCitations()
