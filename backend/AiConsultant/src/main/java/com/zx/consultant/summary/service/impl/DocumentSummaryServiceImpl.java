@@ -1,4 +1,6 @@
 package com.zx.consultant.summary.service.impl;
+import com.zx.consultant.common.trace.TraceContext;
+import com.zx.consultant.common.trace.TraceRecorder;
 import com.zx.consultant.document.entity.Document;
 import com.zx.consultant.llm.entity.PromptRequest;
 import com.zx.consultant.llm.service.LLMService;
@@ -6,6 +8,7 @@ import com.zx.consultant.memory.service.MemoryService;
 import com.zx.consultant.summary.service.DocumentSummaryService;
 import com.zx.consultant.summary.service.SummaryDocumentLoader;
 import com.zx.consultant.summary.service.SummaryService;
+import com.zx.consultant.trace.service.TraceService;
 import com.zx.consultant.workflow.context.WorkflowContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -52,14 +55,17 @@ public class DocumentSummaryServiceImpl implements DocumentSummaryService {
     private final SummaryDocumentLoader documentLoader;
     private final MemoryService memoryService;
     private final LLMService llmService;
+    private final TraceService traceService;
     public DocumentSummaryServiceImpl(SummaryService summaryService,
                                       SummaryDocumentLoader documentLoader,
                                       MemoryService memoryService,
-                                      LLMService llmService) {
+                                      LLMService llmService,
+                                      TraceService traceService) {
         this.summaryService = summaryService;
         this.documentLoader = documentLoader;
         this.memoryService = memoryService;
         this.llmService = llmService;
+        this.traceService = traceService;
     }
 
     /**
@@ -67,73 +73,99 @@ public class DocumentSummaryServiceImpl implements DocumentSummaryService {
      */
     @Override
     public WorkflowContext summarize(WorkflowContext context) {
-        context.setCitations(Collections.emptyList());
-        // 目标不明确时只标记追问，不猜测文档。
-        context.setNeedsClarification(false);
+        context.setTraceId(TraceContext.getTraceId());
+        log.info("=== 开始执行单文档总结，traceId={}, ConversationID: {} ===",
+                context.getTraceId(), context.getConversationId());
+        long startTime = System.currentTimeMillis();
 
         try {
-            if (context.getKnowledgeId() == null) {
-                return complete(context, "会话未绑定知识库，无法总结");
-            }
-            // 加载已就绪的文档
-            List<Document> readyDocs = documentLoader.listReadyDocuments(context.getKnowledgeId());
-            if (readyDocs.isEmpty()) {
-                return complete(context, "当前知识库暂无已就绪的文档，无法进行总结");
-            }
-            // 解析目标文档：先硬匹配，未命中再走 LLM 匹配。
-            TargetResolution resolution = resolveTarget(context.getOriginalQuery(), readyDocs);
+            context.setCitations(Collections.emptyList());
+            // 目标不明确时只标记追问，不猜测文档。
+            context.setNeedsClarification(false);
 
-            // 无法唯一确定目标时交由编排层追问并创建 PendingTask，此处不写入 Redis Memory。
-            if (resolution.needsClarification) {
-                log.info("单文档总结无法确定目标, knowledgeId={}, readyCount={}",
-                        context.getKnowledgeId(), readyDocs.size());
-                context.setNeedsClarification(true);
-                //设置需要澄清的候选文档文件名
-                context.setClarificationCandidates(toFileNames(readyDocs));
-                //设置澄清话术
-                context.setFinalAnswer(buildClarificationMessage(readyDocs));
-                //返回上下文
-                return context;
-            }
-
-            // 没有任何候选文档对应请求时直接报错，不猜测文档。
-            if (resolution.errorMessage != null) {
-                return complete(context, resolution.errorMessage);
-            }
-
-
-            // 先按 fileSize 判断长短：短文档加载原文一次总结，长文档复用已入库 Chunk。
-            Document document = resolution.document;
-            String answer;
-            //判断文档是否为短文档
-            if (documentLoader.isShortDocument(document)) {
-                //加载文档原文
-                String text = documentLoader.loadDocumentText(document);
-                //如果文档原文为空，则返回错误信息
-                if (text == null || text.isBlank()) {
-                    return complete(context, "文档《" + document.getFileName() + "》内容为空，无法总结");
+            try {
+                if (context.getKnowledgeId() == null) {
+                    return complete(context, "会话未绑定知识库，无法总结");
                 }
-                log.info("执行短文档总结, documentId={}, fileName={}, fileSize={}",
-                        document.getId(), document.getFileName(), document.getFileSize());
-                //调用总结服务生成短文档总结
-                answer = summaryService.summarizeDocumentText(text, context.getOriginalQuery());
-
-            } else {
-                List<String> chunks = documentLoader.loadDocumentChunks(document);
-                if (chunks.isEmpty()) {
-                    return complete(context, "文档《" + document.getFileName() + "》内容为空，无法总结");
+                // 加载已就绪的文档
+                List<Document> readyDocs = new ArrayList<>();
+                TraceRecorder.record("Load Documents", () ->
+                        readyDocs.addAll(documentLoader.listReadyDocuments(context.getKnowledgeId())));
+                if (readyDocs.isEmpty()) {
+                    return complete(context, "当前知识库暂无已就绪的文档，无法进行总结");
                 }
-                log.info("执行长文档总结, documentId={}, fileName={}, fileSize={}, chunkCount={}",
-                        document.getId(), document.getFileName(), document.getFileSize(), chunks.size());
-                //调用总结服务生成长文档总结
-                answer = summaryService.summarizeDocumentText(chunks, context.getOriginalQuery());
-            }
-            //返回总结结果
-            return complete(context, answer);
+                // 解析目标文档：先硬匹配，未命中再走 LLM 匹配。
+                TargetResolution[] resolutionHolder = new TargetResolution[1];
+                TraceRecorder.record("Resolve Target", () ->
+                        resolutionHolder[0] = resolveTarget(context.getOriginalQuery(), readyDocs));
+                TargetResolution resolution = resolutionHolder[0];
 
-        } catch (Exception e) {
-            log.error("单文档总结失败, knowledgeId={}", context.getKnowledgeId(), e);
-            return complete(context, "文档总结服务暂时不可用，请稍后重试");
+                // 无法唯一确定目标时交由编排层追问并创建 PendingTask，此处不写入 Redis Memory。
+                if (resolution.needsClarification) {
+                    log.info("单文档总结无法确定目标, knowledgeId={}, readyCount={}",
+                            context.getKnowledgeId(), readyDocs.size());
+                    context.setNeedsClarification(true);
+                    //设置需要澄清的候选文档文件名
+                    context.setClarificationCandidates(toFileNames(readyDocs));
+                    //设置澄清话术
+                    context.setFinalAnswer(buildClarificationMessage(readyDocs));
+                    //返回上下文
+                    return context;
+                }
+
+                // 没有任何候选文档对应请求时直接报错，不猜测文档。
+                if (resolution.errorMessage != null) {
+                    return complete(context, resolution.errorMessage);
+                }
+
+
+                // 先按 fileSize 判断长短：短文档加载原文一次总结，长文档复用已入库 Chunk。
+                Document document = resolution.document;
+                String[] answerHolder = new String[1];
+                //判断文档是否为短文档
+                if (documentLoader.isShortDocument(document)) {
+                    //加载文档原文
+                    String[] textHolder = new String[1];
+                    TraceRecorder.record("Load Content", () ->
+                            textHolder[0] = documentLoader.loadDocumentText(document));
+                    String text = textHolder[0];
+                    //如果文档原文为空，则返回错误信息
+                    if (text == null || text.isBlank()) {
+                        return complete(context, "文档《" + document.getFileName() + "》内容为空，无法总结");
+                    }
+                    log.info("执行短文档总结, documentId={}, fileName={}, fileSize={}",
+                            document.getId(), document.getFileName(), document.getFileSize());
+                    //调用总结服务生成短文档总结
+                    TraceRecorder.record("Summarize Document", () ->
+                            answerHolder[0] = summaryService.summarizeDocumentText(text, context.getOriginalQuery()));
+
+                } else {
+                    List<String> chunks = new ArrayList<>();
+                    TraceRecorder.record("Load Content", () ->
+                            chunks.addAll(documentLoader.loadDocumentChunks(document)));
+                    if (chunks.isEmpty()) {
+                        return complete(context, "文档《" + document.getFileName() + "》内容为空，无法总结");
+                    }
+                    log.info("执行长文档总结, documentId={}, fileName={}, fileSize={}, chunkCount={}",
+                            document.getId(), document.getFileName(), document.getFileSize(), chunks.size());
+                    //调用总结服务生成长文档总结
+                    TraceRecorder.record("Summarize Document", () ->
+                            answerHolder[0] = summaryService.summarizeDocumentText(chunks, context.getOriginalQuery()));
+                }
+                //返回总结结果
+                return complete(context, answerHolder[0]);
+
+            } catch (Exception e) {
+                log.error("单文档总结失败, knowledgeId={}", context.getKnowledgeId(), e);
+                return complete(context, "文档总结服务暂时不可用，请稍后重试");
+            }
+        } finally {
+            // 无论成功失败，都将 Span 回写 Context、落库并打印摘要
+            context.setNodeSpans(new ArrayList<>(TraceContext.getSpans()));
+            persistTraceSpans(context);
+            TraceRecorder.logSummary();
+            log.info("=== 单文档总结结束，traceId={}, 总耗时: {} ms ===",
+                    context.getTraceId(), System.currentTimeMillis() - startTime);
         }
     }
 
@@ -363,15 +395,29 @@ public class DocumentSummaryServiceImpl implements DocumentSummaryService {
     
     /** 写入会话记忆：仅成功/错误等可直接回复的场景。澄清不走这里。恢复任务时 originalQuery 已含原始请求+指定文档。 */
     private void persistMemory(WorkflowContext context, String answer) {
-        if (context.getConversationId() != null
-                && context.getOriginalQuery() != null
-                && answer != null
-                && !answer.isBlank()) {
-            // 写入会话记忆
-            memoryService.appendTurn(
-                    context.getConversationId(),
-                    context.getOriginalQuery(),
-                    answer);
+        TraceRecorder.record("Memory Persist", () -> {
+            if (context.getConversationId() != null
+                    && context.getOriginalQuery() != null
+                    && answer != null
+                    && !answer.isBlank()) {
+                // 写入会话记忆
+                memoryService.appendTurn(
+                        context.getConversationId(),
+                        context.getOriginalQuery(),
+                        answer);
+            }
+        });
+    }
+
+    /**
+     * Trace 落库失败不影响主流程（总结结果仍可正常返回）
+     */
+    private void persistTraceSpans(WorkflowContext context) {
+        try {
+            traceService.saveSpans(context.getTraceId(), context.getNodeSpans());
+        } catch (Exception e) {
+            log.warn("Trace spans 落库失败, traceId={}, error={}",
+                    context.getTraceId(), e.getMessage());
         }
     }
     /** 目标解析结果：命中文档、需要追问、或明确错误，三者互斥。 */

@@ -17,4 +17,5 @@ public class ChatReq {
      * 消息
      */
     private String message;
+    
 }

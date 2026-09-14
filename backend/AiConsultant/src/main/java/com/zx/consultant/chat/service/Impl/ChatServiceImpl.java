@@ -1,50 +1,49 @@
 package com.zx.consultant.chat.service.Impl;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zx.consultant.chat.dto.ChatReq;
-import com.zx.consultant.chat.dto.ChatResp;
+import com.zx.consultant.chat.dto.ChatTaskResp;
 import com.zx.consultant.chat.entity.Conversation;
 import com.zx.consultant.chat.entity.Message;
 import com.zx.consultant.chat.mapper.MessageMapper;
 import com.zx.consultant.chat.service.ChatService;
 import com.zx.consultant.chat.service.ConversationService;
+import com.zx.consultant.chat.sse.SseEmitterManager;
+import com.zx.consultant.chat.task.ChatTask;
+import com.zx.consultant.chat.task.ChatTaskRegistry;
 import com.zx.consultant.common.exception.BaseException;
 import com.zx.consultant.common.trace.TraceContext;
-import com.zx.consultant.orchestrator.Orchestrator;
-import com.zx.consultant.rag.dto.CitationDTO;
-import com.zx.consultant.workflow.context.WorkflowContext;
-import com.zx.consultant.workflow.service.WorkflowService;
+import com.zx.consultant.common.utils.BaseContext;
 import org.springframework.stereotype.Service;
-import java.util.Collections;
-import java.util.List;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
 public class ChatServiceImpl implements ChatService {
 
-    private final Orchestrator orchestrator;
     private final MessageMapper messageMapper;
     private final ConversationService conversationService;
-    private final ObjectMapper objectMapper;
+    private final ChatTaskRegistry chatTaskRegistry;
+    private final ChatWorkflowTask chatWorkflowTask;
+    private final SseEmitterManager sseEmitterManager;
 
-    public ChatServiceImpl(Orchestrator orchestrator,
-                           MessageMapper messageMapper,
+    public ChatServiceImpl(MessageMapper messageMapper,
                            ConversationService conversationService,
-                           ObjectMapper objectMapper) {
-        this.orchestrator = orchestrator;
+                           ChatTaskRegistry chatTaskRegistry,
+                           ChatWorkflowTask chatWorkflowTask,
+                           SseEmitterManager sseEmitterManager) {
         this.messageMapper = messageMapper;
         this.conversationService = conversationService;
-        this.objectMapper = objectMapper;
+        this.chatTaskRegistry = chatTaskRegistry;
+        this.chatWorkflowTask = chatWorkflowTask;
+        this.sseEmitterManager = sseEmitterManager;
     }
 
     /**
-     * 用户提问
-     * @param req
-     * @return
+     * 用户提问：校验会话、用户消息落库、创建任务并启动后台 Workflow，立即返回 taskId。
      */
-    public ChatResp ask(ChatReq req) {
+    @Override
+    public ChatTaskResp ask(ChatReq req) {
         log.info("用户提问：{}, traceId={}", req.getMessage(), TraceContext.getTraceId());
 
         Conversation conversation = conversationService.getById(req.getConversationId());
@@ -52,66 +51,47 @@ public class ChatServiceImpl implements ChatService {
             throw new BaseException("会话不存在");
         }
 
-
-        // 1. 落库用户提问
+        // 1. 落库用户提问（仍在 HTTP 线程，事务边界与改造前一致：无外层 @Transactional）
         Message userMessage = new Message();
         userMessage.setConversationId(req.getConversationId());
         userMessage.setRole("user");
         userMessage.setContent(req.getMessage());
         messageMapper.insert(userMessage);
 
-        // 2. 触发 Workflow 核心引擎（带上知识库隔离 ID）
-        // traceId 已由 TraceIdFilter 在请求入口写入 MDC / TraceContext
-        log.info("触发 Workflow 核心引擎, knowledgeId={}, traceId={}",
-                conversation.getKnowledgeId(), TraceContext.getTraceId());
-        WorkflowContext context = new WorkflowContext();
-        context.setConversationId(req.getConversationId());
-        context.setKnowledgeId(conversation.getKnowledgeId());
-        context.setOriginalQuery(req.getMessage());
+        // 2. 创建 Task，并把当前请求的 userId / traceId 交给后台线程
+        ChatTask task = chatTaskRegistry.create(req.getConversationId());
+        Long userId = BaseContext.getCurrentId();
+        String traceId = TraceContext.getTraceId();
+        log.info("创建 Chat 任务并启动后台执行, taskId={}, knowledgeId={}",
+                task.getTaskId(), conversation.getKnowledgeId());
+        chatWorkflowTask.run(task.getTaskId(), req, conversation.getKnowledgeId(), userId, traceId);
 
-        String answer;
-        List<CitationDTO> references;
-        try {
-            // LLM 双模型降级在 LLMServiceImpl（主失败 → 副模型），此处只编排 Workflow
-            context = orchestrator.dispatch(context);
-            answer = context.getFinalAnswer();
-            references = context.getCitations() != null
-                    ? context.getCitations()
-                    : Collections.emptyList();
-        } catch (Exception e) {
-            // Chat 层兜底：不把异常细节抛给用户，返回友好回复
-            log.error("Workflow 执行失败, conversationId={}, traceId={}",
-                    req.getConversationId(), TraceContext.getTraceId(), e);
-            answer = "当前智能问答服务暂时不可用，请稍后重试";
-            references = Collections.emptyList();
-        }
-
-        // 3. 落库 AI 回答（content 存纯回答，reference 存结构化引用 JSON）
-        log.info("落库 AI 回答");
-        Message aiMessage = new Message();
-        aiMessage.setConversationId(req.getConversationId());
-        aiMessage.setRole("assistant");
-        aiMessage.setContent(answer);
-        aiMessage.setReference(serializeReferences(references));
-        messageMapper.insert(aiMessage);
-
-        // 4. 组装并返回：answer 与 references 同级分离
-        log.info("组装并返回标准格式");
-        ChatResp resp = new ChatResp();
-        resp.setAnswer(answer);
-        resp.setReferences(references);
+        ChatTaskResp resp = new ChatTaskResp();
+        resp.setTaskId(task.getTaskId());
         return resp;
     }
 
-    private String serializeReferences(List<CitationDTO> references) {
-        if (references == null || references.isEmpty()) {
-            return null;
+    /**
+     * 按 taskId 建立 SSE。若后台已完成，立即补推 complete + ChatResp。
+     */
+    @Override
+    public SseEmitter stream(String taskId) {
+        ChatTask task = chatTaskRegistry.get(taskId);
+        if (task == null) {
+            throw new BaseException("任务不存在");
         }
-        try {
-            return objectMapper.writeValueAsString(references);
-        } catch (JsonProcessingException e) {
-            log.error("引用列表序列化失败", e);
-            return null;
+
+        // 加锁：防止并发问题（多个浏览器同时连同一个taskId的SSE）
+        synchronized (task) {
+            // 注册SseEmitter，保存到管理器，后续后台线程通过这个emitter推消息
+            SseEmitter emitter = sseEmitterManager.register(taskId);
+            // 如果后台已完成，立即补推 complete + ChatResp
+            if (task.getResult() != null) {
+                sseEmitterManager.sendComplete(taskId, task.getResult());
+                // 移除任务
+                chatTaskRegistry.remove(taskId);
+            }
+            return emitter;
         }
     }
 }
