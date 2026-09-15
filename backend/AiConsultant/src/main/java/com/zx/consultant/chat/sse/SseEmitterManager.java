@@ -2,6 +2,7 @@ package com.zx.consultant.chat.sse;
 
 import com.zx.consultant.chat.dto.ChatResp;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -41,6 +42,24 @@ public class SseEmitterManager {
     public void remove(String taskId) {
         if (taskId != null) {
             emitters.remove(taskId);
+        }
+    }
+
+    /**
+     * 尽力推送 progress，不关闭连接。emitter 尚未建立时直接丢弃。
+     */
+    public void sendProgress(String taskId, String message) {
+        SseEmitter emitter = emitters.get(taskId);
+        if (emitter == null) {
+            return;
+        }
+        try {
+            emitter.send(SseEmitter.event()
+                    .name("progress")
+                    .data(message != null ? message : "", MediaType.TEXT_PLAIN));
+        } catch (Exception e) {
+            log.warn("SSE 推送 progress 失败, taskId={}", taskId, e);
+            remove(taskId);
         }
     }
 

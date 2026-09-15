@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 /**
  * 请求级 Trace 上下文（ThreadLocal）。
@@ -24,6 +25,12 @@ public final class TraceContext {
     private static final ThreadLocal<Boolean> FALLBACK_TRIGGERED = ThreadLocal.withInitial(() -> false);
     /** 降级原因，如 PRIMARY_LLM_FAILED */
     private static final ThreadLocal<String> FALLBACK_REASON = new ThreadLocal<>();
+    /** Chat SSE 任务 ID；非 Chat 链路保持为空 */
+    private static final ThreadLocal<String> TASK_ID = new ThreadLocal<>();
+    /** 把 progress 文案交给 Chat 层 SseEmitterManager；TraceRecorder 不持有 emitter */
+    private static final ThreadLocal<Consumer<String>> PROGRESS_SINK = new ThreadLocal<>();
+
+
 
     private TraceContext() {
     }
@@ -43,9 +50,48 @@ public final class TraceContext {
         MODEL_USED.remove();
         FALLBACK_TRIGGERED.set(false);
         FALLBACK_REASON.remove();
+        TASK_ID.remove();
+        PROGRESS_SINK.remove();
         //MDC 是专门给日志系统用的 ThreadLocal，把 traceId 写入 MDC，方便后续日志打印时带上 traceId
         MDC.put(TraceConstants.MDC_KEY, traceId);
         return traceId;
+    }
+
+    public static void setTaskId(String taskId) {
+        // 传空，就把当前线程里的taskId删掉，清理上下文状态
+        if (taskId == null || taskId.isBlank()) {
+            TASK_ID.remove();
+        } else {
+            // 非空，存入当前线程的ThreadLocal
+            TASK_ID.set(taskId);
+        }
+    }
+
+    public static String getTaskId() {
+        return TASK_ID.get();
+    }
+
+    /**
+     * Chat 后台任务注入：收到文案后调用 SseEmitterManager.sendProgress。
+     * 评测 / 同步 Workflow 不设置，record() 就不会发 SSE。
+     * 
+     * `Consumer<String>` 是一个回调函数，本质就是**进度推送的出口**
+     * 从 TraceContext 里面拿出来一个“东西”，把这个东西叫做 sink。 
+     * 用来给 ChatWorkflowTask 注入进度推送的回调器。
+     */
+    public static void setProgressSink(Consumer<String> sink) {
+        // 传空，就把当前线程里的progressSink删掉，清理上下文状态
+        if (sink == null) {
+            PROGRESS_SINK.remove();
+        } else {
+            // 非空，存入当前线程的ThreadLocal
+            PROGRESS_SINK.set(sink);
+        }
+    }
+
+    // 获取推送回调器，用于在TraceRecorder中调用
+    public static Consumer<String> getProgressSink() {
+        return PROGRESS_SINK.get();
     }
 
     public static void setModelUsed(String modelUsed) {
@@ -108,6 +154,8 @@ public final class TraceContext {
         MODEL_USED.remove();
         FALLBACK_TRIGGERED.remove();
         FALLBACK_REASON.remove();
+        TASK_ID.remove();
+        PROGRESS_SINK.remove();
         MDC.remove(TraceConstants.MDC_KEY);
     }
 

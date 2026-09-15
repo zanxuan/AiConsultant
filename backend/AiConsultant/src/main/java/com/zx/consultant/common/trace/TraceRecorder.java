@@ -21,12 +21,16 @@ public final class TraceRecorder {
      * @param action   实际执行逻辑
      */
     public static void record(String nodeName, Runnable action) {
+        // Chat SSE 链路才发 progress；失败不影响后续 Trace / Workflow
+        emitProgress(nodeName);
+
         String traceId = TraceContext.getTraceId();
         long start = System.currentTimeMillis();
 
         try {
             action.run();
             long end = System.currentTimeMillis();
+
             boolean llmSpan = TraceContext.getModelUsed() != null
                     || TraceContext.isFallbackTriggered()
                     || TraceContext.getFallbackReason() != null;
@@ -71,6 +75,45 @@ public final class TraceRecorder {
                     span.getModelUsed(), span.getFallbackTriggered());
             throw e;
         }
+    }
+
+    /**
+     * 有 taskId 时尽力推送 SSE progress；无 taskId（评测/同步）或发送失败都不打断主流程。
+     */
+    private static void emitProgress(String nodeName) {
+        String taskId = TraceContext.getTaskId();
+        if (taskId == null || taskId.isBlank()) {
+            return;
+        }
+        // 获取进度推送的接收器（就是前面说的ProgressPublisher/SSE发送器）
+        var sink = TraceContext.getProgressSink();
+        if (sink == null) {
+            return;
+        }
+        try {
+            // 组装进度消息，交给sink推送出去（SSE前端收到进度事件）
+            sink.accept(progressMessage(nodeName));
+            log.info("-------------------------------------------------------------------------------------------------------SSE progress 触发成功, taskId={}, nodeName={}", taskId, nodeName);
+        } catch (Exception e) {
+            log.warn("SSE progress 触发失败, taskId={}, nodeName={}", taskId, nodeName, e);
+        }
+    }
+
+    /** 文案按实际 TraceRecorder / node.getName() 映射，未知名称用通用提示。 */
+    private static String progressMessage(String nodeName) {
+        if (nodeName == null || nodeName.isBlank()) {
+            return "正在处理...";
+        }
+        return switch (nodeName) {
+            case "Memory Load" -> "正在读取对话上下文...";
+            case "Query Rewrite Node" -> "正在分析问题...";
+            case "Retrieve Node" -> "正在检索相关文档...";
+            case "Prompt Builder Node" -> "正在整理相关内容...";
+            case "LLM Generation Node" -> "正在生成回答...";
+            case "Citation Extraction Node" -> "正在整理引用...";
+            case "Memory Persist" -> "正在保存对话...";
+            default -> "正在处理：" + nodeName;
+        };
     }
 
     /** LLM 字段只落在产生它们的那个 Span 上，避免后续节点误继承 */

@@ -57,6 +57,8 @@ public class ChatWorkflowTask {
             BaseContext.setCurrentId(userId);
         }
         TraceContext.init(traceId);
+        TraceContext.setTaskId(taskId);
+        TraceContext.setProgressSink(message -> sseEmitterManager.sendProgress(taskId, message));
 
         try {
             log.info("后台任务开始, taskId={}, knowledgeId={}, traceId={}",

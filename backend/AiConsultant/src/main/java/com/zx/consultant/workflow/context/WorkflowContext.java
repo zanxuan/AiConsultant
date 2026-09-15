@@ -49,4 +49,9 @@ public class WorkflowContext {
      * 仅请求期内有效，不是对外 API。
      */
      private List<String> clarificationCandidates;
+
+     /**
+      * 任务 ID，用于唯一标识一个任务。
+      */
+     private  String taskId;
 }
