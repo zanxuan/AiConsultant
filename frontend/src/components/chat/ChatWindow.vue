@@ -45,7 +45,7 @@ const GUEST_ASSISTANT_TIP = '登录后解锁完整 AI 能力'
 const chatStore = useChatStore()
 const knowledgeStore = useKnowledgeStore()
 const userStore = useUserStore()
-const { send } = useChatStream()
+const { send, abort } = useChatStream()
 const { isLoggedIn, hasToken } = useAuth()
 
 const knowledgeId = ref<number | string | null>(knowledgeStore.currentId)
@@ -76,6 +76,7 @@ onMounted(() => {
 watch(knowledgeId, (id, prev) => {
   knowledgeStore.setCurrentId(id)
   if (prev != null && id !== prev) {
+    abort()
     clearGuestThink()
     chatStore.reset()
   }
@@ -105,6 +106,7 @@ function loadKnowledge() {
 }
 
 function onNewChat() {
+  abort()
   clearGuestThink()
   chatStore.reset()
   pendingMessage.value = null
@@ -118,19 +120,22 @@ async function onSend(message: string) {
       role: MessageRole.USER,
       content: message,
     })
-    // 与真实问答一致：先挂空助手消息显示 ...，短暂缓冲后再填内容
+    // 与真实问答一致：先挂 thinking 占位，短暂缓冲后再填登录引导
     clearGuestThink()
     chatStore.appendMessage({
       role: MessageRole.ASSISTANT,
       content: '',
+      status: 'thinking',
     })
     chatStore.isStreaming = true
     guestThinkTimer = setTimeout(() => {
       guestThinkTimer = null
       const last = chatStore.messages[chatStore.messages.length - 1]
-      if (last?.role === MessageRole.ASSISTANT && !last.content) {
+      if (last?.role === MessageRole.ASSISTANT && last.status === 'thinking') {
         last.content = GUEST_ASSISTANT_TIP
         last.showLoginLink = true
+        last.status = 'completed'
+        last.progress = undefined
       }
       chatStore.isStreaming = false
     }, 700)

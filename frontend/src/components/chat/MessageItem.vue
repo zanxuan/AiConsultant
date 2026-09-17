@@ -1,8 +1,21 @@
 <template>
-  <div class="message-item" :class="`message-item--${roleKey.toLowerCase()}`">
+  <div
+    class="message-item"
+    :class="[
+      `message-item--${roleKey.toLowerCase()}`,
+      { 'message-item--thinking': isThinking, 'message-item--error': isError },
+    ]"
+  >
     <div class="message-item__bubble">
+      <div v-if="isThinking" class="message-item__thinking">
+        <span class="message-item__spinner" aria-hidden="true" />
+        <span>{{ message.progress || '正在思考...' }}</span>
+      </div>
+      <div v-else-if="isError" class="message-item__content message-item__content--error">
+        {{ message.content || '问答失败' }}
+      </div>
       <div
-        v-if="isAssistant"
+        v-else-if="isAssistant"
         class="message-item__content message-item__content--md"
         v-html="renderedHtml"
       />
@@ -15,7 +28,7 @@
       >
         立即登录
       </a>
-      <SourcePanel v-if="message.sources?.length" :sources="message.sources" />
+      <SourcePanel v-if="!isThinking && message.sources?.length" :sources="message.sources" />
     </div>
   </div>
 </template>
@@ -39,6 +52,10 @@ const roleKey = computed(() => String(props.message.role || '').toUpperCase())
 const isAssistant = computed(
   () => roleKey.value === MessageRole.ASSISTANT || roleKey.value === MessageRole.SYSTEM,
 )
+
+const isThinking = computed(() => props.message.status === 'thinking')
+
+const isError = computed(() => props.message.status === 'error')
 
 const renderedHtml = computed(() => {
   const text = props.message.content
@@ -75,12 +92,42 @@ const renderedHtml = computed(() => {
     }
   }
 
+  &--thinking {
+    .message-item__bubble {
+      background: transparent;
+      padding: 4px 2px;
+      color: #64748b;
+    }
+  }
+
   &__bubble {
     max-width: min(100%, 92%);
     padding: 12px 14px;
     border-radius: 12px;
     line-height: 1.6;
     word-break: break-word;
+  }
+
+  &__thinking {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  &__spinner {
+    flex-shrink: 0;
+    width: 12px;
+    height: 12px;
+    border: 2px solid #cbd5e1;
+    border-top-color: #0f4c5c;
+    border-radius: 50%;
+    animation: message-item-spin 0.7s linear infinite;
+  }
+
+  &__content--error {
+    color: #b91c1c;
   }
 
   &__login-link {
@@ -210,6 +257,12 @@ const renderedHtml = computed(() => {
       max-width: 100%;
       border-radius: 6px;
     }
+  }
+}
+
+@keyframes message-item-spin {
+  to {
+    transform: rotate(360deg);
   }
 }
 </style>

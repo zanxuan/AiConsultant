@@ -27,9 +27,12 @@ public class ChatController {
 
     /**
      * 按 taskId 订阅 SSE。连接保持打开，直到后台推送 complete 或超时。
+     * Content-Type 头设置为 text/event-stream，这是 SSE 协议必须的响应头
      */
     @GetMapping(value = "/stream/{taskId}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter stream(@PathVariable String taskId) {
+        // 获取 SSE 连接，并返回给前端
         return chatService.stream(taskId);
     }
+   
 }

@@ -22,9 +22,9 @@ export const API = {
     REINDEX: (id: number | string) => `/documents/${id}/reindex`,
     STATUS: (id: number | string) => `/documents/${id}/status`,
   },
-  /** 聊天发送；后续 SSE 流式升级仍使用同一地址 */
   CHAT: {
     SEND: '/chat',
+    STREAM: (taskId: string) => `/chat/stream/${taskId}`,
   },
   /** 会话（对话历史） */
   HISTORY: {

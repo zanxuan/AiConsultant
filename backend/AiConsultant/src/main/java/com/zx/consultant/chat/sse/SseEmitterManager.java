@@ -48,15 +48,30 @@ public class SseEmitterManager {
     /**
      * 尽力推送 progress，不关闭连接。emitter 尚未建立时直接丢弃。
      */
+    // public void sendProgress(String taskId, String message) {
+    //     SseEmitter emitter = emitters.get(taskId);
+    //     if (emitter == null) {
+    //         return;
+    //     }
+    //     try {
+    //         emitter.send(SseEmitter.event()
+    //                 .name("progress")
+    //                 .data(message != null ? message : "", MediaType.TEXT_PLAIN));
+    //     } catch (Exception e) {
+    //         log.warn("SSE 推送 progress 失败, taskId={}", taskId, e);
+    //         remove(taskId);
+    //     }
+    // }
     public void sendProgress(String taskId, String message) {
         SseEmitter emitter = emitters.get(taskId);
         if (emitter == null) {
             return;
         }
+    
         try {
             emitter.send(SseEmitter.event()
                     .name("progress")
-                    .data(message != null ? message : "", MediaType.TEXT_PLAIN));
+                    .data(message != null ? message : ""));
         } catch (Exception e) {
             log.warn("SSE 推送 progress 失败, taskId={}", taskId, e);
             remove(taskId);
