@@ -1,5 +1,4 @@
 package com.zx.consultant.chat.service.Impl;
-
 import com.zx.consultant.chat.dto.ChatReq;
 import com.zx.consultant.chat.dto.ChatTaskResp;
 import com.zx.consultant.chat.entity.Conversation;
@@ -62,6 +61,8 @@ public class ChatServiceImpl implements ChatService {
         ChatTask task = chatTaskRegistry.create(req.getConversationId());
         Long userId = BaseContext.getCurrentId();
         String traceId = TraceContext.getTraceId();
+        // 在 HTTP ask 线程绑定，供 SSE 超时/断开时落库；不能依赖 stream() 或 @Async 的 ThreadLocal
+        sseEmitterManager.bindTraceId(task.getTaskId(), traceId);
         log.info("创建 Chat 任务并启动后台执行, taskId={}, knowledgeId={}",
                 task.getTaskId(), conversation.getKnowledgeId());
         chatWorkflowTask.run(task.getTaskId(), req, conversation.getKnowledgeId(), userId, traceId);
@@ -85,10 +86,12 @@ public class ChatServiceImpl implements ChatService {
         synchronized (task) {
             // 注册SseEmitter，保存到管理器，后续后台线程通过这个emitter推消息
             SseEmitter emitter = sseEmitterManager.register(taskId);
-            // 如果后台已完成，立即补推 complete + ChatResp
+            // 如果后台已完成 / 已失败，立即补推，避免前端空等
             if (task.getResult() != null) {
                 sseEmitterManager.sendComplete(taskId, task.getResult());
-                // 移除任务
+                chatTaskRegistry.remove(taskId);
+            } else if (task.getErrorMessage() != null) {
+                sseEmitterManager.sendError(taskId, task.getErrorMessage());
                 chatTaskRegistry.remove(taskId);
             }
             return emitter;

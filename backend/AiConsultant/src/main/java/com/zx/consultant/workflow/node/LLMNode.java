@@ -1,7 +1,9 @@
 package com.zx.consultant.workflow.node;
 
+import com.zx.consultant.common.trace.TraceContext;
 import com.zx.consultant.llm.entity.PromptRequest;
 import com.zx.consultant.llm.service.LLMService;
+import com.zx.consultant.llm.service.LlmStreamCollector;
 import com.zx.consultant.workflow.context.WorkflowContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.annotation.Order;
@@ -37,9 +39,14 @@ public class LLMNode implements WorkflowNode {
 
         log.info("正在调用 LLMService 生成回答...");
 
-        // 2. 调用 LLM 获取答案 (直接传入结构化对象)
-        // 注：这里以非流式回答为例。流式请求可在此处调用 streamGenerateAnswer，并由 Controller 处理 SSE 响应
-        String answer = llmService.generateAnswer(promptRequest);
+        // Chat 后台任务才走流式；评测 / 同步 Workflow 仍用非流式（含主副模型降级）
+        String answer;
+        if (isChatStreamTask()) {
+            answer = LlmStreamCollector.collect(
+                    llmService, promptRequest, TraceContext.getAnswerSink());
+        } else {
+            answer = llmService.generateAnswer(promptRequest);
+        }
 
         // 3. 将生成的答案回写到上下文
         context.setLlmResponse(answer); // 保存原始回答（可能含 cite 标记），供 CitationNode 提取引用
@@ -51,5 +58,11 @@ public class LLMNode implements WorkflowNode {
     @Override
     public String getName() {
         return "LLM Generation Node";
+    }
+
+    /** ChatWorkflowTask 会写入 taskId；无 taskId 时不推 SSE、不占用流式通道 */
+    private boolean isChatStreamTask() {
+        String taskId = TraceContext.getTaskId();
+        return taskId != null && !taskId.isBlank();
     }
 }

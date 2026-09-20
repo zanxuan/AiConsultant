@@ -103,6 +103,15 @@ export function useChatStream() {
         onProgress(message) {
           patchLastAssistant(ac, { progress: toThinkingLabel(message) })
         },
+        onAnswer(chunk) {
+          if (!chunk) return
+          chatStore.appendAssistantChunk(chunk)
+          // MessageItem 在 thinking 时只展示 progress，必须离开 thinking 才能渲染正文
+          patchLastAssistant(ac, {
+            status: undefined,
+            progress: undefined,
+          })
+        },
         onComplete(payload) {
           patchLastAssistant(ac, {
             content: payload.answer || '',

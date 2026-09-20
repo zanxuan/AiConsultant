@@ -8,6 +8,7 @@ import com.zx.consultant.chat.service.CasualChatService;
 import com.zx.consultant.workflow.context.WorkflowContext;
 import lombok.extern.slf4j.Slf4j;
 import com.zx.consultant.llm.service.LLMService;
+import com.zx.consultant.llm.service.LlmStreamCollector;
 import com.zx.consultant.memory.service.MemoryService;
 import com.zx.consultant.common.trace.TraceRecorder;
 import com.zx.consultant.trace.service.TraceService;
@@ -64,8 +65,9 @@ public class CasualChatServiceImpl implements CasualChatService{
             PromptRequest promptRequest = promptService.buildChatPrompt(originalQuery, memory);
             context.setPrompt(promptRequest);
 
-            // 走已有 LLM 降级逻辑，不直接创建底层模型
-            String answer = llmService.generateAnswer(promptRequest);
+            // 闲聊只从 Chat 编排进入：流式推 SSE answer，block 直到完整文本拼好再写 Memory
+            String answer = LlmStreamCollector.collect(
+                    llmService, promptRequest, TraceContext.getAnswerSink());
             context.setLlmResponse(answer);
             context.setFinalAnswer(answer);
 

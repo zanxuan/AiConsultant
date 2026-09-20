@@ -19,7 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Sinks;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -138,41 +138,49 @@ public class LLMServiceImpl implements LLMService {
     }
 
     /**
-     * 流式输出（对接前端SSE，适配聊天打字机效果）
+     * 流式输出（对接前端 SSE 打字机效果）。
+     * streamingChatModel 与主模型同为 qwen-plus；当前没有流式副模型，失败不 fallback。
+     * subscribeOn 弹性线程：chat() 可能阻塞读上游 SSE，不能占着 Chat 后台线程。
      */
     @Override
     public Flux<String> streamGenerateAnswer(PromptRequest promptRequest) {
-        Sinks.Many<String> sink = Sinks.many().multicast().onBackpressureBuffer();
-        
-        try {
-            // 组装结构化消息
-            List<ChatMessage> messages = buildChatMessages(promptRequest);
+        TraceContext.setModelUsed(primaryModelName);
+        TraceContext.setFallbackTriggered(false);
+        TraceContext.setFallbackReason(null);
 
-            // 构建 ChatRequest
-            ChatRequest chatRequest = ChatRequest.builder()
-                    .messages(messages)
-                    .build();
+        return Flux.<String>create(emitter -> {
+            try {
+                List<ChatMessage> messages = buildChatMessages(promptRequest);
+                ChatRequest chatRequest = ChatRequest.builder()
+                        .messages(messages)
+                        .build();
 
-            // 传入 chatRequest 开启流式调用
-            streamingChatModel.chat(chatRequest, new StreamingChatResponseHandler() {
-                @Override
-                public void onPartialResponse(String partialResponse) {
-                    sink.tryEmitNext(partialResponse);
-                }
-                @Override
-                public void onCompleteResponse(ChatResponse completeResponse) {
-                    sink.tryEmitComplete();
-                }
-                @Override
-                public void onError(Throwable error) {
-                    sink.tryEmitError(new LLMException("流式调用失败", error));
-                }
-            });
-        } catch (Exception e) {
-            // 捕获组装阶段可能发生的异常
-            sink.tryEmitError(new LLMException("构建流式请求失败: " + e.getMessage(), e));
-        }
-        
-        return sink.asFlux();
+                streamingChatModel.chat(chatRequest, new StreamingChatResponseHandler() {
+                    @Override
+                    public void onPartialResponse(String partialResponse) {
+                        if (emitter.isCancelled() || partialResponse == null || partialResponse.isEmpty()) {
+                            return;
+                        }
+                        emitter.next(partialResponse);
+                    }
+
+                    @Override
+                    public void onCompleteResponse(ChatResponse completeResponse) {
+                        if (!emitter.isCancelled()) {
+                            emitter.complete();
+                        }
+                    }
+
+                    @Override
+                    public void onError(Throwable error) {
+                        if (!emitter.isCancelled()) {
+                            emitter.error(new LLMException("流式调用失败", error));
+                        }
+                    }
+                });
+            } catch (Exception e) {
+                emitter.error(new LLMException("构建流式请求失败: " + e.getMessage(), e));
+            }
+        }).subscribeOn(Schedulers.boundedElastic());
     }
 }

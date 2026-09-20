@@ -72,12 +72,27 @@ function splitSseField(line: string): { field: string; value: string } | null {
 }
 
 /**
- * 按 SSE 规范拆 event/data；一块 buffer 里可能有多条事件，且事件可能被拆到多次 read。
+ * Spring SseEmitter 可能把纯字符串编成 JSON（带外层引号）。
+ * answer 片段不能 trim 掉有效空白，只在整体是 JSON 字符串时解开。
  */
+function asSseDataString(raw: string): string {
+  if (!raw) return raw
+  const trimmed = raw.trim()
+  if (!trimmed.startsWith('"')) return raw
+  try {
+    const parsed = parseJsonSafe(trimmed)
+    return typeof parsed === 'string' ? parsed : raw
+  } catch {
+    return raw
+  }
+}
+
+/** 按 SSE 规范拆 event/data；一块 buffer 里可能有多条事件。 */
 function consumeSseBlock(
   block: string,
   handlers: {
     onProgress?: (message: string) => void
+    onAnswer?: (chunk: string) => void
     onComplete: (data: ChatCompleteResult) => void
   },
 ): 'complete' | 'continue' {
@@ -99,6 +114,11 @@ function consumeSseBlock(
     return 'continue'
   }
 
+  if (eventName === 'answer') {
+    handlers.onAnswer?.(asSseDataString(data))
+    return 'continue'
+  }
+
   if (eventName === 'complete') {
     let payload: ChatCompleteResult
     try {
@@ -112,7 +132,7 @@ function consumeSseBlock(
   }
 
   if (eventName === 'error') {
-    const message = data || '问答失败'
+    const message = asSseDataString(data) || '问答失败'
     ElMessage.error(message)
     throw new Error(message)
   }
@@ -128,6 +148,7 @@ export async function consumeChatSse(
   taskId: string,
   handlers: {
     onProgress?: (message: string) => void
+    onAnswer?: (chunk: string) => void
     onComplete: (data: ChatCompleteResult) => void
     signal?: AbortSignal
   },

@@ -29,6 +29,8 @@ public final class TraceContext {
     private static final ThreadLocal<String> TASK_ID = new ThreadLocal<>();
     /** 把 progress 文案交给 Chat 层 SseEmitterManager；TraceRecorder 不持有 emitter */
     private static final ThreadLocal<Consumer<String>> PROGRESS_SINK = new ThreadLocal<>();
+    /** 把 LLM 回答片段交给 Chat 层 SseEmitterManager；与 progress 一样不持有 emitter */
+    private static final ThreadLocal<Consumer<String>> ANSWER_SINK = new ThreadLocal<>();
 
 
 
@@ -52,6 +54,7 @@ public final class TraceContext {
         FALLBACK_REASON.remove();
         TASK_ID.remove();
         PROGRESS_SINK.remove();
+        ANSWER_SINK.remove();
         //MDC 是专门给日志系统用的 ThreadLocal，把 traceId 写入 MDC，方便后续日志打印时带上 traceId
         MDC.put(TraceConstants.MDC_KEY, traceId);
         return traceId;
@@ -92,6 +95,22 @@ public final class TraceContext {
     // 获取推送回调器，用于在TraceRecorder中调用
     public static Consumer<String> getProgressSink() {
         return PROGRESS_SINK.get();
+    }
+
+    /**
+     * Chat 后台任务注入：收到 LLM partialResponse 后调用 SseEmitterManager.sendAnswer。
+     * 评测 / 同步 Workflow 不设置，流式收集时就不会发 SSE。
+     */
+    public static void setAnswerSink(Consumer<String> sink) {
+        if (sink == null) {
+            ANSWER_SINK.remove();
+        } else {
+            ANSWER_SINK.set(sink);
+        }
+    }
+
+    public static Consumer<String> getAnswerSink() {
+        return ANSWER_SINK.get();
     }
 
     public static void setModelUsed(String modelUsed) {
@@ -156,6 +175,7 @@ public final class TraceContext {
         FALLBACK_REASON.remove();
         TASK_ID.remove();
         PROGRESS_SINK.remove();
+        ANSWER_SINK.remove();
         MDC.remove(TraceConstants.MDC_KEY);
     }
 

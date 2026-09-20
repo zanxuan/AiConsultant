@@ -78,6 +78,24 @@ public final class TraceRecorder {
     }
 
     /**
+     * 构造通信层 FAILED Span，不执行业务、不抛异常、不写入 TraceContext。
+     * 供 SSE 等通道失败单独落库，避免打断 Chat / RAG / LLM。
+     */
+    public static NodeSpan failedSpan(String traceId, String nodeName, String errorMessage, long costMs) {
+        long end = System.currentTimeMillis();
+        long cost = Math.max(0L, costMs);
+        return NodeSpan.builder()
+                .nodeName(nodeName)
+                .traceId(traceId)
+                .startTime(end - cost)
+                .endTime(end)
+                .costMs(cost)
+                .status(NodeStatus.FAILED)
+                .errorMessage(errorMessage)
+                .build();
+    }
+
+    /**
      * 有 taskId 时尽力推送 SSE progress；无 taskId（评测/同步）或发送失败都不打断主流程。
      */
     private static void emitProgress(String nodeName) {

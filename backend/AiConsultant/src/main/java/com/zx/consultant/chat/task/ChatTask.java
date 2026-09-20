@@ -16,4 +16,8 @@ public class ChatTask {
      * SSE 可能晚于 Workflow 建立连接，先存在这里再补推。
      */
     private ChatResp result;
+    /**
+     * 后台失败时缓冲的错误文案。与 result 互斥，供晚到的 SSE 补推 error。
+     */
+    private String errorMessage;
 }
