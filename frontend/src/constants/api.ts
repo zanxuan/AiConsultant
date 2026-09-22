@@ -27,6 +27,10 @@ export const API = {
     STREAM: (taskId: string) => `/chat/stream/${taskId}`,
   },
   /** 会话（对话历史） */
+  EVAL: {
+    DATASET: '/eval/dataset',
+    RUN: '/eval/run',
+  },
   HISTORY: {
     LIST: '/conversations',
     CREATE: '/conversations',

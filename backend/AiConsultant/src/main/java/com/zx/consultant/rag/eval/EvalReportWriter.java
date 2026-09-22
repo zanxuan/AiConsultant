@@ -35,6 +35,8 @@ public class EvalReportWriter {
             sb.append("Hit Rate@5: ").append(formatPercent(result.getHitRate())).append("\n\n");
             sb.append("Recall@5: ").append(formatPercent(result.getRecall())).append("\n\n");
             sb.append("MRR: ").append(String.format("%.2f", result.getMrr())).append("\n\n");
+            sb.append("Avg Latency: ").append(formatLatencyMs(result.getAvgLatencyMs())).append("\n\n");
+            sb.append("P95 Latency: ").append(formatLatencyMs(result.getP95LatencyMs())).append("\n\n");
             sb.append("---\n\n");
             sb.append("# Failed Cases\n\n");
 
@@ -62,6 +64,8 @@ public class EvalReportWriter {
                     } else {
                         sb.append(String.format("%.2f", item.getTopScore())).append("\n\n");
                     }
+                    sb.append("### Retrieve Latency\n\n");
+                    sb.append(formatLatencyMs(item.getLatencyMs())).append("\n\n");
                     sb.append("---\n\n");
                 }
             }
@@ -110,6 +114,13 @@ public class EvalReportWriter {
 
     private String formatPercent(double ratio) {
         return Math.round(ratio * 100) + "%";
+    }
+
+    private static String formatLatencyMs(Long latencyMs) {
+        if (latencyMs == null) {
+            return "N/A";
+        }
+        return latencyMs + " ms";
     }
 
     private Path resolveOutputPath() {

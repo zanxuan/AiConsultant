@@ -44,6 +44,7 @@ import {
   ChatDotRound,
   Collection,
   Document,
+  DataAnalysis,
   Clock,
   User,
 } from '@element-plus/icons-vue'
@@ -56,6 +57,7 @@ const menus = [
   { path: '/chat', title: 'AI 聊天', icon: ChatDotRound },
   { path: '/knowledge', title: '知识库', icon: Collection },
   { path: '/document', title: '文档管理', icon: Document },
+  { path: '/eval', title: 'RAG 评测', icon: DataAnalysis },
   { path: '/history', title: '对话历史', icon: Clock },
   { path: '/profile', title: '用户信息', icon: User },
 ]

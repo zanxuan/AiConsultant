@@ -46,6 +46,12 @@ export const routes: RouteRecordRaw[] = [
         meta: { title: '文档管理', requiresAuth: false },
       },
       {
+        path: 'eval',
+        name: 'eval',
+        component: () => import('@/views/eval/index.vue'),
+        meta: { title: 'RAG 评测', requiresAuth: true },
+      },
+      {
         path: 'history',
         name: 'history',
         component: () => import('@/views/history/index.vue'),

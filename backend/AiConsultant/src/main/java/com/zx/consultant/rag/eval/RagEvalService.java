@@ -3,6 +3,7 @@ package com.zx.consultant.rag.eval;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -37,6 +38,26 @@ public class RagEvalService {
     private String goldenSetPath;
 
     /**
+     * 供 HTTP 入口写入评测知识库 ID，对应配置 app.rag.eval.knowledge-id。
+     * 不改变 evaluate() 的计算逻辑。
+     */
+    public void setKnowledgeId(Long knowledgeId) {
+        this.knowledgeId = knowledgeId;
+    }
+
+    /**
+     * 只读加载当前 golden-set，不执行检索或指标计算。
+     */
+    public EvalDataset loadDataset() {
+        File goldenFile = resolveGoldenSetFile();
+        List<EvalCase> cases = loadGoldenSet(goldenFile);
+        EvalDataset dataset = new EvalDataset();
+        dataset.setName(goldenFile.getName());
+        dataset.setCases(cases);
+        return dataset;
+    }
+
+    /**
      * 评估
      * @return 评估结果
      */
@@ -56,14 +77,21 @@ public class RagEvalService {
         double recallSum = 0.0;
         double mrrSum = 0.0;
         List<FailedCase> failedCases = new ArrayList<>();
+        List<EvalCaseResult> caseResults = new ArrayList<>();
+        List<Long> retrieveLatenciesMs = new ArrayList<>();
 
         // 遍历黄金集
         for (EvalCase evalCase : goldenSet) {
             String query = evalCase.getQuery();
+            long retrieveStartNs = System.nanoTime();
             List<RetrievedChunk> chunks = hybridRetriever.retrieve(query, knowledgeId);
+            long latencyMs = (System.nanoTime() - retrieveStartNs) / 1_000_000L;
+            retrieveLatenciesMs.add(latencyMs);
             List<String> retrievedDocIds = toRetrievedDocIds(chunks, TOP_K);
 
             boolean hit = isHit(retrievedDocIds, evalCase.getExpectedDocIds());
+            double caseRecall = hit ? 1.0 : 0.0;
+            double caseMrr = reciprocalRank(retrievedDocIds, evalCase.getExpectedDocIds());
             if (hit) {
                 hitCount++;
             } else {
@@ -73,10 +101,23 @@ public class RagEvalService {
                 failed.setExpectedDocIds(evalCase.getExpectedDocIds());
                 failed.setRetrievedDocIds(retrievedDocIds);
                 failed.setTopScore(topScore(chunks));
+                failed.setLatencyMs(latencyMs);
                 failedCases.add(failed);
             }
-            recallSum += hit ? 1.0 : 0.0;
-            mrrSum += reciprocalRank(retrievedDocIds, evalCase.getExpectedDocIds());
+            recallSum += caseRecall;
+            mrrSum += caseMrr;
+
+            EvalCaseResult caseResult = new EvalCaseResult();
+            caseResult.setId(evalCase.getId());
+            caseResult.setQuery(query);
+            caseResult.setExpectedDocIds(evalCase.getExpectedDocIds());
+            caseResult.setRetrievedDocIds(retrievedDocIds);
+            caseResult.setTopScore(topScore(chunks));
+            caseResult.setLatencyMs(latencyMs);
+            caseResult.setHit(hit);
+            caseResult.setRecall(caseRecall);
+            caseResult.setMrr(caseMrr);
+            caseResults.add(caseResult);
         }
 
         // 计算评估结果
@@ -87,6 +128,9 @@ public class RagEvalService {
         result.setRecall(recallSum / total);
         result.setMrr(mrrSum / total);
         result.setFailedCases(failedCases);
+        result.setCases(caseResults);
+        result.setAvgLatencyMs(averageLatencyMs(retrieveLatenciesMs));
+        result.setP95LatencyMs(p95LatencyMs(retrieveLatenciesMs));
 
         // 打印报告
         printReport(goldenFile.getName(), result);
@@ -214,6 +258,8 @@ public class RagEvalService {
                 Hit Rate:   %s
                 Recall@5:   %s
                 MRR:        %.2f
+                Avg Latency:%s
+                P95 Latency:%s
                 Failed:     %d
                 ==================================
                 """.formatted(
@@ -222,6 +268,8 @@ public class RagEvalService {
                 formatPercent(result.getHitRate()),
                 formatPercent(result.getRecall()),
                 result.getMrr(),
+                formatLatencyMs(result.getAvgLatencyMs()),
+                formatLatencyMs(result.getP95LatencyMs()),
                 result.getFailedCases() == null ? 0 : result.getFailedCases().size());
         System.out.print(report);
     }
@@ -233,5 +281,49 @@ public class RagEvalService {
      */
     private String formatPercent(double ratio) {
         return Math.round(ratio * 100) + "%";
+    }
+
+    private static String formatLatencyMs(Long latencyMs) {
+        if (latencyMs == null) {
+            return "N/A";
+        }
+        return latencyMs + " ms";
+    }
+
+    /**
+     * 检索耗时算术平均，四舍五入为毫秒；空列表返回 null，避免除零。
+     */
+    Long averageLatencyMs(List<Long> latenciesMs) {
+        if (latenciesMs == null || latenciesMs.isEmpty()) {
+            return null;
+        }
+        long sum = 0L;
+        for (Long latency : latenciesMs) {
+            sum += latency == null ? 0L : latency;
+        }
+        return Math.round(sum / (double) latenciesMs.size());
+    }
+
+    /**
+     * P95：升序后取 ceil(0.95 * n) 名（1-based），再转 0-based 下标。
+     * 空列表返回 null；下标夹在 [0, n-1]，避免越界。
+     */
+    Long p95LatencyMs(List<Long> latenciesMs) {
+        if (latenciesMs == null || latenciesMs.isEmpty()) {
+            return null;
+        }
+        List<Long> sorted = new ArrayList<>(latenciesMs.size());
+        for (Long latency : latenciesMs) {
+            sorted.add(latency == null ? 0L : latency);
+        }
+        Collections.sort(sorted);
+        int n = sorted.size();
+        int index = (int) Math.ceil(0.95d * n) - 1;
+        if (index < 0) {
+            index = 0;
+        } else if (index >= n) {
+            index = n - 1;
+        }
+        return sorted.get(index);
     }
 }
