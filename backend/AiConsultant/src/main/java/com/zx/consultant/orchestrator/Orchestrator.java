@@ -192,6 +192,7 @@ public class Orchestrator {
         }
         return input;
     }
+
     /** 恢复任务时拼接原始请求与澄清回答，Memory 也使用该关联文本，而不是只存文件名。 */
     private static String reconstructQuery(String originalQuery, String clarificationAnswer) {
         String original = originalQuery == null ? "" : originalQuery.trim();
@@ -205,10 +206,6 @@ public class Orchestrator {
         return original + " " + answer;
     }
     
-
-
-    
-
 
 
     /**

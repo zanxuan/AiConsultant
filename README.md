@@ -1,18 +1,11 @@
 # AI Enterprise Knowledge Platform
 
-基于 RAG + Workflow 架构的企业级知识助手平台。
+基于 **RAG + Workflow + Intent Orchestration** 架构的企业级 AI 知识助手平台。
 
-面向企业内部技术文档、Wiki、接口文档等知识管理场景，
-实现从文档解析、向量检索、上下文管理到大模型生成的完整 AI 应用链路。
+面向企业内部技术文档、Wiki、接口文档等知识管理场景，构建从**文档解析 → 知识检索 → 多轮上下文管理 → 大模型生成 → 来源追踪 → 链路观测 → 检索评测**的完整 AI 应用链路。
 
-核心能力：
+项目当前重点围绕 RAG 应用工程化展开，并进一步加入 Intent Orchestration、异步任务、SSE 流式交互、Summary / Clarification、Trace 与 Evaluation 等能力。
 
-- RAG 知识增强问答
-- Workflow 流程编排
-- 多轮上下文 Memory
-- Citation 来源追踪
-- Trace 链路观测
-- LLM Fallback 降级
 ---
 
 ## 🌐 Online Demo
@@ -25,45 +18,47 @@
 
 由于系统依赖第三方 LLM API 服务，Demo 暂未开放公开注册。
 
-Demo 体验账号：grest01    / Demo 密码：46r567656757fg7tf6g7g676f6f7
+Demo 体验账号：grest01  / Demo 密码：46r567656757fg7tf6g7g676f6f7
 
 ---
 
 ## 📖 项目介绍
 
-在企业研发过程中，大量技术文档、接口文档、Wiki 等知识分散存储，传统关键词搜索难以理解用户语义，导致研发人员需要在大量文档中反复查找。
+在企业研发过程中，大量技术文档、接口文档、Wiki 等知识分散存储，传统关键词搜索难以理解用户真实语义。本项目面向企业内部知识管理场景，构建了一套基于 **RAG（Retrieval-Augmented Generation）** 的 AI 知识助手系统。
 
-本项目面向企业内部知识管理场景，构建了一套基于 RAG（Retrieval-Augmented Generation，检索增强生成）的 AI 知识助手系统。
+系统在请求入口增加 **Intent Orchestrator**，根据用户请求选择不同业务链路：
 
-用户可以上传企业文档，系统经过：
-
+```text
+User Query
+    │
+    ▼
+Intent Orchestrator
+    │
+    ├───────────────┬────────────────┐
+    ▼               ▼                ▼
+ RAG_QA          SUMMARY           CHAT
+    │               │                │
+    ▼               ▼                ▼
+RAG Workflow   Summary Service  CasualChatService
 ```
-文档解析
-↓
-文本分块
-↓
-Embedding向量化
-↓
-知识库存储
-↓
-语义检索
-↓
-LLM生成回答
-```
+
+其中 `SUMMARY` 支持单文档总结与整库总结；单文档目标不明确时，通过 Clarification / PendingTask 等待用户补充信息后继续执行。
+
+RAG_QA 基于 **Memory + Query Rewrite + Hybrid Retrieval + RRF + Citation** 完成知识增强问答。
 
 ---
 
 ## ⭐ 项目亮点
 
-- 基于 RAG + Workflow 构建企业知识问答链路，实现从文档解析、检索增强到 LLM 生成的完整 AI Pipeline
-- 基于 Redis Stack + RediSearch Vector 实现向量检索，并结合 Metadata Filter 实现知识库级别的数据隔离
-- 设计 WorkflowContext 管理 Query Rewrite、Memory、Retrieval、Generation 等节点状态，降低多节点流程耦合
-- 实现 Citation 来源追踪，提高生成结果可解释性
-- 实现 Trace 链路追踪、RAG Evaluation、LLM Fallback，提高系统可观测性与稳定性
+- 基于 Intent Orchestration 实现请求意图识别与任务分发，将用户请求路由至 RAG_QA、SUMMARY、CHAT 等不同业务链路，避免无关请求进入 RAG 流程
+- 基于 PendingTask 管理需要用户进一步指定目标的任务状态，支持多轮交互后继续执行；澄清回复会先判断是回答澄清还是换了新问题，知识库换绑后旧的 PendingTask 会作废
+- 实现 Vector Retrieval + BM25 + RRF 的 Hybrid Retrieval，两路检索均基于 knowledgeId 进行 Metadata Filter，实现知识库范围隔离
+- Vector Retrieval 用于语义匹配，BM25 补充技术术语与精确关键词场景，并通过 RRF 融合检索结果
+- 实现 RAG Early Stop，在无召回结果时提前结束流程，避免无效调用 LLM；低分结果 Early Stop 逻辑已保留但当前未启用
 
 ---
 
-## ✨ 核心功能 (V1 已完成)
+## ✨ 核心功能 (V2.1 已完成)
 
 ### 🖥️ 前端交互
 
@@ -71,76 +66,127 @@ LLM生成回答
 - 知识库管理界面
 - 文档上传交互
 - AI 对话页面
-- Markdown回答渲染
-- Citation引用展示
+- Markdown 回答渲染
+- Citation 引用展示
+- RAG Evaluation 评测页面
+- 对话历史
+- 用户信息
+- 登录弹窗
+
+
 
 ### 📄 文档与知识库管理
 
 - 知识库创建与管理
 - 企业文档上传
 - PDF / Markdown / TXT 文档解析
-- 文档自动分块 Chunking
 - 文档 Embedding 向量化并写入 Redis Vector Store
+- 文档处理状态跟踪
+- 文档删除时同步清理数据库、向量索引与本地文件
+- 文档自动分块 Chunking：按页递归切分（约 500 字符、50 重叠），页码会进入 metadata，供引用使用；当前 token_size 记的是字符数
+
+
 
 ### 🔍 RAG 检索链路
 
-- Embedding 向量生成
-- Redis Vector 向量数据库存储
-- 基于语义相似度的知识检索
-- Metadata Filter 精确过滤
+- Query Rewrite 优化用户查询
+- Vector Retrieval + BM25 Retrieval 实现混合检索；BM25 复用向量入库时的 RediSearch TEXT 字段
+- Metadata Filter 基于 `knowledgeId` 限制检索范围
+- RRF 融合两路检索结果
+- 无召回结果时触发 Early Stop，避免无效 LLM 调用
+- Prompt Construction 组装检索上下文并进行 LLM Generation
+- Citation 追踪生成结果对应的知识来源
+
+
 
 ### 💬 智能问答
 
+- Intent Recognition 意图识别
 - Query Rewrite 查询重写
 - 多轮对话上下文 Memory
 - 基于知识库增强回答
+- Hybrid Retrieval 混合检索
 - Citation 引用来源返回
+- 异步任务处理
+- SSE 流式输出
+- Summary 文档 / 知识库总结
+- Clarification 澄清与 PendingTask 任务管理
+
+
 
 ### 🔐 基础系统能力
 
 - 用户认证
+- JWT 鉴权
 - REST API 接口设计
 - 模块化业务架构
 
 ---
 
+
+
 ## 🏗️ 系统架构
 
+```text
+                           User
+                            │
+                           Vue3
+                            │
+                    Spring Boot API
+                            │
+                   Intent Orchestrator
+                            │
+             ┌──────────────┼──────────────┐
+             ▼              ▼              ▼
+          RAG_QA         SUMMARY          CHAT
+             │              │              │
+             ▼              ▼              ▼
+       RAG Workflow   Summary Service  CasualChatService
+             │
+     ┌───────┼────────┬────────┬──────────┐
+     ▼       ▼        ▼        ▼          ▼
+   Rewrite Retrieve  Prompt    LLM      Citation
+    Node     Node     Node     Node       Node
+              │                 │
+         ┌────┴────┐            │
+         ▼         ▼            ▼
+       Vector     BM25         LLM
+      Retrieval Retrieval       │
+         │         │            │
+         └────┬────┘            │
+              ▼                 ▼
+          RRF Fusion       Trace System
+                              │
+                        （贯穿全链路）
 ```
-                    User
-                     |
-                    Vue3
-                     |
-             Spring Boot API
-                     |
-             Workflow Engine
-                     |
-   +-----------------+----------------+
-   |                 |                |
-Memory Node     Retrieval Node    Generate Node
-   |                 |                |
- Redis          Vector Store        LLM
-                     |
-                 Citation
-                     
-        Trace System (贯穿全链路)
-```
+
+RAG Workflow 实际包含 `Rewrite Node`、`Retrieve Node`、`Prompt Node`、`LLM Generation Node`、`Citation Node` 五个节点。Memory 在 Workflow 前后分别进行 Load / Persist，不作为 Workflow Node。
 
 ---
 
 ## 📄 文档处理流程
 
-```
+```text
 用户上传文档
- ↓
+
+↓
+
 Document Parser (PDF / Markdown / TXT)
- ↓
+
+↓
+
 Chunk Service (文本分块)
- ↓
+
+↓
+
 Embedding Model
- ↓
+
+↓
+
 Redis Vector Store
- ↓
+
+↓
+
 企业知识库
 ```
 
@@ -148,17 +194,21 @@ Redis Vector Store
 
 ## 🎬 系统展示
 
+
+
 ### AI问答
 
-![AI问答](docs/images/chat.png)
+AI问答
 
 ### 知识库管理
 
-![知识库管理](docs/images/knowledge.png)
+知识库管理
 
 ### 文档管理
 
-![文档管理](docs/images/upload.png)
+文档管理
+
+---
 
 ## 🛠️ 技术栈
 
@@ -167,34 +217,25 @@ Redis Vector Store
 | ----------- | ------------------------ |
 | 前端框架        | Vue3                     |
 | 构建工具        | Vite                     |
+| 开发语言        | TypeScript               |
 | UI组件        | Element Plus             |
+| 状态管理        | Pinia                    |
+| 路由          | Vue Router               |
 | HTTP请求      | Axios                    |
-| 后端框架        | Spring Boot              |
+| 后端框架        | Spring Boot 3            |
 | 开发语言        | Java 17                  |
 | ORM框架       | MyBatis Plus             |
 | AI框架        | LangChain4j              |
-| 大语言模型       | Qwen                     |
+| 大语言模型       | DashScope 兼容接口 / Qwen    |
+| Chat模型      | qwen-plus / qwen-turbo   |
 | Embedding模型 | text-embedding-v3        |
 | 数据库         | MySQL                    |
 | 缓存          | Redis                    |
 | 向量检索        | Redis Stack + RediSearch |
 | API测试       | Postman                  |
+| API文档       | SpringDoc                |
+| 鉴权          | JWT                      |
 
-
----
-
-## 📊 Project Statistics
-
-- Backend: Spring Boot 3 + Java 17
-- Frontend: Vue3 + TypeScript
-- AI Pipeline: RAG + Workflow
-- Storage: MySQL + Redis Stack
-- Deployment: Cloud Server + Docker
-- Modules: 10+
-- Supported Documents:
-  - PDF
-  - Markdown
-  - TXT
 
 ---
 
@@ -209,6 +250,7 @@ Redis Vector Store
 
 ```text
 AI-Enterprise-Knowledge-Platform
+
 ├── backend
 │   └── AiConsultant
 │       ├── common
@@ -217,14 +259,24 @@ AI-Enterprise-Knowledge-Platform
 │       ├── knowledge
 │       ├── llm
 │       ├── memory
+│       ├── orchestrator
+│       ├── pending
 │       ├── rag
+│       ├── summary
+│       ├── trace
+│       ├── user
 │       └── workflow
 │
 ├── frontend
 │   ├── views
 │   ├── components
 │   ├── api
-│   └── stores
+│   ├── stores
+│   ├── router
+│   ├── layouts
+│   ├── composables
+│   ├── types
+│   └── utils
 │
 ├── docs
 └── README.md
@@ -234,33 +286,47 @@ AI-Enterprise-Knowledge-Platform
 
 ## 🧩 Engineering Challenges
 
+
+
 ### 1. 多节点流程参数管理
 
 **问题**：
-RAG流程包含：Query Rewrite、Memory、Retrieval、Generation 多个节点，节点之间需要共享流转数据。
+
+RAG 流程包含 Query Rewrite、Memory、Retrieval、Generation 等多个处理阶段，需要在不同节点之间共享流转数据。
 
 **方案**：
+
 设计 `WorkflowContext` 上下文对象，统一承载全流程流转数据。
 
-```
+```text
 WorkflowContext
-- query
-- rewriteQuery
-- history
-- documents
-- traceId
-- response
+
+- originalQuery
+- rewrittenQuery
+- memory
+- retrievedDocuments
+- finalAnswer
+- knowledgeId
+- intent
+- citations
+- earlyStop
+- needsClarification
+- taskId
 ```
+
+---
 
 ### 2. LLM 稳定性
 
 **问题**：
+
 调用第三方大模型服务，存在超时、限流、报错等服务失败风险。
 
 **方案**：
-实现主模型+降级模型的容错链路，失败自动重试，重试失败切换兜底模型，同时记录降级链路 Trace 用于问题排查。
 
-```
+非流式 `generateAnswer` 实现主模型重试与兜底模型机制。主模型 `qwen-plus` 共调用 2 次（首次调用 + 1 次重试），两次均失败后切换默认 `qwen-turbo`，同时记录 Trace 用于问题排查。
+
+```text
 Primary Model
       |
 失败重试
@@ -268,19 +334,31 @@ Primary Model
 Fallback Model
 ```
 
+用户聊天使用流式 `qwen-plus` 调用，当前没有配置流式副模型，因此流式调用失败时不会执行上述 Fallback。
+
+---
+
 ### 3. 检索效果评估
 
 **问题**：
+
 RAG 效果不能只靠人工肉眼观察主观判断，需要可量化指标做客观评测。
 
 **方案**：
-构建标准测试集 `golden dataset`，通过检索指标量化召回质量。
+
+构建标准测试集 `golden dataset`，通过固定 Top5 检索结果进行离线评测。评测页面位于 /eval，支持查看测试集、点击「开始评测」，展示 Hit@5、Recall@5、MRR、平均耗时、P95 等指标，并可在用例表中按搜索、Passed / Failed 筛选；
+
+查看单个用例时，可通过右侧抽屉查看检索链路、Top 召回文档、Ground Truth 与命中标记。评测只覆盖检索效果，不评估生成质量。评测结果会写入 docs/eval/result/eval-result-yyyy-MM-dd.md。
 
 计算指标：
 
-- Recall@K
+- Recall@5
 - MRR
 - Hit Rate
+- Avg Latency
+- P95 Latency
+
+当前 Recall@5 与 Hit Rate 均按照「召回列表中是否出现任一期望文档」进行计算，因此在当前评测实现中两者结果相同。
 
 ---
 
@@ -291,43 +369,52 @@ RAG 效果不能只靠人工肉眼观察主观判断，需要可量化指标做�
 ### 部署环境
 
 
-| 模块        | 技术选型                    |
-| --------- | ----------------------- |
-| 操作系统      | Ubuntu 22.04 LTS        |
-| 容器化       | Docker + Docker Compose |
-| 后端服务      | Spring Boot             |
-| 前端服务      | Vue3 + Nginx            |
-| 数据库       | MySQL 8.0               |
-| 缓存 / 向量存储 | Redis Stack             |
-| 部署方式      | 云服务器部署                  |
+| 模块        | 技术选型             |
+| --------- | ---------------- |
+| 操作系统      | Ubuntu 22.04 LTS |
+| 后端服务      | Spring Boot      |
+| 前端服务      | Vue3             |
+| 数据库       | MySQL            |
+| 缓存 / 向量存储 | Redis Stack      |
+| 部署方式      | 云服务器部署           |
 
+
+仓库当前未提供 Dockerfile、Docker Compose 或 Nginx 配置文件。
 
 ### 系统部署架构
 
-```
+```text
 服务器环境准备
+
 ↓
-Docker 安装
-↓
-Docker Compose 启动 MySQL / Redis
-↓
+
 Spring Boot 后端部署
+
 ↓
+
 Vue3 前端构建部署
+
 ↓
+
+MySQL / Redis 配置
+
+↓
+
 公网访问验证
 ```
+
+
 
 ### 已完成部署能力
 
 - [x] 云服务器部署
-- [x] Docker 容器化运行 MySQL
-- [x] Docker 容器化运行 Redis Stack
 - [x] Spring Boot 后端线上运行
 - [x] Vue3 前端线上部署
 - [x] RAG 核心链路线上环境验证
 - [x] 数据库持久化配置
 - [x] Redis Vector Store 正常运行
+
+Docker Compose 部署方案目前仍未纳入仓库。
 
 ### 生产环境说明
 
@@ -343,15 +430,24 @@ SPRING_PROFILES_ACTIVE=prod
 
 `backend/AiConsultant/.env.example`
 
+后端默认端口为：
+
+```text
+8087
+```
+
 ---
 
 ## 🚀 快速启动
+
+
 
 ### 1. 环境要求
 
 - Java 17+
 - MySQL 8+
 - Redis 7+（本地向量检索建议 Redis Stack）
+- Node.js
 
 ### 2. 环境配置
 
@@ -361,6 +457,7 @@ SPRING_PROFILES_ACTIVE=prod
 
 ```bash
 cd backend/AiConsultant
+
 cp .env.example .env
 ```
 
@@ -376,7 +473,7 @@ cp .env.example .env
 
 ### 3. 后端启动
 
-进入后端项目目录 
+进入后端项目目录：
 
 ```bash
 cd backend/AiConsultant
@@ -388,9 +485,11 @@ cd backend/AiConsultant
 mvn spring-boot:run
 ```
 
+后端默认运行在 `8087` 端口。
+
 ### 4. 前端启动
 
-进入前端项目目录
+进入前端项目目录：
 
 ```bash
 cd frontend
@@ -412,7 +511,9 @@ npm run dev
 
 ## 🔌 API 示例
 
-当前提供 REST API，可通过 Postman 调试。
+当前聊天接口采用**异步任务 + SSE** 方式返回结果。
+
+### 1. 提交聊天任务
 
 **请求接口：**
 
@@ -430,24 +531,63 @@ POST /api/v1/chat
 ```
 
 **返回结果：**
-成功返回答案以及 Citation 引用信息
+
+提交成功后立即返回 `taskId`：
 
 ```json
 {
   "code": 1,
   "data": {
-    "answer": "Redis主要有RDB和AOF两种持久化方式...",
-    "reference": [
-      {
-        "documentId": 2080836111764529154,
-        "documentName": "redis持久化.pdf",
-        "page": 1,
-        "content": "redis持久化..."
-      }
-    ]
+    "taskId": "..."
   }
 }
 ```
+
+
+
+### 2. 建立 SSE 连接
+
+```http
+GET /api/v1/chat/stream/{taskId}
+```
+
+SSE 过程中：
+
+- `RAG_QA` 和 `CHAT` 走流式 `qwen-plus`，会多次推送 `answer` 生成片段，流式调用失败后发送 `error` 事件并关闭连接，不进行模型降级
+- `SUMMARY`、意图识别、澄清判断走非流式 `generateAnswer`，支持主模型重试与 `qwen-turbo` 兜底，SSE 上通常表现为 `progress` 事件，最后以 `complete` 事件结束，中间不会推送 `answer` 生成片段
+- 成功时以 `complete` 事件结束，并返回最终 `answer` 与 `references`
+- 流式处理失败时发送 `error` 事件并关闭连接，不再发送 `complete`
+
+最终成功结果通过 `complete` 事件返回：
+
+```json
+{
+  "answer": "Redis主要有RDB和AOF两种持久化方式...",
+  "references": [
+    {
+      "documentId": 2080836111764529154,
+      "documentName": "redis持久化.pdf",
+      "page": 1,
+      "content": "redis持久化..."
+    }
+  ]
+}
+```
+
+
+
+### 3. RAG Evaluation 评测
+
+GET /api/v1/eval/dataset
+POST /api/v1/eval/run
+
+评测接口用于加载测试集与执行检索评测。评测结果会写入 docs/eval/result/eval-result-yyyy-MM-dd.md。
+
+### 4. Trace 查询
+
+GET /api/v1/traces/{traceId}
+
+Trace 查询可查看节点耗时、状态，以及 model_used、是否发生降级、降级原因等信息，数据落在 trace_span。当前 Trace 只有接口与落库能力，前端没有独立 Trace 页面或侧边栏入口。
 
 ---
 
@@ -470,7 +610,7 @@ POST /api/v1/chat
 
 ## ✅ 当前状态
 
-目前已完成前后端完整链路，并完成 V2 生产部署：
+目前已完成前后端完整链路，并完成云服务器环境验证：
 
 - 企业知识库管理
 - 文档解析与向量化
@@ -478,15 +618,25 @@ POST /api/v1/chat
 - 多轮对话 Memory
 - Citation 引用返回
 - Trace 链路观测
-- LLM Fallback 降级
+- LLM Fallback 降级（非流式调用）
 - RAG Evaluation 检索评测
-- Vue 前端交互页面（支持游客浏览）
+- Intent Orchestration
+- 文档 / 知识库 Summary
+- Clarification / PendingTask
+- 异步任务与 SSE 流式输出
+- Vue 前端交互页面
 
-支持本地部署与云服务器生产环境运行。
+其中 Memory 当前为 Redis 短期记忆，支持滑动窗口与摘要，不包含 Long-term Memory。
+
+游客可以访问前端页面，但后端业务接口仍需要 JWT 鉴权，因此未登录状态下无法进行实际问答或获取业务数据。
+
+支持本地部署与云服务器环境运行。
 
 ---
 
 ## 🗺️ Roadmap
+
+
 
 ### V1.0 - RAG 基础能力 ✅
 
@@ -502,15 +652,22 @@ POST /api/v1/chat
 - [x] REST API
 - [x] Vue 前端基础交互界面
 
-### V2.0 - 可观测性与生产部署 ✅
+
+
+### V2.1 - 可观测性与生产部署
 
 - [x] Trace 链路日志追踪
 - [x] RAG Evaluation 检索效果评估
 - [x] Fallback 大模型降级策略
 - [x] Hybrid Retrieval（向量 + BM25 + RRF）
+- [x] Intent Orchestration
+- [x] Summary / Clarification / PendingTask
+- [x] 异步任务与 SSE 流式输出
 - [x] 游客浏览与登录弹窗
 - [ ] Long-term Memory 长期记忆
 - [ ] 完善 Docker Compose 部署方案
+
+
 
 ### V3.0 - Advanced AI Application （计划）🚀
 
