@@ -28,347 +28,342 @@
         >
           开始评测
         </el-button>
+        <el-button :disabled="running || historyLoading" @click="onCompare">对比</el-button>
       </div>
     </section>
 
-    <section v-if="result" class="eval-page__card">
-      <div class="eval-page__list-title">最新评测结果</div>
-      <div class="eval-page__metrics">
-        <div class="eval-page__metric">
-          <div class="eval-page__metric-value">{{ result.total }}</div>
-          <div class="eval-page__metric-label">Test Cases</div>
-        </div>
-        <div class="eval-page__metric">
-          <div class="eval-page__metric-value">{{ formatRate(result.hitRate) }}</div>
-          <div class="eval-page__metric-label">Hit@5</div>
-        </div>
-        <div class="eval-page__metric">
-          <div class="eval-page__metric-value">{{ formatRate(result.recall) }}</div>
-          <div class="eval-page__metric-label">Recall@5</div>
-        </div>
-        <div class="eval-page__metric">
-          <div class="eval-page__metric-value">{{ formatMrr(result.mrr) }}</div>
-          <div class="eval-page__metric-label">MRR</div>
-        </div>
-        <div class="eval-page__metric">
-          <div class="eval-page__metric-value">{{ formatLatency(result.avgLatencyMs) }}</div>
-          <div class="eval-page__metric-label">Avg Latency</div>
-        </div>
-        <div class="eval-page__metric">
-          <div class="eval-page__metric-value">{{ formatLatency(result.p95LatencyMs) }}</div>
-          <div class="eval-page__metric-label">P95 Latency</div>
-        </div>
-      </div>
-    </section>
-
-    <section v-if="result" class="eval-page__card">
-      <div class="eval-page__list-head">
-        <div class="eval-page__list-title">Case 列表</div>
-        <el-input
-          v-model="keyword"
-          class="eval-page__search"
-          clearable
-          placeholder="搜索 Case..."
-        />
-      </div>
-      <div class="eval-page__filters">
-        <el-radio-group v-model="statusFilter" size="small">
-          <el-radio-button label="all">全部 {{ caseViews.length }}</el-radio-button>
-          <el-radio-button label="passed">Passed {{ passedCount }}</el-radio-button>
-          <el-radio-button label="failed">Failed {{ failedCount }}</el-radio-button>
-        </el-radio-group>
-      </div>
-      <el-table
-        :data="visibleCases"
-        class="eval-page__table"
-        header-cell-class-name="eval-page__table-header"
-        highlight-current-row
-        row-key="id"
-        :row-class-name="tableRowClass"
-        @row-click="onSelectCase"
-      >
-        <el-table-column label="Question" min-width="280" show-overflow-tooltip>
-          <template #default="{ row }">{{ row.query }}</template>
-        </el-table-column>
-        <el-table-column label="Hit@5" width="110" align="right">
-          <template #default="{ row }">{{ row.failed ? 'Failed' : 'Passed' }}</template>
-        </el-table-column>
-        <el-table-column label="Recall@5" width="110" align="right">
-          <template #default="{ row }">{{ formatCaseRate(row.recall) }}</template>
-        </el-table-column>
-        <el-table-column label="MRR" width="90" align="right">
-          <template #default="{ row }">{{ formatMrr(row.mrr) }}</template>
-        </el-table-column>
-        <el-table-column label="Latency" width="120" align="right">
-          <template #default="{ row }">{{ formatLatency(row.latencyMs) }}</template>
-        </el-table-column>
-        <el-table-column label="Status" width="110" align="center">
-          <template #default="{ row }">
-            <el-tag :type="row.failed ? 'danger' : 'success'" size="small" effect="plain">
-              {{ row.failed ? 'Failed' : 'Passed' }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <template #empty>
-          <el-empty description="暂无评测 Case" :image-size="100" />
-        </template>
-      </el-table>
-    </section>
-
-    <el-drawer
-      v-model="drawerVisible"
-      :title="selectedCase ? `Case #${selectedCase.id}` : 'Case 详情'"
-      direction="rtl"
-      size="480px"
-      append-to-body
-      class="eval-drawer"
-      @close="onDrawerClose"
-    >
-      <div v-if="selectedCase" class="eval-drawer__body">
-        <p class="eval-drawer__query">{{ selectedCase.query }}</p>
-
-        <section class="eval-drawer__section">
-          <h3>Evaluation Result</h3>
-          <div class="eval-drawer__metrics">
-            <div><span>Hit@5</span>{{ selectedCase.failed ? 'Failed' : 'Passed' }}</div>
-            <div><span>Recall@5</span>{{ formatCaseRate(selectedCase.recall) }}</div>
-            <div><span>MRR</span>{{ formatMrr(selectedCase.mrr) }}</div>
-            <div><span>Latency</span>{{ formatLatency(selectedCase.latencyMs) }}</div>
-            <div><span>Top Score</span>{{ formatScore(selectedCase.topScore) }}</div>
-            <div><span>Status</span>{{ selectedCase.failed ? 'Failed' : 'Passed' }}</div>
+    <div class="eval-history">
+      <div class="eval-history__main">
+        <section v-if="section === 'history'" class="eval-page__card">
+          <div class="eval-page__list-head">
+            <div class="eval-page__list-title">历史评测</div>
+            <div class="eval-history__actions">
+              <el-button :disabled="historyLoading || running" @click="fetchHistory">刷新</el-button>
+              <template v-if="comparing">
+                <el-button :disabled="historyLoading || running" @click="cancelCompare">取消</el-button>
+                <el-button
+                  type="primary"
+                  :disabled="historyLoading || running"
+                  @click="startCompare"
+                >
+                  开始对比
+                </el-button>
+              </template>
+            </div>
+          </div>
+          <p v-if="comparing" class="eval-page__hint">
+            先选择的记录为评测 A，后选择的为评测 B。已选 {{ compareSelection.length }} / 2
+            <template v-if="compareSelection[0]"> · A：{{ comparePickLabel(compareSelection[0]) }}</template>
+            <template v-if="compareSelection[1]"> · B：{{ comparePickLabel(compareSelection[1]) }}</template>
+          </p>
+          <p v-if="historyError" class="eval-page__note">
+            {{ historyError }}
+            <el-button link type="primary" @click="fetchHistory">重试</el-button>
+          </p>
+          <el-table
+            v-loading="historyLoading"
+            :data="historyList"
+            class="eval-page__table"
+            header-cell-class-name="eval-page__table-header"
+            row-key="id"
+            :row-class-name="historyRowClass"
+            @row-click="onOpenHistory"
+          >
+            <el-table-column v-if="comparing" width="88" align="center">
+              <template #default="{ row }">
+                <div class="eval-history__pick" @click.stop="toggleCompare(row)">
+                  <el-checkbox
+                    :model-value="compareRank(row) >= 0"
+                    :disabled="compareSelection.length >= 2 && compareRank(row) < 0"
+                    @click.stop
+                    @change="toggleCompare(row)"
+                  />
+                  <span v-if="compareRank(row) === 0">A</span>
+                  <span v-else-if="compareRank(row) === 1">B</span>
+                </div>
+              </template>
+            </el-table-column>
+            <el-table-column label="评测时间" width="160">
+              <template #default="{ row }">{{ row.createTime || '—' }}</template>
+            </el-table-column>
+            <el-table-column label="状态" width="110" align="center">
+              <template #default="{ row }">
+                <el-tooltip
+                  v-if="row.errorMessage"
+                  :content="row.errorMessage"
+                  placement="top"
+                >
+                  <el-tag :type="statusTagType(row.status)" size="small" effect="plain">
+                    {{ statusLabel(row.status) }}
+                  </el-tag>
+                </el-tooltip>
+                <el-tag v-else :type="statusTagType(row.status)" size="small" effect="plain">
+                  {{ statusLabel(row.status) }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="数据集" min-width="200" show-overflow-tooltip>
+              <template #default="{ row }">
+                <div>{{ row.datasetName || '—' }}</div>
+                <div class="eval-page__sub">{{ datasetSourceLabel(row.datasetSource) }}</div>
+              </template>
+            </el-table-column>
+            <el-table-column label="Hit@5" width="100" align="right">
+              <template #default="{ row }">{{ formatRate(row.hitRate) }}</template>
+            </el-table-column>
+            <el-table-column label="Recall@5" width="110" align="right">
+              <template #default="{ row }">{{ formatRate(row.recall) }}</template>
+            </el-table-column>
+            <el-table-column label="MRR" width="90" align="right">
+              <template #default="{ row }">{{ formatMrr(row.mrr) }}</template>
+            </el-table-column>
+            <el-table-column label="耗时" width="110" align="right">
+              <template #default="{ row }">{{ formatLatency(row.durationMs) }}</template>
+            </el-table-column>
+            <template #empty>
+              <el-empty
+                :description="historyEmptyText"
+                :image-size="100"
+              />
+            </template>
+          </el-table>
+          <div v-if="pagination.total > 0" class="eval-page__pager">
+            <el-pagination
+              v-model:current-page="pagination.page"
+              v-model:page-size="pagination.pageSize"
+              background
+              layout="total, prev, pager, next"
+              :total="pagination.total"
+              @current-change="fetchHistory"
+            />
           </div>
         </section>
 
-        <section class="eval-drawer__section">
-          <h3>Retrieval Pipeline</h3>
-          <el-steps direction="vertical" :active="3" finish-status="success">
-            <el-step title="Query" :description="selectedCase.query" />
-            <el-step title="Hybrid Retrieval" description="现有评测走 HybridRetriever" />
-            <el-step
-              title="Retrieved Documents"
-              :description="`${selectedCase.retrievedDocIds.length} documents`"
-            />
-            <el-step
-              title="Ground Truth"
-              :description="`${selectedCase.expectedDocIds.length} documents`"
-            />
-          </el-steps>
-        </section>
-
-        <section class="eval-drawer__section">
-          <h3>
-            Retrieved Documents
-            <em>{{ selectedCase.retrievedDocIds.length }}</em>
-          </h3>
-          <p v-if="selectedCase.failed" class="eval-drawer__note">
-            Ground Truth 未出现在 Top 5 检索结果中
+        <div v-else v-loading="detailLoading" class="eval-history__detail">
+          <p v-if="detailError && !detailLoading" class="eval-page__note">
+            {{ detailError }}
+            <el-button link type="primary" @click="loadDetail(selectedId)">重试</el-button>
           </p>
-          <ul v-if="selectedCase.retrievedDocIds.length" class="eval-drawer__docs">
-            <li
-              v-for="(docId, index) in selectedCase.retrievedDocIds"
-              :key="`${selectedCase.id}-r-${index}-${docId}`"
-              class="eval-drawer__doc"
-            >
-              <div class="eval-drawer__doc-head">
-                <span>#{{ index + 1 }}</span>
-                <strong>Document ID: {{ docId }}</strong>
-                <el-tag
-                  v-if="isGroundTruth(selectedCase, docId)"
-                  size="small"
-                  effect="plain"
-                  type="success"
-                >
-                  Hit
-                </el-tag>
-              </div>
-              <div class="eval-drawer__meta">Score: {{ retrievedScore(selectedCase, index) }}</div>
-            </li>
-          </ul>
-          <p v-else class="eval-drawer__empty">本次检索未返回文档。</p>
-        </section>
-
-        <section class="eval-drawer__section">
-          <h3>
-            Ground Truth
-            <em>{{ selectedCase.expectedDocIds.length }}</em>
-          </h3>
-          <ul v-if="selectedCase.expectedDocIds.length" class="eval-drawer__docs">
-            <li
-              v-for="docId in selectedCase.expectedDocIds"
-              :key="`${selectedCase.id}-e-${docId}`"
-              class="eval-drawer__doc"
-            >
-              <div class="eval-drawer__doc-head">
-                <span>✓</span>
-                <strong>Document ID: {{ docId }}</strong>
-              </div>
-            </li>
-          </ul>
-          <p v-else class="eval-drawer__empty">无 Expected Documents</p>
-        </section>
+          <EvalOverview v-else-if="detail && section === 'overview'" :detail="detail" />
+          <EvalCasePanel v-else-if="detail && section === 'cases'" :detail="detail" />
+          <EvalConfigPanel v-else-if="detail && section === 'config'" :detail="detail" />
+          <EvalMetricsPanel v-else-if="detail && section === 'metrics'" :detail="detail" />
+          <EvalCasePanel v-else-if="detail && section === 'failed'" :detail="detail" only-failed />
+        </div>
       </div>
-    </el-drawer>
+
+      <nav class="eval-history__nav" aria-label="历史评测分区">
+        <button
+          v-for="item in sections"
+          :key="item.key"
+          type="button"
+          class="eval-history__nav-item"
+          :class="{ 'is-active': section === item.key }"
+          :disabled="item.key !== 'history' && !selectedId"
+          @click="onSection(item.key)"
+        >
+          <span>{{ item.label }}</span>
+          <em v-if="item.key === 'failed' && failedCountLabel">{{ failedCountLabel }}</em>
+        </button>
+      </nav>
+    </div>
   </PageContainer>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import type { UploadFile } from 'element-plus'
 import PageContainer from '@/components/common/PageContainer.vue'
 import KnowledgeSelect from '@/components/knowledge/KnowledgeSelect.vue'
-import { runUploadedEvalApi } from '@/api/eval'
-import type { EvalCase, EvalCaseResult, EvalCaseView, EvalFailedCase, EvalResult } from '@/types/eval'
+import EvalCasePanel from '@/components/eval/EvalCasePanel.vue'
+import EvalConfigPanel from '@/components/eval/EvalConfigPanel.vue'
+import EvalMetricsPanel from '@/components/eval/EvalMetricsPanel.vue'
+import EvalOverview from '@/components/eval/EvalOverview.vue'
+import { getEvalRunDetailApi, getEvalRunsApi, runUploadedEvalApi } from '@/api/eval'
+import {
+  datasetSourceLabel,
+  formatLatency,
+  formatMrr,
+  formatRate,
+  savedMetrics,
+  statusLabel,
+  statusTagType,
+} from '@/components/eval/format'
+import type { EvalRun, EvalRunDetail } from '@/types/eval'
 import { useAuth } from '@/composables/useAuth'
+import { usePagination } from '@/composables/usePagination'
 
+type EvalSection = 'history' | 'overview' | 'cases' | 'config' | 'metrics' | 'failed'
+
+const sections: { key: EvalSection; label: string }[] = [
+  { key: 'history', label: '历史评测' },
+  { key: 'overview', label: '评测概览' },
+  { key: 'cases', label: '测试用例' },
+  { key: 'config', label: '评测配置' },
+  { key: 'metrics', label: '评测指标' },
+  { key: 'failed', label: '失败用例' },
+]
+
+interface ComparePick {
+  id: string
+  datasetName: string
+  createTime: string
+}
+
+const router = useRouter()
 const { hasToken } = useAuth()
+const { pagination, setTotal, resetPage } = usePagination(10)
 
 const datasetFile = ref<File | null>(null)
 const knowledgeId = ref<number | string | null>(null)
 const running = ref(false)
-const result = ref<EvalResult | null>(null)
-const drawerVisible = ref(false)
-const selectedCase = ref<EvalCaseView | null>(null)
-const statusFilter = ref<'all' | 'passed' | 'failed'>('all')
-const keyword = ref('')
+const historyList = ref<EvalRun[]>([])
+const historyLoading = ref(false)
+const historyError = ref('')
+const section = ref<EvalSection>('history')
+const selectedId = ref('')
+const detail = ref<EvalRunDetail | null>(null)
+const detailLoading = ref(false)
+const detailError = ref('')
+const comparing = ref(false)
+const compareSelection = ref<ComparePick[]>([])
+let detailRequest = 0
 
-function caseKey(id: number | string | null | undefined) {
-  return id == null ? '' : String(id)
+const historyEmptyText = computed(() => {
+  if (!hasToken()) return '请先登录后查看评测历史'
+  if (historyError.value) return '评测历史加载失败'
+  return '暂无评测历史'
+})
+
+const failedCountLabel = computed(() => {
+  const value = savedMetrics(detail.value).failedCount
+  if (value == null) return ''
+  return String(Math.round(value))
+})
+
+function historyRowClass({ row }: { row: EvalRun }) {
+  if (comparing.value) return compareRank(row) >= 0 ? 'eval-page__row--selected' : ''
+  return String(row.id) === selectedId.value ? 'eval-page__row--selected' : ''
 }
 
-const detailMap = computed(() => {
-  const map = new Map<string, EvalCaseResult | EvalFailedCase>()
-  for (const item of result.value?.cases ?? []) {
-    const key = caseKey(item?.id)
-    if (key) map.set(key, item)
-  }
-  for (const item of result.value?.failedCases ?? []) {
-    const key = caseKey(item?.id)
-    if (key && !map.has(key)) map.set(key, item)
-  }
-  return map
-})
+function compareRank(row: { id?: unknown }) {
+  const id = row.id == null ? '' : String(row.id)
+  return compareSelection.value.findIndex((item) => item.id === id)
+}
 
-const caseViews = computed<EvalCaseView[]>(() => {
-  if (!result.value) return []
-  if (result.value.cases?.length) {
-    return result.value.cases.map((item) => toCaseViewFromResult(item))
+function comparePickLabel(item: ComparePick) {
+  return [item.datasetName, item.createTime].filter(Boolean).join(' · ') || item.id
+}
+
+function toggleCompare(row: { id?: unknown; datasetName?: unknown; createTime?: unknown }) {
+  if (row.id == null || row.id === '') return
+  const id = String(row.id)
+  const index = compareSelection.value.findIndex((item) => item.id === id)
+  if (index >= 0) {
+    compareSelection.value.splice(index, 1)
+    return
   }
-  const source = result.value.failedCases ?? []
-  return source.map((item) => toCaseView(item))
-})
-
-const failedCount = computed(() => caseViews.value.filter((item) => item.failed).length)
-const passedCount = computed(() => caseViews.value.length - failedCount.value)
-
-const visibleCases = computed(() => {
-  const q = keyword.value.trim().toLowerCase()
-  return caseViews.value.filter((item) => {
-    if (statusFilter.value === 'failed' && !item.failed) return false
-    if (statusFilter.value === 'passed' && item.failed) return false
-    if (q && !item.query.toLowerCase().includes(q)) return false
-    return true
+  if (compareSelection.value.length >= 2) return
+  compareSelection.value.push({
+    id,
+    datasetName: typeof row.datasetName === 'string' ? row.datasetName : '',
+    createTime: typeof row.createTime === 'string' ? row.createTime : '',
   })
-})
+}
 
-function toCaseViewFromResult(item: EvalCaseResult): EvalCaseView {
-  return {
-    id: Number(item.id),
-    query: item.query,
-    expectedDocIds: item.expectedDocIds ?? [],
-    retrievedDocIds: item.retrievedDocIds ?? [],
-    topScore: item.topScore ?? null,
-    latencyMs: item.latencyMs ?? null,
-    failed: item.hit === false,
-    recall: item.recall ?? null,
-    mrr: item.mrr ?? null,
+async function fetchHistory() {
+  if (!hasToken()) {
+    historyList.value = []
+    historyError.value = ''
+    setTotal(0)
+    return
+  }
+  historyLoading.value = true
+  historyError.value = ''
+  try {
+    const res = await getEvalRunsApi({
+      pageNum: pagination.page,
+      pageSize: pagination.pageSize,
+    })
+    historyList.value = res?.list ?? []
+    setTotal(Number(res?.total ?? 0))
+  } catch {
+    historyList.value = []
+    setTotal(0)
+    historyError.value = '评测历史加载失败'
+  } finally {
+    historyLoading.value = false
   }
 }
 
-function toCaseView(item: EvalCase | EvalFailedCase): EvalCaseView {
-  const detail = detailMap.value.get(caseKey(item.id))
-  const failedDetail = detail && !('hit' in detail) ? (detail as EvalFailedCase) : undefined
-  const full = detail && 'hit' in detail ? (detail as EvalCaseResult) : undefined
-  return {
-    id: Number(item.id),
-    query: full?.query ?? failedDetail?.query ?? item.query,
-    expectedDocIds: full?.expectedDocIds ?? failedDetail?.expectedDocIds ?? item.expectedDocIds ?? [],
-    retrievedDocIds: full?.retrievedDocIds ?? failedDetail?.retrievedDocIds ?? [],
-    topScore: full?.topScore ?? failedDetail?.topScore ?? null,
-    latencyMs: full?.latencyMs ?? failedDetail?.latencyMs ?? null,
-    failed: full ? full.hit === false : Boolean(failedDetail),
-    recall: full?.recall ?? (failedDetail ? 0 : null),
-    mrr: full?.mrr ?? (failedDetail ? 0 : null),
+async function loadDetail(id: string) {
+  const requestId = ++detailRequest
+  detailLoading.value = true
+  detailError.value = ''
+  detail.value = null
+  try {
+    const data = await getEvalRunDetailApi(id)
+    if (requestId !== detailRequest) return
+    detail.value = data
+  } catch {
+    if (requestId !== detailRequest) return
+    detailError.value = '评测详情加载失败'
+  } finally {
+    if (requestId === detailRequest) detailLoading.value = false
   }
 }
 
-function resolveCaseDetail(row: EvalCaseView): EvalCaseView {
-  const detail = detailMap.value.get(caseKey(row.id))
-  if (detail && 'hit' in detail) {
-    return toCaseViewFromResult(detail as EvalCaseResult)
+function onSection(key: EvalSection) {
+  if (key !== 'history' && !selectedId.value) return
+  section.value = key
+}
+
+function onOpenHistory(row: EvalRun) {
+  if (running.value || row.id == null) return
+  if (comparing.value) {
+    toggleCompare(row)
+    return
   }
-  if (detail) {
-    const failed = detail as EvalFailedCase
-    return {
-      ...row,
-      query: failed.query ?? row.query,
-      expectedDocIds: failed.expectedDocIds?.length ? failed.expectedDocIds : row.expectedDocIds,
-      retrievedDocIds: failed.retrievedDocIds ?? [],
-      topScore: failed.topScore ?? null,
-      latencyMs: failed.latencyMs ?? null,
-      failed: true,
-      recall: 0,
-      mrr: 0,
-    }
+  selectedId.value = String(row.id)
+  section.value = 'overview'
+  loadDetail(selectedId.value)
+}
+
+function onCompare() {
+  if (running.value || historyLoading.value) return
+  if (historyError.value) {
+    ElMessage.warning('评测历史加载失败')
+    return
   }
-  return { ...row }
+  if (!pagination.total) {
+    ElMessage.warning('暂无评测记录，请先运行一次评测')
+    return
+  }
+  comparing.value = true
+  section.value = 'history'
 }
 
-function formatRate(value?: number | null) {
-  if (value === null || value === undefined || Number.isNaN(Number(value))) return '-'
-  return `${(Number(value) * 100).toFixed(1)}%`
+function cancelCompare() {
+  comparing.value = false
+  compareSelection.value = []
 }
 
-function formatMrr(value?: number | null) {
-  if (value === null || value === undefined || Number.isNaN(Number(value))) return '—'
-  return Number(value).toFixed(2)
-}
-
-function formatCaseRate(value?: number | null) {
-  if (value === null || value === undefined || Number.isNaN(Number(value))) return '—'
-  return `${Math.round(Number(value) * 100)}%`
-}
-
-function formatLatency(value?: number | null) {
-  if (value === null || value === undefined || Number.isNaN(Number(value))) return '—'
-  return `${Math.round(Number(value))} ms`
-}
-
-function formatScore(value?: number | null) {
-  if (value === null || value === undefined || Number.isNaN(Number(value))) return '—'
-  return Number(value).toFixed(2)
-}
-
-function retrievedScore(row: EvalCaseView, index: number) {
-  if (index !== 0) return '—'
-  return formatScore(row.topScore)
-}
-
-function isGroundTruth(row: EvalCaseView, docId: string) {
-  return (row.expectedDocIds ?? []).map(String).includes(String(docId))
-}
-
-function tableRowClass({ row }: { row: EvalCaseView }) {
-  return caseKey(selectedCase.value?.id) === caseKey(row.id) ? 'eval-page__row--selected' : ''
-}
-
-function onSelectCase(row: EvalCaseView) {
-  selectedCase.value = resolveCaseDetail(row)
-  drawerVisible.value = true
-}
-
-function onDrawerClose() {
-  drawerVisible.value = false
+function startCompare() {
+  const selected = compareSelection.value
+  if (selected.length === 0) {
+    ElMessage.warning('请至少选择两条评测记录')
+    return
+  }
+  if (selected.length === 1) {
+    ElMessage.warning('还需选择 1 条评测记录')
+    return
+  }
+  router.push({
+    name: 'eval-compare',
+    query: { a: selected[0].id, b: selected[1].id },
+  })
 }
 
 function onDatasetChange(uploadFile: UploadFile) {
@@ -391,408 +386,125 @@ async function onRun() {
   if (running.value) return
   running.value = true
   try {
-    result.value = await runUploadedEvalApi(datasetFile.value, knowledgeId.value)
-    selectedCase.value = null
-    drawerVisible.value = false
+    const executed = await runUploadedEvalApi(datasetFile.value, knowledgeId.value)
     ElMessage.success('评测完成')
+    resetPage()
+    const historyPromise = fetchHistory()
+    if (executed?.runId != null && executed.runId !== '') {
+      selectedId.value = String(executed.runId)
+      section.value = 'overview'
+      await Promise.all([loadDetail(selectedId.value), historyPromise])
+      return
+    }
+    ElMessage.warning('评测已完成，但没有保存可查看的历史记录')
+    section.value = 'history'
+    await historyPromise
   } finally {
     running.value = false
   }
 }
+
+onMounted(fetchHistory)
 </script>
 
+<style lang="scss">
+@import '@/components/eval/eval-shared.scss';
+</style>
+
 <style scoped lang="scss">
-.eval-page {
-  &__card {
-    background: #fff;
-    border: 1px solid #e6ecef;
-    border-radius: 14px;
-    box-shadow: 0 6px 18px rgba(15, 45, 60, 0.04);
-    margin-bottom: 16px;
-    padding: 16px 18px 18px;
-  }
+.eval-history {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 168px;
+  gap: 16px;
+  align-items: start;
 
-  &__list-title {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 14px;
-    font-size: 15px;
-    font-weight: 600;
-    color: #1f2d3d;
-  }
-
-  &__list-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 12px;
-
-    .eval-page__list-title {
-      margin-bottom: 0;
-    }
-  }
-
-  &__search {
-    width: 240px;
-
-    :deep(.el-input__wrapper) {
-      border-radius: 8px;
-    }
-  }
-
-  &__filters {
-    margin-bottom: 12px;
-  }
-
-  &__form {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 16px 24px;
-  }
-
-  &__field {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+  &__main,
+  &__detail {
     min-width: 0;
   }
 
-  &__label {
-    flex-shrink: 0;
-    color: #1f2d3d;
-    font-size: 14px;
-  }
-
-  &__file {
-    max-width: 240px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    color: #64748b;
-    font-size: 13px;
-  }
-
-  &__summary-name {
-    font-size: 18px;
-    font-weight: 600;
-    color: #1f2d3d;
-  }
-
-  &__summary-meta {
-    margin-top: 6px;
-    color: #64748b;
-    font-size: 13px;
+  &__detail {
+    min-height: 160px;
   }
 
   &__actions {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
-    margin-top: 16px;
-  }
-
-  &__hint {
-    margin: -6px 0 12px;
-    color: #64748b;
-    font-size: 13px;
-  }
-
-  &__table {
-    width: 100%;
-
-    :deep(.el-table__row) {
-      cursor: pointer;
-    }
-
-    :deep(.eval-page__row--selected > td) {
-      background: rgba(15, 76, 92, 0.08) !important;
-    }
-  }
-
-  &__ids {
-    white-space: normal;
-    word-break: break-all;
-    line-height: 1.5;
-  }
-
-  &__metrics {
-    display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: 12px;
-  }
-
-  &__metric {
-    padding: 14px 12px;
-    background: #f6f9fa;
-    border: 1px solid #e6ecef;
-    border-radius: 10px;
-    text-align: center;
-  }
-
-  &__metric-value {
-    font-size: 20px;
-    font-weight: 700;
-    color: #0f4c5c;
-    word-break: break-all;
-  }
-
-  &__metric-label {
-    margin-top: 6px;
-    font-size: 13px;
-    color: #64748b;
-  }
-
-  &__block {
-    margin-top: 18px;
-
-    &--half {
-      flex: 1;
-      min-width: 0;
-      margin-top: 0;
-    }
-  }
-
-  &__block-title {
-    margin-bottom: 10px;
-    font-size: 13px;
-    font-weight: 600;
-    color: #64748b;
-  }
-
-  &__query {
-    margin: 0;
-    font-size: 16px;
-    line-height: 1.6;
-    color: #1f2d3d;
-  }
-
-  &__note {
-    margin: 0 0 10px;
-    padding: 8px 10px;
-    background: #f8fafb;
-    border: 1px solid #e6ecef;
-    border-radius: 8px;
-    color: #64748b;
-    font-size: 13px;
-  }
-
-  &__compare {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    margin-top: 18px;
-  }
-
-  &__docs {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  &__doc {
-    padding: 10px 12px;
-    border: 1px solid #e6ecef;
-    border-radius: 10px;
-    background: #fafcfd;
-
-    + .eval-page__doc {
-      margin-top: 8px;
-    }
-  }
-
-  &__doc-head {
-    display: flex;
-    align-items: flex-start;
     gap: 8px;
   }
 
-  &__rank,
-  &__gt-mark {
-    flex-shrink: 0;
+  &__pick {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
     color: #0f4c5c;
-    font-weight: 700;
-    font-size: 13px;
-  }
-
-  &__doc-name {
-    flex: 1;
-    min-width: 0;
-    word-break: break-all;
-    color: #1f2d3d;
-    font-size: 13px;
-    line-height: 1.5;
-  }
-
-  &__doc-score {
-    margin: 6px 0 0 28px;
-    color: #64748b;
     font-size: 12px;
+    font-weight: 700;
   }
 
-  &__case-metrics {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 10px;
-
-    > div {
-      padding: 12px;
-      background: #f6f9fa;
-      border: 1px solid #e6ecef;
-      border-radius: 10px;
-      color: #1f2d3d;
-      font-size: 14px;
-      font-weight: 600;
-    }
-
-    span {
-      display: block;
-      margin-bottom: 4px;
-      color: #64748b;
-      font-size: 12px;
-      font-weight: 500;
-    }
+  &__nav {
+    position: sticky;
+    top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px;
+    background: #fff;
+    border: 1px solid #e6ecef;
+    border-radius: 14px;
+    box-shadow: 0 6px 18px rgba(15, 45, 60, 0.04);
   }
-}
 
-@media (max-width: 1100px) {
-  .eval-page__metrics,
-  .eval-page__case-metrics,
-  .eval-page__compare {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
-@media (max-width: 900px) {
-  .eval-page__metrics,
-  .eval-page__case-metrics,
-  .eval-page__compare {
-    grid-template-columns: 1fr;
-  }
-}
-</style>
-
-<style lang="scss">
-.eval-drawer {
-  .el-drawer__body {
-    overflow: auto;
-    padding: 8px 20px 24px;
-  }
-}
-
-.eval-drawer__query {
-  margin: 0 0 8px;
-  font-size: 16px;
-  line-height: 1.6;
-  color: #1f2d3d;
-  font-weight: 600;
-}
-
-.eval-drawer__section {
-  margin-top: 20px;
-  padding-top: 16px;
-  border-top: 1px solid #eef2f5;
-
-  h3 {
+  &__nav-item {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 8px;
-    margin: 0 0 12px;
-    font-size: 13px;
-    font-weight: 600;
-    color: #64748b;
+    width: 100%;
+    padding: 10px 12px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: #334155;
+    font-size: 14px;
+    text-align: left;
+    cursor: pointer;
 
     em {
       font-style: normal;
       color: #0f4c5c;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    &.is-active {
+      background: rgba(15, 76, 92, 0.1);
+      color: #0f4c5c;
+      font-weight: 600;
+    }
+
+    &:disabled {
+      color: #94a3b8;
+      cursor: not-allowed;
     }
   }
 }
 
-.eval-drawer__metrics {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-
-  > div {
-    padding: 10px 12px;
-    background: #f6f9fa;
-    border: 1px solid #e6ecef;
-    border-radius: 10px;
-    color: #1f2d3d;
-    font-size: 14px;
-    font-weight: 600;
+@media (max-width: 900px) {
+  .eval-history {
+    grid-template-columns: 1fr;
   }
 
-  span {
-    display: block;
-    margin-bottom: 4px;
-    color: #64748b;
-    font-size: 12px;
-    font-weight: 500;
-  }
-}
-
-.eval-drawer__note {
-  margin: 0 0 10px;
-  padding: 8px 10px;
-  background: #f8fafb;
-  border: 1px solid #e6ecef;
-  border-radius: 8px;
-  color: #64748b;
-  font-size: 13px;
-}
-
-.eval-drawer__empty {
-  margin: 0;
-  color: #94a3b8;
-  font-size: 13px;
-}
-
-.eval-drawer__docs {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.eval-drawer__doc {
-  padding: 10px 12px;
-  border: 1px solid #e6ecef;
-  border-radius: 10px;
-  background: #fafcfd;
-
-  + .eval-drawer__doc {
-    margin-top: 8px;
-  }
-}
-
-.eval-drawer__doc-head {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  color: #1f2d3d;
-  font-size: 13px;
-  line-height: 1.5;
-
-  span {
-    flex-shrink: 0;
-    color: #0f4c5c;
-    font-weight: 700;
+  .eval-history__nav {
+    position: static;
+    flex-direction: row;
+    overflow-x: auto;
   }
 
-  strong {
-    flex: 1;
-    min-width: 0;
-    font-weight: 600;
-    word-break: break-all;
+  .eval-history__nav-item {
+    flex: 0 0 auto;
+    width: auto;
   }
-}
-
-.eval-drawer__meta {
-  margin: 6px 0 0 24px;
-  color: #64748b;
-  font-size: 12px;
 }
 </style>

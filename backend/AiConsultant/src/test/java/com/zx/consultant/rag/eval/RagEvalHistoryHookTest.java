@@ -13,6 +13,7 @@ import java.util.Map;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zx.consultant.common.utils.BaseContext;
 import com.zx.consultant.rag.entity.RetrievedChunk;
+import com.zx.consultant.rag.eval.vo.EvalRunExecuteVO;
 import com.zx.consultant.rag.retriever.HybridRetriever;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,7 +34,8 @@ class RagEvalHistoryHookTest {
 
     @BeforeEach
     void setUp() {
-        ragEvalService = new RagEvalService(retriever, new ObjectMapper(), writer, runService);
+        ragEvalService = new RagEvalService(retriever, new ObjectMapper(), writer, runService, null);
+        ReflectionTestUtils.setField(ragEvalService, "embeddingModelName", "text-embedding-v3");
         ReflectionTestUtils.setField(ragEvalService, "retrieverMaxResults", 8);
         ReflectionTestUtils.setField(ragEvalService, "retrieverMinScore", 0.75d);
         ReflectionTestUtils.setField(ragEvalService, "rrfK", 60);
@@ -61,6 +63,7 @@ class RagEvalHistoryHookTest {
         assertEquals(1.0d, result.getMrr());
         assertEquals(7L, runService.userId);
         assertEquals(1L, runService.knowledgeId);
+        assertEquals("text-embedding-v3", runService.modelName);
         assertEquals(RagEvalDatasetSource.GOLDEN_SET, runService.datasetSource);
         assertEquals("golden-set.json", runService.datasetName);
         assertEquals(5, runService.config.get("evalTopK"));
@@ -68,6 +71,17 @@ class RagEvalHistoryHookTest {
         assertEquals(List.of("write", "success"), events);
         assertEquals(result, runService.successResult);
         assertTrue(runService.failures.isEmpty());
+    }
+
+    @Test
+    void executeReturnsRunIdWithTheSameMetrics() {
+        retriever.hits = List.of(chunk(100L));
+
+        EvalRunExecuteVO executed = ragEvalService.execute(List.of(evalCase()), 1L, "cases.json");
+
+        assertEquals(11L, executed.getRunId());
+        assertEquals(1.0d, executed.getResult().getHitRate());
+        assertEquals(executed.getResult(), runService.successResult);
     }
 
     @Test
@@ -209,6 +223,8 @@ class RagEvalHistoryHookTest {
         private int createCount;
         private Long userId;
         private Long knowledgeId;
+        private String modelName;
+        private String knowledgeName;
         private RagEvalDatasetSource datasetSource;
         private String datasetName;
         private Map<String, Object> config;
@@ -219,14 +235,17 @@ class RagEvalHistoryHookTest {
         }
 
         @Override
-        public Long createRunning(Long userId, Long knowledgeId, RagEvalDatasetSource datasetSource,
-                String datasetName, List<EvalCase> cases, Map<String, Object> configSnapshot) {
+        public Long createRunning(Long userId, Long knowledgeId, String modelName, String knowledgeName,
+                RagEvalDatasetSource datasetSource, String datasetName, List<EvalCase> cases,
+                Map<String, Object> configSnapshot) {
             createCount++;
             if (createError != null) {
                 throw createError;
             }
             this.userId = userId;
             this.knowledgeId = knowledgeId;
+            this.modelName = modelName;
+            this.knowledgeName = knowledgeName;
             this.datasetSource = datasetSource;
             this.datasetName = datasetName;
             this.config = configSnapshot;
@@ -234,16 +253,22 @@ class RagEvalHistoryHookTest {
         }
 
         @Override
-        public void markSuccess(Long runId, EvalResult result, long durationMs) {
+        public void markSuccess(Long runId, EvalResult result, long durationMs, String modelName,
+                String knowledgeName) {
             events.add("success");
             this.successResult = result;
+            this.modelName = modelName;
+            this.knowledgeName = knowledgeName;
         }
 
         @Override
-        public void markFailed(Long runId, EvalResult result, long durationMs, Throwable error) {
+        public void markFailed(Long runId, EvalResult result, long durationMs, Throwable error,
+                String modelName, String knowledgeName) {
             if (failError != null) {
                 throw failError;
             }
+            this.modelName = modelName;
+            this.knowledgeName = knowledgeName;
             failures.add(new FailedMark(result, error));
         }
     }

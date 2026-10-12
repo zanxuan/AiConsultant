@@ -23,6 +23,12 @@ public class RagEvalRun {
 
     private Long knowledgeId;
 
+    /** 评测使用的向量模型，对应 langchain4j embedding-model */
+    private String modelName;
+
+    /** 创建记录时的知识库名称快照 */
+    private String knowledgeName;
+
     /** {@link com.zx.consultant.rag.eval.RagEvalDatasetSource#name()} */
     private String datasetSource;
 

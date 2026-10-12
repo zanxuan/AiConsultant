@@ -28,6 +28,8 @@ class RagEvalRunServicePermissionTest {
         RagEvalRunDetailVO detail = service.getDetail(9L, 7L);
 
         assertEquals(9L, detail.getId());
+        assertEquals("text-embedding-v3", detail.getModelName());
+        assertEquals("Redis知识库", detail.getKnowledgeName());
         assertEquals("q", detail.getCases().get(0).getQuery());
         assertEquals(1, detail.getResult().getTotal());
         assertEquals(5, detail.getConfigSnapshot().get("evalTopK"));
@@ -67,21 +69,24 @@ class RagEvalRunServicePermissionTest {
 
     @Test
     void createAndFailureUpdateKeepStatusOutsideCallerTransaction() throws Exception {
-        assertRequiresNew("createRunning", Long.class, Long.class, RagEvalDatasetSource.class,
-                String.class, List.class, Map.class);
-        assertRequiresNew("markSuccess", Long.class, EvalResult.class, long.class);
-        assertRequiresNew("markFailed", Long.class, EvalResult.class, long.class, Throwable.class);
+        assertRequiresNew("createRunning", Long.class, Long.class, String.class, String.class,
+                RagEvalDatasetSource.class, String.class, List.class, Map.class);
+        assertRequiresNew("markSuccess", Long.class, EvalResult.class, long.class, String.class, String.class);
+        assertRequiresNew("markFailed", Long.class, EvalResult.class, long.class, Throwable.class,
+                String.class, String.class);
 
         PersistingRunService service = new PersistingRunService();
         EvalCase evalCase = new EvalCase();
         evalCase.setId(1);
         evalCase.setQuery("q");
         evalCase.setExpectedDocIds(List.of("100"));
-        Long runId = service.createRunning(7L, 1L, RagEvalDatasetSource.UPLOAD, "cases.json",
-                List.of(evalCase), Map.of("evalTopK", 5));
+        Long runId = service.createRunning(7L, 1L, "text-embedding-v3", "Redis知识库",
+                RagEvalDatasetSource.UPLOAD, "cases.json", List.of(evalCase), Map.of("evalTopK", 5));
 
         assertEquals(99L, runId);
         assertEquals(RagEvalRunStatus.RUNNING.name(), service.saved.getStatus());
+        assertEquals("text-embedding-v3", service.saved.getModelName());
+        assertEquals("Redis知识库", service.saved.getKnowledgeName());
         assertTrue(service.saved.getDatasetSnapshot().contains("\"query\":\"q\""));
 
         EvalResult result = new EvalResult();
@@ -89,9 +94,12 @@ class RagEvalRunServicePermissionTest {
         result.setHitRate(1.0d);
         result.setRecall(1.0d);
         result.setMrr(1.0d);
-        service.markFailed(runId, result, 12L, new IllegalStateException("redis down"));
+        service.markFailed(runId, result, 12L, new IllegalStateException("redis down"),
+                "text-embedding-v3", "Redis知识库");
 
         assertEquals(RagEvalRunStatus.FAILED.name(), service.updated.getStatus());
+        assertEquals("text-embedding-v3", service.updated.getModelName());
+        assertEquals("Redis知识库", service.updated.getKnowledgeName());
         assertEquals(1.0d, service.updated.getHitRate());
         assertEquals(1.0d, service.updated.getRecallAtK());
         assertEquals("redis down", service.updated.getErrorMessage());
@@ -109,6 +117,8 @@ class RagEvalRunServicePermissionTest {
         run.setId(id);
         run.setUserId(7L);
         run.setKnowledgeId(1L);
+        run.setModelName("text-embedding-v3");
+        run.setKnowledgeName("Redis知识库");
         run.setDatasetSource(RagEvalDatasetSource.UPLOAD.name());
         run.setDatasetName("cases.json");
         run.setStatus(RagEvalRunStatus.SUCCESS.name());

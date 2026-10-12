@@ -17,6 +17,12 @@ public class RagEvalRunVO {
     @Schema(description = "知识库 ID")
     private Long knowledgeId;
 
+    @Schema(description = "评测使用的向量模型")
+    private String modelName;
+
+    @Schema(description = "评测当时的知识库名称")
+    private String knowledgeName;
+
     @Schema(description = "测试集来源：GOLDEN_SET / UPLOAD")
     private String datasetSource;
 

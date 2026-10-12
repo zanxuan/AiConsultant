@@ -13,11 +13,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import com.zx.consultant.common.utils.BaseContext;
+import com.zx.consultant.knowledge.entity.KnowledgeBase;
+import com.zx.consultant.knowledge.mapper.KnowledgeBaseMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zx.consultant.rag.entity.RetrievedChunk;
+import com.zx.consultant.rag.eval.vo.EvalRunExecuteVO;
 import com.zx.consultant.rag.retriever.HybridRetriever;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +40,11 @@ public class RagEvalService {
     private final ObjectMapper objectMapper;
     private final EvalReportWriter evalReportWriter;
     private final RagEvalRunService ragEvalRunService;
+    private final KnowledgeBaseMapper knowledgeBaseMapper;
+
+    /** 检索评测实际使用的向量模型，不参与指标计算 */
+    @Value("${langchain4j.open-ai.embedding-model.model-name:text-embedding-v3}")
+    private String embeddingModelName;
 
     @Value("${app.rag.eval.knowledge-id:#{null}}")
     private Long knowledgeId;
@@ -86,6 +94,13 @@ public class RagEvalService {
      * 旧入口的显式知识库参数。传入 null 时回退到配置项 app.rag.eval.knowledge-id。
      */
     public EvalResult evaluateGoldenSet(Long requestedKnowledgeId) {
+        return executeGoldenSet(requestedKnowledgeId).getResult();
+    }
+
+    /**
+     * 与 {@link #evaluateGoldenSet(Long)} 相同，额外带回 runId 供详情页跳转。
+     */
+    public EvalRunExecuteVO executeGoldenSet(Long requestedKnowledgeId) {
         Long id = requestedKnowledgeId != null ? requestedKnowledgeId : this.knowledgeId;
         if (id == null) {
             throw new IllegalStateException("请配置 app.rag.eval.knowledge-id（评测知识库 ID）");
@@ -95,7 +110,7 @@ public class RagEvalService {
         if (goldenSet.isEmpty()) {
             throw new IllegalStateException("golden-set 为空: " + goldenFile.getAbsolutePath());
         }
-        return evaluate(goldenSet, id, goldenFile.getName(), RagEvalDatasetSource.GOLDEN_SET);
+        return execute(goldenSet, id, goldenFile.getName(), RagEvalDatasetSource.GOLDEN_SET);
     }
 
     /**
@@ -109,7 +124,14 @@ public class RagEvalService {
      * datasetName 只用于控制台报告标题，不参与指标计算。上传测试集走这里，来源记为 UPLOAD。
      */
     public EvalResult evaluate(List<EvalCase> cases, Long knowledgeId, String datasetName) {
-        return evaluate(cases, knowledgeId, datasetName, RagEvalDatasetSource.UPLOAD);
+        return execute(cases, knowledgeId, datasetName).getResult();
+    }
+
+    /**
+     * 上传测试集的执行入口。指标计算与 {@link #evaluate(List, Long, String)} 相同，并返回 runId。
+     */
+    public EvalRunExecuteVO execute(List<EvalCase> cases, Long knowledgeId, String datasetName) {
+        return execute(cases, knowledgeId, datasetName, RagEvalDatasetSource.UPLOAD);
     }
 
     /**
@@ -118,6 +140,15 @@ public class RagEvalService {
      */
     public EvalResult evaluate(List<EvalCase> cases, Long knowledgeId, String datasetName,
             RagEvalDatasetSource datasetSource) {
+                
+        return execute(cases, knowledgeId, datasetName, datasetSource).getResult();
+    }
+
+    /**
+     * 评测计算与落库。runId 不写入 {@link EvalResult}，避免进结果快照。
+     */
+    public EvalRunExecuteVO execute(List<EvalCase> cases, Long knowledgeId, String datasetName,
+            RagEvalDatasetSource datasetSource) {
         if (knowledgeId == null) {
             throw new IllegalStateException("请配置 app.rag.eval.knowledge-id（评测知识库 ID）");
         }
@@ -125,17 +156,23 @@ public class RagEvalService {
             throw new IllegalStateException("评测测试集为空");
         }
 
-        Long runId = createRunQuietly(cases, knowledgeId, datasetName, datasetSource);
+        String modelName = embeddingModelName;
+        String knowledgeName = resolveKnowledgeName(knowledgeId);
+        Long runId = createRunQuietly(cases, knowledgeId, datasetName, datasetSource, modelName, knowledgeName);
         long startNs = System.nanoTime();
         EvalResult result = null;
         try {
             result = calculate(cases, knowledgeId);
             printReport(datasetName, result);
             evalReportWriter.write(result);
-            markSuccessQuietly(runId, result, startNs);
-            return result;
+            markSuccessQuietly(runId, result, startNs, modelName, knowledgeName);
+          
+            EvalRunExecuteVO executed = new EvalRunExecuteVO();
+            executed.setRunId(runId);
+            executed.setResult(result);
+            return executed;
         } catch (RuntimeException e) {
-            markFailedQuietly(runId, result, startNs, e);
+            markFailedQuietly(runId, result, startNs, e, modelName, knowledgeName);
             throw e;
         }
     }
@@ -207,11 +244,13 @@ public class RagEvalService {
      * 历史库不可用时继续评测，避免影响原有接口。
      */
     private Long createRunQuietly(List<EvalCase> cases, Long knowledgeId, String datasetName,
-            RagEvalDatasetSource datasetSource) {
+            RagEvalDatasetSource datasetSource, String modelName, String knowledgeName) {
         try {
             return ragEvalRunService.createRunning(
                     BaseContext.getCurrentId(),
                     knowledgeId,
+                    modelName,
+                    knowledgeName,
                     datasetSource,
                     datasetName,
                     cases,
@@ -222,25 +261,46 @@ public class RagEvalService {
         }
     }
 
-    private void markSuccessQuietly(Long runId, EvalResult result, long startNs) {
+    private void markSuccessQuietly(Long runId, EvalResult result, long startNs, String modelName,
+            String knowledgeName) {
         if (runId == null) {
             return;
         }
         try {
-            ragEvalRunService.markSuccess(runId, result, elapsedMs(startNs));
+            ragEvalRunService.markSuccess(runId, result, elapsedMs(startNs), modelName, knowledgeName);
         } catch (Exception e) {
             log.error("更新评测成功状态失败, runId={}", runId, e);
         }
     }
 
-    private void markFailedQuietly(Long runId, EvalResult result, long startNs, Throwable error) {
+    private void markFailedQuietly(Long runId, EvalResult result, long startNs, Throwable error,
+            String modelName, String knowledgeName) {
         if (runId == null) {
             return;
         }
         try {
-            ragEvalRunService.markFailed(runId, result, elapsedMs(startNs), error);
+            ragEvalRunService.markFailed(runId, result, elapsedMs(startNs), error, modelName, knowledgeName);
         } catch (Exception e) {
             log.error("更新评测失败状态失败, runId={}", runId, e);
+        }
+    }
+
+    /**
+     * 记下评测当时的知识库名称。查不到或查询失败时留空，不中断评测。
+     */
+    private String resolveKnowledgeName(Long knowledgeId) {
+        if (knowledgeBaseMapper == null || knowledgeId == null) {
+            return null;
+        }
+        try {
+            KnowledgeBase knowledgeBase = knowledgeBaseMapper.selectById(knowledgeId);
+            if (knowledgeBase == null || knowledgeBase.getName() == null || knowledgeBase.getName().isBlank()) {
+                return null;
+            }
+            return knowledgeBase.getName();
+        } catch (Exception e) {
+            log.warn("读取知识库名称失败, knowledgeId={}", knowledgeId, e);
+            return null;
         }
     }
 

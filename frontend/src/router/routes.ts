@@ -52,6 +52,12 @@ export const routes: RouteRecordRaw[] = [
         meta: { title: 'RAG 评测', requiresAuth: true },
       },
       {
+        path: 'eval/compare',
+        name: 'eval-compare',
+        component: () => import('@/views/eval/compare.vue'),
+        meta: { title: '评测对比', requiresAuth: true },
+      },
+      {
         path: 'history',
         name: 'history',
         component: () => import('@/views/history/index.vue'),

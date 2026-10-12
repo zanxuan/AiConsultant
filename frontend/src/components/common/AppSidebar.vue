@@ -71,6 +71,7 @@ function toggleCollapsed() {
 
 const active = computed(() => {
   if (route.path.startsWith('/knowledge')) return '/knowledge'
+  if (route.path.startsWith('/eval')) return '/eval'
   return route.path
 })
 </script>

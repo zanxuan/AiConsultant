@@ -30,6 +30,8 @@ export const API = {
   EVAL: {
     DATASET: '/eval/dataset',
     RUN: '/eval/run',
+    RUNS: '/eval/runs',
+    RUN_DETAIL: (id: number | string) => `/eval/runs/${id}`,
   },
   HISTORY: {
     LIST: '/conversations',

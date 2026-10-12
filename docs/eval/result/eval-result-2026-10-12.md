@@ -10,9 +10,9 @@ Recall@5: 92%
 
 MRR: 0.84
 
-Avg Latency: 322 ms
+Avg Latency: 275 ms
 
-P95 Latency: 307 ms
+P95 Latency: 339 ms
 
 ---
 
@@ -44,7 +44,7 @@ Case Id: 16
 
 ### Retrieve Latency
 
-266 ms
+215 ms
 
 ---
 
@@ -74,7 +74,7 @@ Case Id: 29
 
 ### Retrieve Latency
 
-265 ms
+245 ms
 
 ---
 
@@ -102,7 +102,7 @@ Case Id: 34
 
 ### Retrieve Latency
 
-214 ms
+236 ms
 
 ---
 
@@ -129,7 +129,7 @@ Case Id: 37
 
 ### Retrieve Latency
 
-213 ms
+318 ms
 
 ---
 

@@ -44,11 +44,14 @@ public class RagEvalRunService extends ServiceImpl<RagEvalRunMapper, RagEvalRun>
      * 校验通过后插入 RUNNING。快照序列化失败时不落库。
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public Long createRunning(Long userId, Long knowledgeId, RagEvalDatasetSource datasetSource,
-            String datasetName, List<EvalCase> cases, Map<String, Object> configSnapshot) {
+    public Long createRunning(Long userId, Long knowledgeId, String modelName, String knowledgeName,
+            RagEvalDatasetSource datasetSource, String datasetName, List<EvalCase> cases,
+            Map<String, Object> configSnapshot) {
         RagEvalRun run = new RagEvalRun();
         run.setUserId(userId);
         run.setKnowledgeId(knowledgeId);
+        run.setModelName(modelName);
+        run.setKnowledgeName(knowledgeName);
         run.setDatasetSource(datasetSource == null
                 ? RagEvalDatasetSource.UPLOAD.name()
                 : datasetSource.name());
@@ -64,12 +67,15 @@ public class RagEvalRunService extends ServiceImpl<RagEvalRunMapper, RagEvalRun>
      * 评测正常返回后写入指标和完整结果。
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void markSuccess(Long runId, EvalResult result, long durationMs) {
+    public void markSuccess(Long runId, EvalResult result, long durationMs, String modelName,
+            String knowledgeName) {
         if (runId == null) {
             return;
         }
         RagEvalRun update = new RagEvalRun();
         update.setId(runId);
+        update.setModelName(modelName);
+        update.setKnowledgeName(knowledgeName);
         update.setStatus(RagEvalRunStatus.SUCCESS.name());
         update.setDurationMs(durationMs);
         update.setEndTime(LocalDateTime.now());
@@ -83,12 +89,15 @@ public class RagEvalRunService extends ServiceImpl<RagEvalRunMapper, RagEvalRun>
      * 评测中途失败时更新同一行。result 可能为空（检索阶段就抛错）。
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void markFailed(Long runId, EvalResult result, long durationMs, Throwable error) {
+    public void markFailed(Long runId, EvalResult result, long durationMs, Throwable error,
+            String modelName, String knowledgeName) {
         if (runId == null) {
             return;
         }
         RagEvalRun update = new RagEvalRun();
         update.setId(runId);
+        update.setModelName(modelName);
+        update.setKnowledgeName(knowledgeName);
         update.setStatus(RagEvalRunStatus.FAILED.name());
         update.setDurationMs(durationMs);
         update.setEndTime(LocalDateTime.now());
@@ -115,6 +124,8 @@ public class RagEvalRunService extends ServiceImpl<RagEvalRunMapper, RagEvalRun>
         wrapper.select(
                 RagEvalRun::getId,
                 RagEvalRun::getKnowledgeId,
+                RagEvalRun::getModelName,
+                RagEvalRun::getKnowledgeName,
                 RagEvalRun::getDatasetSource,
                 RagEvalRun::getDatasetName,
                 RagEvalRun::getStatus,
@@ -212,6 +223,8 @@ public class RagEvalRunService extends ServiceImpl<RagEvalRunMapper, RagEvalRun>
     private void copyToVo(RagEvalRun run, RagEvalRunVO vo) {
         vo.setId(run.getId());
         vo.setKnowledgeId(run.getKnowledgeId());
+        vo.setModelName(run.getModelName());
+        vo.setKnowledgeName(run.getKnowledgeName());
         vo.setDatasetSource(run.getDatasetSource());
         vo.setDatasetName(run.getDatasetName());
         vo.setStatus(run.getStatus());

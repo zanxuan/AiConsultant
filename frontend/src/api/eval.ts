@@ -1,6 +1,7 @@
 import { API } from '@/constants/api'
 import { request } from '@/utils/request'
-import type { EvalDataset, EvalResult } from '@/types/eval'
+import type { PageResult } from '@/types/api'
+import type { EvalDataset, EvalRun, EvalRunDetail, EvalRunExecute, EvalRunQuery } from '@/types/eval'
 
 /** GET /api/v1/eval/dataset — 读取现有 golden-set，不执行评测 */
 export function getEvalDatasetApi() {
@@ -12,7 +13,7 @@ export function getEvalDatasetApi() {
 
 /** POST /api/v1/eval/run — 同步跑固定 golden-set，不上传文件 */
 export function runEvalApi(knowledgeId?: number | string) {
-  return request<EvalResult>({
+  return request<EvalRunExecute>({
     url: API.EVAL.RUN,
     method: 'post',
     params: knowledgeId == null ? undefined : { knowledgeId: String(knowledgeId) },
@@ -29,10 +30,27 @@ export function runUploadedEvalApi(dataset: File, knowledgeId: number | string) 
   const formData = new FormData()
   formData.append('dataset', dataset)
   formData.append('knowledgeId', String(knowledgeId))
-  return request<EvalResult>({
+  return request<EvalRunExecute>({
     url: API.EVAL.RUN,
     method: 'post',
     data: formData,
     timeout: 10 * 60 * 1000,
+  })
+}
+
+/** GET /api/v1/eval/runs — 当前用户的评测历史，后端按 pageNum / pageSize 分页 */
+export function getEvalRunsApi(params?: EvalRunQuery) {
+  return request<PageResult<EvalRun>>({
+    url: API.EVAL.RUNS,
+    method: 'get',
+    params,
+  })
+}
+
+/** GET /api/v1/eval/runs/{id} — 单条详情，含完整 EvalResult */
+export function getEvalRunDetailApi(id: number | string) {
+  return request<EvalRunDetail>({
+    url: API.EVAL.RUN_DETAIL(id),
+    method: 'get',
   })
 }

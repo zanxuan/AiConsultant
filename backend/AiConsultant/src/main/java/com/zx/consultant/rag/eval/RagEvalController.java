@@ -7,6 +7,7 @@ import com.zx.consultant.common.exception.BaseException;
 import com.zx.consultant.common.result.PageResult;
 import com.zx.consultant.common.result.Result;
 import com.zx.consultant.common.utils.BaseContext;
+import com.zx.consultant.rag.eval.vo.EvalRunExecuteVO;
 import com.zx.consultant.rag.eval.vo.RagEvalRunDetailVO;
 import com.zx.consultant.rag.eval.vo.RagEvalRunVO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -23,12 +24,12 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
- * 现有离线 RAG 评测的 HTTP 入口：同步调用 {@link RagEvalService#evaluate()}，原样返回 {@link EvalResult}。
+ * 现有离线 RAG 评测的 HTTP 入口。发起评测时在原有结果外返回 runId，供详情页按记录打开。
  */
 @RestController
 @RequestMapping("/api/v1/eval")
 @RequiredArgsConstructor
-@Tag(name = "RAG 评测", description = "触发现有离线检索评测并返回 EvalResult")
+@Tag(name = "RAG 评测", description = "触发现有离线检索评测，并按记录 ID 查看历史详情")
 public class RagEvalController {
 
     private final RagEvalService ragEvalService;
@@ -52,12 +53,12 @@ public class RagEvalController {
      * knowledgeId 为空则沿用 app.rag.eval.knowledge-id。
      */
     @PostMapping("/run")
-    @Operation(summary = "运行离线 RAG 评测", description = "同步执行固定 golden-set，返回 Hit Rate / Recall / MRR / failedCases")
-    public Result<EvalResult> run(
+    @Operation(summary = "运行离线 RAG 评测", description = "同步执行固定 golden-set，返回 runId 与评测结果")
+    public Result<EvalRunExecuteVO> run(
             @Parameter(description = "评测知识库 ID，对应 app.rag.eval.knowledge-id")
             @RequestParam(value = "knowledgeId", required = false) Long knowledgeId) {
         try {
-            return Result.success(ragEvalService.evaluateGoldenSet(knowledgeId));
+            return Result.success(ragEvalService.executeGoldenSet(knowledgeId));
         } catch (IllegalStateException e) {
             throw new BaseException(e.getMessage());
         }
@@ -67,8 +68,8 @@ public class RagEvalController {
      * 新入口：上传测试集 JSON，并指定知识库 ID。解析后走同一套评测核心。
      */
     @PostMapping(value = "/run", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @Operation(summary = "上传测试集并评测", description = "multipart 提交 dataset 与 knowledgeId，返回现有 EvalResult")
-    public Result<EvalResult> runUploaded(
+    @Operation(summary = "上传测试集并评测", description = "multipart 提交 dataset 与 knowledgeId，返回 runId 与评测结果")
+    public Result<EvalRunExecuteVO> runUploaded(
             @Parameter(description = "EvalCase JSON 数组，格式与 golden-set 一致")
             @RequestParam("dataset") MultipartFile dataset,
             @Parameter(description = "知识库 ID")
@@ -83,9 +84,11 @@ public class RagEvalController {
         if (sourceName == null || sourceName.isBlank()) {
             sourceName = "uploaded-dataset";
         }
+       
         try (InputStream input = dataset.getInputStream()) {
             List<EvalCase> cases = ragEvalService.parseCases(input, sourceName);
-            return Result.success(ragEvalService.evaluate(cases, knowledgeId, sourceName));
+                 
+            return Result.success(ragEvalService.execute(cases, knowledgeId, sourceName));
         } catch (IllegalStateException e) {
             throw new BaseException(e.getMessage());
         } catch (IOException e) {
