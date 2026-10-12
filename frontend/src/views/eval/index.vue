@@ -1,39 +1,34 @@
 <template>
-  <PageContainer title="RAG 评测" desc="基于现有 golden-set 的离线检索评测">
+  <PageContainer title="RAG 评测" desc="上传测试集并选择知识库，运行离线检索评测">
     <section class="eval-page__card">
-      <div class="eval-page__list-title">当前测试集</div>
-      <div v-loading="datasetLoading" class="eval-page__summary">
-        <div class="eval-page__summary-name">{{ datasetName || '—' }}</div>
-        <div class="eval-page__summary-meta">共 {{ caseCount }} 条测试用例</div>
-        <div class="eval-page__actions">
-          <el-button :disabled="!cases.length" @click="showDataset = !showDataset">
-            {{ showDataset ? '收起测试集' : '查看测试集' }}
-          </el-button>
-          <el-button type="primary" :loading="running" :disabled="running" @click="onRun">
-            开始评测
-          </el-button>
+      <div class="eval-page__list-title">开始评测</div>
+      <div class="eval-page__form">
+        <div class="eval-page__field">
+          <span class="eval-page__label">测试集</span>
+          <el-upload
+            :auto-upload="false"
+            :show-file-list="false"
+            accept=".json,application/json"
+            :disabled="running"
+            @change="onDatasetChange"
+          >
+            <el-button :disabled="running">选择测试集</el-button>
+          </el-upload>
+          <span v-if="datasetFile" class="eval-page__file">{{ datasetFile.name }}</span>
         </div>
+        <div class="eval-page__field">
+          <span class="eval-page__label">知识库</span>
+          <KnowledgeSelect v-model="knowledgeId" placeholder="请选择知识库" />
+        </div>
+        <el-button
+          type="primary"
+          :loading="running"
+          :disabled="running || !datasetFile || !knowledgeId"
+          @click="onRun"
+        >
+          开始评测
+        </el-button>
       </div>
-    </section>
-
-    <section v-if="showDataset" class="eval-page__card">
-      <div class="eval-page__list-title">测试集</div>
-      <el-table
-        :data="cases"
-        class="eval-page__table"
-        header-cell-class-name="eval-page__table-header"
-      >
-        <el-table-column prop="id" label="ID" width="80" />
-        <el-table-column prop="query" label="Query" min-width="280" show-overflow-tooltip />
-        <el-table-column label="Expected Document IDs" min-width="240">
-          <template #default="{ row }">
-            <span class="eval-page__ids">{{ formatIds(row.expectedDocIds) }}</span>
-          </template>
-        </el-table-column>
-        <template #empty>
-          <el-empty description="暂无测试用例" :image-size="100" />
-        </template>
-      </el-table>
     </section>
 
     <section v-if="result" class="eval-page__card">
@@ -217,27 +212,25 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { ElMessage } from 'element-plus'
+import type { UploadFile } from 'element-plus'
 import PageContainer from '@/components/common/PageContainer.vue'
-import { getEvalDatasetApi, runEvalApi } from '@/api/eval'
+import KnowledgeSelect from '@/components/knowledge/KnowledgeSelect.vue'
+import { runUploadedEvalApi } from '@/api/eval'
 import type { EvalCase, EvalCaseResult, EvalCaseView, EvalFailedCase, EvalResult } from '@/types/eval'
 import { useAuth } from '@/composables/useAuth'
 
 const { hasToken } = useAuth()
 
-const datasetLoading = ref(false)
-const datasetName = ref('')
-const cases = ref<EvalCase[]>([])
-const showDataset = ref(false)
+const datasetFile = ref<File | null>(null)
+const knowledgeId = ref<number | string | null>(null)
 const running = ref(false)
 const result = ref<EvalResult | null>(null)
 const drawerVisible = ref(false)
 const selectedCase = ref<EvalCaseView | null>(null)
 const statusFilter = ref<'all' | 'passed' | 'failed'>('all')
 const keyword = ref('')
-
-const caseCount = computed(() => cases.value.length)
 
 function caseKey(id: number | string | null | undefined) {
   return id == null ? '' : String(id)
@@ -261,7 +254,7 @@ const caseViews = computed<EvalCaseView[]>(() => {
   if (result.value.cases?.length) {
     return result.value.cases.map((item) => toCaseViewFromResult(item))
   }
-  const source = cases.value.length ? cases.value : (result.value.failedCases ?? [])
+  const source = result.value.failedCases ?? []
   return source.map((item) => toCaseView(item))
 })
 
@@ -331,11 +324,6 @@ function resolveCaseDetail(row: EvalCaseView): EvalCaseView {
   return { ...row }
 }
 
-function formatIds(ids?: string[]) {
-  if (!ids || !ids.length) return '-'
-  return ids.join(', ')
-}
-
 function formatRate(value?: number | null) {
   if (value === null || value === undefined || Number.isNaN(Number(value))) return '-'
   return `${(Number(value) * 100).toFixed(1)}%`
@@ -383,20 +371,8 @@ function onDrawerClose() {
   drawerVisible.value = false
 }
 
-async function fetchDataset() {
-  if (!hasToken()) {
-    cases.value = []
-    datasetName.value = ''
-    return
-  }
-  datasetLoading.value = true
-  try {
-    const data = await getEvalDatasetApi()
-    datasetName.value = data?.name ?? ''
-    cases.value = data?.cases ?? []
-  } finally {
-    datasetLoading.value = false
-  }
+function onDatasetChange(uploadFile: UploadFile) {
+  datasetFile.value = uploadFile.raw ?? null
 }
 
 async function onRun() {
@@ -404,10 +380,18 @@ async function onRun() {
     ElMessage.warning('请先登录后再开始评测')
     return
   }
+  if (!datasetFile.value) {
+    ElMessage.warning('请选择测试集')
+    return
+  }
+  if (!knowledgeId.value) {
+    ElMessage.warning('请选择知识库')
+    return
+  }
   if (running.value) return
   running.value = true
   try {
-    result.value = await runEvalApi()
+    result.value = await runUploadedEvalApi(datasetFile.value, knowledgeId.value)
     selectedCase.value = null
     drawerVisible.value = false
     ElMessage.success('评测完成')
@@ -415,8 +399,6 @@ async function onRun() {
     running.value = false
   }
 }
-
-onMounted(fetchDataset)
 </script>
 
 <style scoped lang="scss">
@@ -462,6 +444,35 @@ onMounted(fetchDataset)
 
   &__filters {
     margin-bottom: 12px;
+  }
+
+  &__form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px 24px;
+  }
+
+  &__field {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  &__label {
+    flex-shrink: 0;
+    color: #1f2d3d;
+    font-size: 14px;
+  }
+
+  &__file {
+    max-width: 240px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #64748b;
+    font-size: 13px;
   }
 
   &__summary-name {

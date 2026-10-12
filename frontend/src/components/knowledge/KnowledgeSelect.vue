@@ -2,7 +2,7 @@
   <el-select
     :model-value="modelValue"
     class="knowledge-select"
-    placeholder="选择知识库"
+    :placeholder="placeholder"
     clearable
     filterable
     :loading="knowledgeStore.loading"
@@ -27,9 +27,13 @@ import { Folder } from '@element-plus/icons-vue'
 import { useKnowledgeStore } from '@/stores/knowledge'
 import { useAuth } from '@/composables/useAuth'
 
-defineProps<{
-  modelValue: number | string | null
-}>()
+withDefaults(
+  defineProps<{
+    modelValue: number | string | null
+    placeholder?: string
+  }>(),
+  { placeholder: '选择知识库' },
+)
 
 defineEmits<{
   'update:modelValue': [value: number | string | null]

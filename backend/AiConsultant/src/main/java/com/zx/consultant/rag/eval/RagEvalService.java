@@ -1,13 +1,18 @@
 package com.zx.consultant.rag.eval;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import com.zx.consultant.common.utils.BaseContext;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -18,7 +23,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * RAG Evaluation Runner：读 golden-set → HybridRetriever → 文档级指标 → 打印 + 写报告。
+ * RAG Evaluation：评测核心只消费用例列表和知识库 ID。
+ * 固定 golden-set 与上传测试集都先解析成 {@link EvalCase}，再进入同一套指标计算。
  */
 @Slf4j
 @Service
@@ -30,12 +36,23 @@ public class RagEvalService {
     private final HybridRetriever hybridRetriever;
     private final ObjectMapper objectMapper;
     private final EvalReportWriter evalReportWriter;
+    private final RagEvalRunService ragEvalRunService;
 
     @Value("${app.rag.eval.knowledge-id:#{null}}")
     private Long knowledgeId;
 
     @Value("${app.rag.eval.golden-set-path:docs/eval/golden-set.json}")
     private String goldenSetPath;
+
+    /** 只写入配置快照，不参与指标计算 */
+    @Value("${app.rag.retriever.max-results:5}")
+    private Integer retrieverMaxResults;
+
+    @Value("${app.rag.retriever.min-score:0.75}")
+    private Double retrieverMinScore;
+
+    @Value("${app.rag.retriever.rrf-k:60}")
+    private Integer rrfK;
 
     /**
      * 供 HTTP 入口写入评测知识库 ID，对应配置 app.rag.eval.knowledge-id。
@@ -58,21 +75,75 @@ public class RagEvalService {
     }
 
     /**
-     * 评估
-     * @return 评估结果
+     * 旧入口：读取固定 golden-set，再交给评测核心。
+     * 供 {@code --eval}、{@link RagEvalRunner} 和未上传文件的 HTTP 调用继续使用。
      */
     public EvalResult evaluate() {
-        if (knowledgeId == null) {
+        return evaluateGoldenSet(knowledgeId);
+    }
+
+    /**
+     * 旧入口的显式知识库参数。传入 null 时回退到配置项 app.rag.eval.knowledge-id。
+     */
+    public EvalResult evaluateGoldenSet(Long requestedKnowledgeId) {
+        Long id = requestedKnowledgeId != null ? requestedKnowledgeId : this.knowledgeId;
+        if (id == null) {
             throw new IllegalStateException("请配置 app.rag.eval.knowledge-id（评测知识库 ID）");
         }
-
-        // 解析黄金集文件
         File goldenFile = resolveGoldenSetFile();
         List<EvalCase> goldenSet = loadGoldenSet(goldenFile);
         if (goldenSet.isEmpty()) {
             throw new IllegalStateException("golden-set 为空: " + goldenFile.getAbsolutePath());
         }
+        return evaluate(goldenSet, id, goldenFile.getName(), RagEvalDatasetSource.GOLDEN_SET);
+    }
 
+    /**
+     * 评测核心：只根据用例和知识库 ID 计算 Hit@5 / Recall@5 / MRR，不读取文件、不解析上传。
+     */
+    public EvalResult evaluate(List<EvalCase> cases, Long knowledgeId) {
+        return evaluate(cases, knowledgeId, "uploaded-dataset");
+    }
+
+    /**
+     * datasetName 只用于控制台报告标题，不参与指标计算。上传测试集走这里，来源记为 UPLOAD。
+     */
+    public EvalResult evaluate(List<EvalCase> cases, Long knowledgeId, String datasetName) {
+        return evaluate(cases, knowledgeId, datasetName, RagEvalDatasetSource.UPLOAD);
+    }
+
+    /**
+     * 校验通过后创建 RUNNING 记录；正常结束更新成功，异常更新失败后继续抛出。
+     * 历史写入失败只记日志，不改变指标、报告和原异常。
+     */
+    public EvalResult evaluate(List<EvalCase> cases, Long knowledgeId, String datasetName,
+            RagEvalDatasetSource datasetSource) {
+        if (knowledgeId == null) {
+            throw new IllegalStateException("请配置 app.rag.eval.knowledge-id（评测知识库 ID）");
+        }
+        if (cases == null || cases.isEmpty()) {
+            throw new IllegalStateException("评测测试集为空");
+        }
+
+        Long runId = createRunQuietly(cases, knowledgeId, datasetName, datasetSource);
+        long startNs = System.nanoTime();
+        EvalResult result = null;
+        try {
+            result = calculate(cases, knowledgeId);
+            printReport(datasetName, result);
+            evalReportWriter.write(result);
+            markSuccessQuietly(runId, result, startNs);
+            return result;
+        } catch (RuntimeException e) {
+            markFailedQuietly(runId, result, startNs, e);
+            throw e;
+        }
+    }
+
+    /**
+     * 原有指标计算。报告仍由调用方在结果赋值后写出，写报告失败时结果可以记入失败记录。
+     */
+    private EvalResult calculate(List<EvalCase> cases, Long knowledgeId) {
         int hitCount = 0;
         double recallSum = 0.0;
         double mrrSum = 0.0;
@@ -80,8 +151,7 @@ public class RagEvalService {
         List<EvalCaseResult> caseResults = new ArrayList<>();
         List<Long> retrieveLatenciesMs = new ArrayList<>();
 
-        // 遍历黄金集
-        for (EvalCase evalCase : goldenSet) {
+        for (EvalCase evalCase : cases) {
             String query = evalCase.getQuery();
             long retrieveStartNs = System.nanoTime();
             List<RetrievedChunk> chunks = hybridRetriever.retrieve(query, knowledgeId);
@@ -120,8 +190,7 @@ public class RagEvalService {
             caseResults.add(caseResult);
         }
 
-        // 计算评估结果
-        int total = goldenSet.size();
+        int total = cases.size();
         EvalResult result = new EvalResult();
         result.setTotal(total);
         result.setHitRate((double) hitCount / total);
@@ -131,12 +200,77 @@ public class RagEvalService {
         result.setCases(caseResults);
         result.setAvgLatencyMs(averageLatencyMs(retrieveLatenciesMs));
         result.setP95LatencyMs(p95LatencyMs(retrieveLatenciesMs));
-
-        // 打印报告
-        printReport(goldenFile.getName(), result);
-        // 写报告
-        evalReportWriter.write(result);
         return result;
+    }
+
+    /**
+     * 历史库不可用时继续评测，避免影响原有接口。
+     */
+    private Long createRunQuietly(List<EvalCase> cases, Long knowledgeId, String datasetName,
+            RagEvalDatasetSource datasetSource) {
+        try {
+            return ragEvalRunService.createRunning(
+                    BaseContext.getCurrentId(),
+                    knowledgeId,
+                    datasetSource,
+                    datasetName,
+                    cases,
+                    configSnapshot(datasetSource));
+        } catch (Exception e) {
+            log.error("创建评测记录失败，继续执行评测", e);
+            return null;
+        }
+    }
+
+    private void markSuccessQuietly(Long runId, EvalResult result, long startNs) {
+        if (runId == null) {
+            return;
+        }
+        try {
+            ragEvalRunService.markSuccess(runId, result, elapsedMs(startNs));
+        } catch (Exception e) {
+            log.error("更新评测成功状态失败, runId={}", runId, e);
+        }
+    }
+
+    private void markFailedQuietly(Long runId, EvalResult result, long startNs, Throwable error) {
+        if (runId == null) {
+            return;
+        }
+        try {
+            ragEvalRunService.markFailed(runId, result, elapsedMs(startNs), error);
+        } catch (Exception e) {
+            log.error("更新评测失败状态失败, runId={}", runId, e);
+        }
+    }
+
+    /**
+     * 记录当时影响检索和打分的配置。固定集才写入 golden-set 路径。
+     */
+    private Map<String, Object> configSnapshot(RagEvalDatasetSource datasetSource) {
+        Map<String, Object> config = new LinkedHashMap<>();
+        config.put("evalTopK", TOP_K);
+        config.put("retrieverMaxResults", retrieverMaxResults);
+        config.put("retrieverMinScore", retrieverMinScore);
+        config.put("rrfK", rrfK);
+        config.put("goldenSetPath", datasetSource == RagEvalDatasetSource.GOLDEN_SET ? goldenSetPath : null);
+        return config;
+    }
+
+    private static long elapsedMs(long startNs) {
+        return (System.nanoTime() - startNs) / 1_000_000L;
+    }
+
+    /**
+     * 与 golden-set 使用同一套 Jackson 解析，把 JSON 数组反序列化为 EvalCase。
+     */
+    public List<EvalCase> parseCases(InputStream input, String sourceName) {
+        try {
+            List<EvalCase> cases = objectMapper.readValue(input, new TypeReference<List<EvalCase>>() {});
+            return cases == null ? List.of() : cases;
+        } catch (Exception e) {
+            throw new IllegalStateException("读取测试集失败: " + sourceName, e);
+        }
     }
 
     /**
@@ -214,8 +348,10 @@ public class RagEvalService {
      * @return 黄金集
      */
     private List<EvalCase> loadGoldenSet(File file) {
-        try {
-            return objectMapper.readValue(file, new TypeReference<List<EvalCase>>() {});
+        try (InputStream in = new FileInputStream(file)) {
+            return parseCases(in, file.getAbsolutePath());
+        } catch (IllegalStateException e) {
+            throw e;
         } catch (Exception e) {
             throw new IllegalStateException("读取 golden-set 失败: " + file.getAbsolutePath(), e);
         }

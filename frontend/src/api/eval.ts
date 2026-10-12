@@ -10,12 +10,29 @@ export function getEvalDatasetApi() {
   })
 }
 
-/** POST /api/v1/eval/run — 同步执行现有 evaluate()，不传 knowledgeId */
-export function runEvalApi() {
+/** POST /api/v1/eval/run — 同步跑固定 golden-set，不上传文件 */
+export function runEvalApi(knowledgeId?: number | string) {
   return request<EvalResult>({
     url: API.EVAL.RUN,
     method: 'post',
-    // 后端同步跑完 50 条检索，超过默认 60s
+    params: knowledgeId == null ? undefined : { knowledgeId: String(knowledgeId) },
+    // 后端同步跑完检索，超过默认 60s
+    timeout: 10 * 60 * 1000,
+  })
+}
+
+/**
+ * POST /api/v1/eval/run
+ * multipart：dataset 为 EvalCase JSON，knowledgeId 为知识库 ID（字符串，避免雪花 ID 丢精度）
+ */
+export function runUploadedEvalApi(dataset: File, knowledgeId: number | string) {
+  const formData = new FormData()
+  formData.append('dataset', dataset)
+  formData.append('knowledgeId', String(knowledgeId))
+  return request<EvalResult>({
+    url: API.EVAL.RUN,
+    method: 'post',
+    data: formData,
     timeout: 10 * 60 * 1000,
   })
 }

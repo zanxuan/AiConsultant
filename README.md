@@ -74,7 +74,6 @@ RAG_QA 基于 **Memory + Query Rewrite + Hybrid Retrieval + RRF + Citation** 完
 - 登录弹窗
 
 
-
 ### 📄 文档与知识库管理
 
 - 知识库创建与管理
@@ -86,7 +85,6 @@ RAG_QA 基于 **Memory + Query Rewrite + Hybrid Retrieval + RRF + Citation** 完
 - 文档自动分块 Chunking：按页递归切分（约 500 字符、50 重叠），页码会进入 metadata，供引用使用；当前 token_size 记的是字符数
 
 
-
 ### 🔍 RAG 检索链路
 
 - Query Rewrite 优化用户查询
@@ -96,7 +94,6 @@ RAG_QA 基于 **Memory + Query Rewrite + Hybrid Retrieval + RRF + Citation** 完
 - 无召回结果时触发 Early Stop，避免无效 LLM 调用
 - Prompt Construction 组装检索上下文并进行 LLM Generation
 - Citation 追踪生成结果对应的知识来源
-
 
 
 ### 💬 智能问答
@@ -113,7 +110,6 @@ RAG_QA 基于 **Memory + Query Rewrite + Hybrid Retrieval + RRF + Citation** 完
 - Clarification 澄清与 PendingTask 任务管理
 
 
-
 ### 🔐 基础系统能力
 
 - 用户认证
@@ -122,8 +118,6 @@ RAG_QA 基于 **Memory + Query Rewrite + Hybrid Retrieval + RRF + Citation** 完
 - 模块化业务架构
 
 ---
-
-
 
 ## 🏗️ 系统架构
 
@@ -194,19 +188,17 @@ Redis Vector Store
 
 ## 🎬 系统展示
 
-
-
 ### AI问答
 
-AI问答
+![AI问答](docs/images/chat.png)
 
 ### 知识库管理
 
-知识库管理
+![知识库管理](docs/images/knowledge.png)
 
 ### 文档管理
 
-文档管理
+![文档管理](docs/images/upload.png)
 
 ---
 
@@ -285,7 +277,6 @@ AI-Enterprise-Knowledge-Platform
 ---
 
 ## 🧩 Engineering Challenges
-
 
 
 ### 1. 多节点流程参数管理
@@ -403,8 +394,6 @@ MySQL / Redis 配置
 公网访问验证
 ```
 
-
-
 ### 已完成部署能力
 
 - [x] 云服务器部署
@@ -439,8 +428,6 @@ SPRING_PROFILES_ACTIVE=prod
 ---
 
 ## 🚀 快速启动
-
-
 
 ### 1. 环境要求
 
@@ -543,8 +530,6 @@ POST /api/v1/chat
 }
 ```
 
-
-
 ### 2. 建立 SSE 连接
 
 ```http
@@ -573,8 +558,6 @@ SSE 过程中：
   ]
 }
 ```
-
-
 
 ### 3. RAG Evaluation 评测
 
@@ -636,8 +619,6 @@ Trace 查询可查看节点耗时、状态，以及 model_used、是否发生降
 
 ## 🗺️ Roadmap
 
-
-
 ### V1.0 - RAG 基础能力 ✅
 
 - [x] 用户认证
@@ -651,7 +632,6 @@ Trace 查询可查看节点耗时、状态，以及 model_used、是否发生降
 - [x] Citation引用来源
 - [x] REST API
 - [x] Vue 前端基础交互界面
-
 
 
 ### V2.1 - 可观测性与生产部署

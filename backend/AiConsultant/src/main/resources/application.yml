@@ -26,7 +26,7 @@ app:
       max-results: 8       # 默认召回数量
       min-score: 0.75      # 默认最低相似度阈值（仅向量通道）
     eval:
-      # 与 golden-set.json 对应的固定评测知识库，页面不传此参数
+      # 固定 golden-set 入口使用的知识库；上传测试集时以前端传入的 knowledgeId 为准
       knowledge-id: 2084568960212553729
       golden-set-path: docs/eval/golden-set.json
   summary:
