@@ -8,6 +8,7 @@ import com.zx.consultant.common.result.PageResult;
 import com.zx.consultant.common.result.Result;
 import com.zx.consultant.common.utils.BaseContext;
 import com.zx.consultant.rag.eval.vo.EvalRunExecuteVO;
+import com.zx.consultant.rag.eval.vo.RagEvalRetrievalTraceVO;
 import com.zx.consultant.rag.eval.vo.RagEvalRunDetailVO;
 import com.zx.consultant.rag.eval.vo.RagEvalRunVO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -34,6 +35,7 @@ public class RagEvalController {
 
     private final RagEvalService ragEvalService;
     private final RagEvalRunService ragEvalRunService;
+    private final RagEvalRetrievalTraceService retrievalTraceService;
 
     /**
      * 读取现有 golden-set.json，不执行评测。
@@ -123,5 +125,18 @@ public class RagEvalController {
             @Parameter(description = "评测记录 ID", required = true)
             @PathVariable("id") Long id) {
         return Result.success(ragEvalRunService.getDetail(id, BaseContext.getCurrentId()));
+    }
+
+    /**
+     * 按运行和用例读取已保存的检索链路。不重新检索，也不改原详情接口。
+     */
+    @GetMapping("/runs/{id}/cases/{caseId}/retrieval-trace")
+    @Operation(summary = "查询用例检索链路", description = "仅记录所属用户可查看该用例已保存的检索快照")
+    public Result<RagEvalRetrievalTraceVO> retrievalTrace(
+            @Parameter(description = "评测记录 ID", required = true)
+            @PathVariable("id") Long id,
+            @Parameter(description = "用例 ID", required = true)
+            @PathVariable("caseId") Integer caseId) {
+        return Result.success(retrievalTraceService.getTrace(id, caseId, BaseContext.getCurrentId()));
     }
 }

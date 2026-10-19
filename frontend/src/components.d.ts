@@ -53,6 +53,8 @@ declare module 'vue' {
     EvalConfigPanel: typeof import('./components/eval/EvalConfigPanel.vue')['default']
     EvalMetricsPanel: typeof import('./components/eval/EvalMetricsPanel.vue')['default']
     EvalOverview: typeof import('./components/eval/EvalOverview.vue')['default']
+    EvalRetrievalTrace: typeof import('./components/eval/EvalRetrievalTrace.vue')['default']
+    EvalRetrievalTraceList: typeof import('./components/eval/EvalRetrievalTraceList.vue')['default']
     HistoryItem: typeof import('./components/history/HistoryItem.vue')['default']
     HistoryList: typeof import('./components/history/HistoryList.vue')['default']
     KnowledgeCard: typeof import('./components/knowledge/KnowledgeCard.vue')['default']

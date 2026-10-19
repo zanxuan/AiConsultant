@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zx.consultant.rag.entity.RetrievedChunk;
+import com.zx.consultant.rag.eval.entity.RagEvalRetrievalTrace;
 import com.zx.consultant.rag.eval.vo.EvalRunExecuteVO;
 import com.zx.consultant.rag.retriever.HybridRetriever;
 import lombok.RequiredArgsConstructor;
@@ -41,6 +42,7 @@ public class RagEvalService {
     private final EvalReportWriter evalReportWriter;
     private final RagEvalRunService ragEvalRunService;
     private final KnowledgeBaseMapper knowledgeBaseMapper;
+    private final RagEvalRetrievalTraceService retrievalTraceService;
 
     /** 检索评测实际使用的向量模型，不参与指标计算 */
     @Value("${langchain4j.open-ai.embedding-model.model-name:text-embedding-v3}")
@@ -58,6 +60,10 @@ public class RagEvalService {
 
     @Value("${app.rag.retriever.min-score:0.75}")
     private Double retrieverMinScore;
+
+    /** 只写入配置快照，与 HybridRetriever 的 BM25 阈值一致 */
+    @Value("${app.rag.retriever.bm25-min-score:1.0}")
+    private Double retrieverBm25MinScore;
 
     @Value("${app.rag.retriever.rrf-k:60}")
     private Integer rrfK;
@@ -162,11 +168,14 @@ public class RagEvalService {
         long startNs = System.nanoTime();
         EvalResult result = null;
         try {
-            result = calculate(cases, knowledgeId);
+            CalculatedEval calculated = calculate(cases, knowledgeId);
+            result = calculated.result;
             printReport(datasetName, result);
             evalReportWriter.write(result);
+            // 报告写完再落检索明细。运行中途失败时不保存这批尚未提交的快照。
+            saveTracesQuietly(runId, calculated.traces);
             markSuccessQuietly(runId, result, startNs, modelName, knowledgeName);
-          
+
             EvalRunExecuteVO executed = new EvalRunExecuteVO();
             executed.setRunId(runId);
             executed.setResult(result);
@@ -178,22 +187,25 @@ public class RagEvalService {
     }
 
     /**
-     * 原有指标计算。报告仍由调用方在结果赋值后写出，写报告失败时结果可以记入失败记录。
+     * 原有指标计算。每个用例只走一次 {@link HybridRetriever#diagnose}，指标使用同一次 finalTopK。
+     * 报告仍由调用方在结果赋值后写出，写报告失败时结果可以记入失败记录。
      */
-    private EvalResult calculate(List<EvalCase> cases, Long knowledgeId) {
+    private CalculatedEval calculate(List<EvalCase> cases, Long knowledgeId) {
         int hitCount = 0;
         double recallSum = 0.0;
         double mrrSum = 0.0;
         List<FailedCase> failedCases = new ArrayList<>();
         List<EvalCaseResult> caseResults = new ArrayList<>();
         List<Long> retrieveLatenciesMs = new ArrayList<>();
+        List<RagEvalRetrievalTrace> traces = new ArrayList<>();
 
         for (EvalCase evalCase : cases) {
             String query = evalCase.getQuery();
             long retrieveStartNs = System.nanoTime();
-            List<RetrievedChunk> chunks = hybridRetriever.retrieve(query, knowledgeId);
+            HybridRetriever.RecallTrace trace = hybridRetriever.diagnose(query, knowledgeId);
             long latencyMs = (System.nanoTime() - retrieveStartNs) / 1_000_000L;
             retrieveLatenciesMs.add(latencyMs);
+            List<RetrievedChunk> chunks = trace.finalTopK == null ? List.of() : trace.finalTopK;
             List<String> retrievedDocIds = toRetrievedDocIds(chunks, TOP_K);
 
             boolean hit = isHit(retrievedDocIds, evalCase.getExpectedDocIds());
@@ -224,6 +236,11 @@ public class RagEvalService {
             caseResult.setHit(hit);
             caseResult.setRecall(caseRecall);
             caseResult.setMrr(caseMrr);
+            // 成功和失败用例共用这一份快照，不额外再检索一次
+            RetrievalTraceSnapshots.fillSummary(caseResult, trace, evalCase.getExpectedDocIds(), retrievedDocIds);
+            if (evalCase.getId() != null) {
+                traces.addAll(RetrievalTraceSnapshots.toRows(null, evalCase.getId(), trace, retrievedDocIds));
+            }
             caseResults.add(caseResult);
         }
 
@@ -237,7 +254,32 @@ public class RagEvalService {
         result.setCases(caseResults);
         result.setAvgLatencyMs(averageLatencyMs(retrieveLatenciesMs));
         result.setP95LatencyMs(p95LatencyMs(retrieveLatenciesMs));
-        return result;
+        return new CalculatedEval(result, traces);
+    }
+
+    /**
+     * 检索明细写入失败只记日志，不改变已算出的指标，也不把运行标成失败。
+     */
+    private void saveTracesQuietly(Long runId, List<RagEvalRetrievalTrace> traces) {
+        if (runId == null || retrievalTraceService == null) {
+            return;
+        }
+        try {
+            retrievalTraceService.saveRunTraces(runId, traces);
+        } catch (Exception e) {
+            log.error("保存检索链路失败, runId={}", runId, e);
+        }
+    }
+
+    /** 指标结果和待落库的检索明细。明细不进入 result_snapshot。 */
+    private static final class CalculatedEval {
+        private final EvalResult result;
+        private final List<RagEvalRetrievalTrace> traces;
+
+        private CalculatedEval(EvalResult result, List<RagEvalRetrievalTrace> traces) {
+            this.result = result;
+            this.traces = traces;
+        }
     }
 
     /**
@@ -312,6 +354,7 @@ public class RagEvalService {
         config.put("evalTopK", TOP_K);
         config.put("retrieverMaxResults", retrieverMaxResults);
         config.put("retrieverMinScore", retrieverMinScore);
+        config.put("retrieverBm25MinScore", retrieverBm25MinScore);
         config.put("rrfK", rrfK);
         config.put("goldenSetPath", datasetSource == RagEvalDatasetSource.GOLDEN_SET ? goldenSetPath : null);
         return config;

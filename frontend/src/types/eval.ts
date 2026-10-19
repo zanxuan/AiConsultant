@@ -32,6 +32,24 @@ export interface EvalCaseResult {
   hit: boolean
   recall: number
   mrr: number
+  /** 旧记录没有这些字段 */
+  vectorHitCount?: number | null
+  bm25HitCount?: number | null
+  bm25Query?: string | null
+  expectedHits?: ExpectedDocHit[] | null
+  missStage?: string | null
+}
+
+/** 单个期望文档在各检索阶段的命中。空排名表示该阶段没有出现 */
+export interface ExpectedDocHit {
+  expectedDocId: string
+  vectorRank?: number | null
+  bm25Rank?: number | null
+  rrfRank?: number | null
+  filtered?: boolean | null
+  filterReason?: string | null
+  finalRank?: number | null
+  evalDocRank?: number | null
 }
 
 /** 与后端 EvalResult 对齐 */
@@ -80,6 +98,7 @@ export interface EvalRunDetail extends EvalRun {
     evalTopK?: number | null
     retrieverMaxResults?: number | null
     retrieverMinScore?: number | null
+    retrieverBm25MinScore?: number | null
     rrfK?: number | null
     goldenSetPath?: string | null
   }
@@ -87,6 +106,51 @@ export interface EvalRunDetail extends EvalRun {
   cases?: EvalCase[]
   /** 完整评测结果；失败且尚未算出结果时为空 */
   result?: EvalResult | null
+}
+
+/** 检索链路中的一个候选 chunk。正文和文档名由详情接口临时查出。 */
+export interface RetrievalTraceChunk {
+  chunkId?: number | string | null
+  documentId?: number | string | null
+  documentName?: string | null
+  page?: number | null
+  content?: string | null
+  vectorRank?: number | null
+  vectorScore?: number | null
+  bm25Rank?: number | null
+  bm25Score?: number | null
+  rrfRank?: number | null
+  rrfScore?: number | null
+  filtered?: boolean | null
+  filterReason?: string | null
+  afterFilterRank?: number | null
+  finalRank?: number | null
+  evalDocRank?: number | null
+}
+
+export interface RetrievalEvalDoc {
+  rank: number
+  documentId?: number | string | null
+  documentName?: string | null
+  expected?: boolean | null
+}
+
+/** GET /eval/runs/{id}/cases/{caseId}/retrieval-trace */
+export interface RetrievalTrace {
+  runId?: number | string
+  caseId?: number
+  saved: boolean
+  vectorHitCount?: number | null
+  bm25HitCount?: number | null
+  bm25Query?: string | null
+  missStage?: string | null
+  expectedHits?: ExpectedDocHit[]
+  vectorHits?: RetrievalTraceChunk[]
+  bm25Hits?: RetrievalTraceChunk[]
+  rrfHits?: RetrievalTraceChunk[]
+  afterFilter?: RetrievalTraceChunk[]
+  finalTopK?: RetrievalTraceChunk[]
+  evalDocs?: RetrievalEvalDoc[]
 }
 
 /** POST /eval/run，与后端 EvalRunExecuteVO 对齐。详情页按 runId 再查一次。 */

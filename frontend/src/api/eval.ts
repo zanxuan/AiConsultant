@@ -1,7 +1,14 @@
 import { API } from '@/constants/api'
 import { request } from '@/utils/request'
 import type { PageResult } from '@/types/api'
-import type { EvalDataset, EvalRun, EvalRunDetail, EvalRunExecute, EvalRunQuery } from '@/types/eval'
+import type {
+  EvalDataset,
+  EvalRun,
+  EvalRunDetail,
+  EvalRunExecute,
+  EvalRunQuery,
+  RetrievalTrace,
+} from '@/types/eval'
 
 /** GET /api/v1/eval/dataset — 读取现有 golden-set，不执行评测 */
 export function getEvalDatasetApi() {
@@ -51,6 +58,14 @@ export function getEvalRunsApi(params?: EvalRunQuery) {
 export function getEvalRunDetailApi(id: number | string) {
   return request<EvalRunDetail>({
     url: API.EVAL.RUN_DETAIL(id),
+    method: 'get',
+  })
+}
+
+/** GET /api/v1/eval/runs/{id}/cases/{caseId}/retrieval-trace — 只拉当前用例的历史快照 */
+export function getEvalRetrievalTraceApi(runId: number | string, caseId: number | string) {
+  return request<RetrievalTrace>({
+    url: API.EVAL.RETRIEVAL_TRACE(runId, caseId),
     method: 'get',
   })
 }

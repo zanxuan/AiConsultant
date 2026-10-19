@@ -34,10 +34,16 @@ public class VectorRetriever {
     @Value("${app.rag.retriever.max-results:5}")
     private Integer maxResults;
 
-    @Value("${app.rag.retriever.min-score:0.75}")
-    private Double minScore;
-
     public List<RetrievedChunk> retrieve(String query, Long knowledgeId) {
+        return retrieve(query, knowledgeId, maxResults);
+    }
+
+    /**
+     * 与 {@link #retrieve(String, Long)} 同一套检索，仅召回条数可覆盖。
+     * 评测 / 对话仍走配置项 max-results；更大的 limit 只给诊断用，不改变默认行为。
+     * 不设置 minScore：LangChain4j 默认 0，app.rag.retriever.min-score 不在本方法生效。
+     */
+    public List<RetrievedChunk> retrieve(String query, Long knowledgeId, int resultLimit) {
         if (knowledgeId == null) {
             throw new IllegalArgumentException("knowledgeId 不能为空，无法按知识库隔离检索");
         }
@@ -50,14 +56,14 @@ public class VectorRetriever {
         Filter knowledgeFilter = metadataKey(VectorMetadataKeys.KNOWLEDGE_ID).isGreaterThanOrEqualTo(knowledgeId)
                 .and(metadataKey(VectorMetadataKeys.KNOWLEDGE_ID).isLessThanOrEqualTo(knowledgeId));
 
+        // 低于 min-score 的向量分也要返回，交给 HybridRetriever 和 BM25 原始分一起判断
         EmbeddingSearchRequest searchRequest = EmbeddingSearchRequest.builder()
                 .queryEmbedding(queryEmbedding)
-                .maxResults(maxResults)
-                .minScore(minScore)
+                .maxResults(resultLimit)
                 .filter(knowledgeFilter)
                 .build();
 
-        log.info("向量检索开始, knowledgeId={}, maxResults={}, minScore={}", knowledgeId, maxResults, minScore);
+        log.info("向量检索开始, knowledgeId={}, maxResults={}", knowledgeId, resultLimit);
 
         // 3. 执行检索
         EmbeddingSearchResult<TextSegment> searchResult = embeddingStore.search(searchRequest);

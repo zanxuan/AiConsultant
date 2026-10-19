@@ -34,6 +34,9 @@ public class BM25Retriever {
     private final JedisPooled jedis;
     private final ObjectMapper objectMapper;
 
+    /** 本次 retrieve 实际提交给 RediSearch 的查询串，读完必须清理 */
+    private static final ThreadLocal<String> EXECUTED_QUERY = new ThreadLocal<>();
+
     /** 与 VectorStoreConfig / EmbeddingStore 共用，避免环境切换时漏改 */
     @Value("${app.rag.redis.index-name:embedding-index}")
     private String indexName;
@@ -55,6 +58,15 @@ public class BM25Retriever {
     }
 
     public List<RetrievedChunk> retrieve(String query, Long knowledgeId) {
+        return retrieve(query, knowledgeId, maxResults);
+    }
+
+    /**
+     * 与默认检索同一条 RediSearch 查询，仅 LIMIT 可覆盖。更大的 limit 只给诊断用。
+     */
+    public List<RetrievedChunk> retrieve(String query, Long knowledgeId, int resultLimit) {
+        // 先清掉上一次残留，避免线程复用把别的查询串带进来
+        EXECUTED_QUERY.remove();
         if (knowledgeId == null) {
             throw new IllegalArgumentException("knowledgeId 不能为空，无法按知识库隔离检索");
         }
@@ -69,28 +81,40 @@ public class BM25Retriever {
 
         // 1. 知识库隔离：NUMERIC 字段用区间 @knowledgeId:[id id]
         // 2. @text:(...) 走 RediSearch 全文检索（默认 BM25）
-        String redisQuery = String.format(
-                "@%s:[%d %d] @%s:(%s)",
-                VectorMetadataKeys.KNOWLEDGE_ID,
-                knowledgeId,
-                knowledgeId,
-                TEXT_FIELD,
-                textQuery);
+        String redisQuery = buildRedisQuery(knowledgeId, textQuery);
 
         Query searchQuery = new Query(redisQuery)
-                .limit(0, maxResults)
+                .limit(0, resultLimit)
                 .dialect(2);
 
         log.info("BM25 检索开始, index={}, knowledgeId={}, maxResults={}, query={}",
-                indexName, knowledgeId, maxResults, redisQuery);
+                indexName, knowledgeId, resultLimit, redisQuery);
 
-        // 3. 执行全文检索
-        SearchResult searchResult = jedis.ftSearch(indexName, searchQuery);
+        try {
+            EXECUTED_QUERY.set(redisQuery);
+            // 3. 执行全文检索
+            SearchResult searchResult = jedis.ftSearch(indexName, searchQuery);
 
-        // 4. 结果映射
-        return searchResult.getDocuments().stream()
-                .map(this::convertToRetrievedChunk)
-                .collect(Collectors.toList());
+            // 4. 结果映射
+            return searchResult.getDocuments().stream()
+                    .map(this::convertToRetrievedChunk)
+                    .collect(Collectors.toList());
+        } catch (RuntimeException e) {
+            EXECUTED_QUERY.remove();
+            throw e;
+        }
+    }
+
+    /**
+     * 取出本次检索实际执行的 Redis 查询串，并清理 ThreadLocal。
+     * 没有执行查询时返回 null。
+     */
+    public String consumeExecutedQuery() {
+        try {
+            return EXECUTED_QUERY.get();
+        } finally {
+            EXECUTED_QUERY.remove();
+        }
     }
 
     /**
@@ -150,6 +174,28 @@ public class BM25Retriever {
             log.warn("解析 RediSearch 文档 JSON 失败, id={}", document.getId(), e);
             return Collections.emptyMap();
         }
+    }
+
+    public String buildRedisQuery(Long knowledgeId, String textQuery) {
+        return String.format(
+                "@%s:[%d %d] @%s:(%s)",
+                VectorMetadataKeys.KNOWLEDGE_ID,
+                knowledgeId,
+                knowledgeId,
+                TEXT_FIELD,
+                textQuery);
+    }
+
+    /** 与检索实际使用的转义规则一致，供诊断打印查询词。 */
+    public String previewEscapedQuery(String query) {
+        if (query == null || query.isBlank()) {
+            return "";
+        }
+        return escapeQuery(query.trim());
+    }
+
+    public String getIndexName() {
+        return indexName;
     }
 
     /**

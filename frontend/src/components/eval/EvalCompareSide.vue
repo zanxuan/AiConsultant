@@ -20,6 +20,9 @@
       <el-descriptions-item label="retrieverMinScore">
         {{ formatConfig(detail.configSnapshot?.retrieverMinScore) }}
       </el-descriptions-item>
+      <el-descriptions-item label="retrieverBm25MinScore">
+        {{ formatConfig(detail.configSnapshot?.retrieverBm25MinScore) }}
+      </el-descriptions-item>
       <el-descriptions-item label="rrfK">
         {{ formatConfig(detail.configSnapshot?.rrfK) }}
       </el-descriptions-item>

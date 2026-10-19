@@ -24,7 +24,8 @@ app:
       index-name: embedding-index   # 与 Vector / BM25 共用；可按环境改为 embedding-index-dev / -prod
     retriever:
       max-results: 8       # 默认召回数量
-      min-score: 0.75      # 默认最低相似度阈值（仅向量通道）
+      min-score: 0.75      # 向量相似度下限（余弦，约 0~1）；融合后使用，检索阶段不提前丢弃
+      bm25-min-score: 1.0  # RediSearch 原始 BM25 下限（无界正数，不能与 min-score 混用）
     eval:
       # 固定 golden-set 入口使用的知识库；上传测试集时以前端传入的 knowledgeId 为准
       knowledge-id: 2084568960212553729

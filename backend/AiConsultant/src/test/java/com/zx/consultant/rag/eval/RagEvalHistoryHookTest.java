@@ -13,8 +13,10 @@ import java.util.Map;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zx.consultant.common.utils.BaseContext;
 import com.zx.consultant.rag.entity.RetrievedChunk;
+import com.zx.consultant.rag.eval.entity.RagEvalRetrievalTrace;
 import com.zx.consultant.rag.eval.vo.EvalRunExecuteVO;
 import com.zx.consultant.rag.retriever.HybridRetriever;
+import com.zx.consultant.rag.retriever.HybridRetriever.RecallTrace;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,14 +32,17 @@ class RagEvalHistoryHookTest {
     private final RecordingRetriever retriever = new RecordingRetriever();
     private final RecordingWriter writer = new RecordingWriter();
     private final RecordingRunService runService = new RecordingRunService();
+    private final RecordingTraceService traceService = new RecordingTraceService();
     private RagEvalService ragEvalService;
 
     @BeforeEach
     void setUp() {
-        ragEvalService = new RagEvalService(retriever, new ObjectMapper(), writer, runService, null);
+        ragEvalService = new RagEvalService(
+                retriever, new ObjectMapper(), writer, runService, null, traceService);
         ReflectionTestUtils.setField(ragEvalService, "embeddingModelName", "text-embedding-v3");
         ReflectionTestUtils.setField(ragEvalService, "retrieverMaxResults", 8);
         ReflectionTestUtils.setField(ragEvalService, "retrieverMinScore", 0.75d);
+        ReflectionTestUtils.setField(ragEvalService, "retrieverBm25MinScore", 1.0d);
         ReflectionTestUtils.setField(ragEvalService, "rrfK", 60);
         ReflectionTestUtils.setField(ragEvalService, "goldenSetPath", "docs/eval/golden-set.json");
         BaseContext.setCurrentId(7L);
@@ -71,6 +76,20 @@ class RagEvalHistoryHookTest {
         assertEquals(List.of("write", "success"), events);
         assertEquals(result, runService.successResult);
         assertTrue(runService.failures.isEmpty());
+        assertEquals(1, retriever.diagnoseCount);
+        assertEquals(0, retriever.retrieveCount);
+        EvalCaseResult caseResult = result.getCases().get(0);
+        assertEquals(1, caseResult.getVectorHitCount());
+        assertEquals(0, caseResult.getBm25HitCount());
+        assertEquals("@knowledgeId:[1 1] @text:(q)", caseResult.getBm25Query());
+        assertEquals(RetrievalMissStage.IN_EVAL_TOPK, caseResult.getMissStage());
+        assertEquals(1, caseResult.getExpectedHits().get(0).getEvalDocRank());
+        assertEquals(1, traceService.batches.size());
+        assertEquals(11L, traceService.lastRunId);
+        RagEvalRetrievalTrace row = traceService.batches.get(0).get(0);
+        assertEquals(1, row.getVectorRank());
+        assertNull(row.getBm25Rank());
+        assertEquals(1, row.getEvalDocRank());
     }
 
     @Test
@@ -126,6 +145,8 @@ class RagEvalHistoryHookTest {
         assertSame(failure, runService.failures.get(0).error);
         assertNull(runService.successResult);
         assertEquals(List.of("write"), events);
+        assertTrue(traceService.batches.isEmpty());
+        assertEquals(1, runService.failures.get(0).result.getCases().get(0).getVectorHitCount());
     }
 
     @Test
@@ -137,6 +158,8 @@ class RagEvalHistoryHookTest {
 
         assertEquals(0, runService.createCount);
         assertEquals(0, retriever.retrieveCount);
+        assertEquals(0, retriever.diagnoseCount);
+        assertTrue(traceService.batches.isEmpty());
         assertTrue(events.isEmpty());
     }
 
@@ -151,6 +174,7 @@ class RagEvalHistoryHookTest {
         assertEquals(List.of("write"), events);
         assertNull(runService.successResult);
         assertTrue(runService.failures.isEmpty());
+        assertTrue(traceService.batches.isEmpty());
 
         events.clear();
         runService.createError = null;
@@ -161,6 +185,96 @@ class RagEvalHistoryHookTest {
         IllegalStateException thrown = assertThrows(IllegalStateException.class,
                 () -> ragEvalService.evaluate(List.of(evalCase()), 1L, "cases.json"));
         assertSame(failure, thrown);
+    }
+
+    @Test
+    void traceSaveFailureDoesNotChangeMetricsOrSuccessStatus() {
+        retriever.hits = List.of(chunk(100L));
+        traceService.error = new RuntimeException("trace down");
+
+        EvalResult result = ragEvalService.evaluate(List.of(evalCase()), 1L, "cases.json");
+
+        assertEquals(1.0d, result.getHitRate());
+        assertEquals(List.of("write", "success"), events);
+        assertEquals(result, runService.successResult);
+    }
+
+    @Test
+    void outsideVectorWindowDoesNotInventRrfRankAndStillSavesRealCandidates() {
+        RecallTrace trace = new RecallTrace();
+        List<RetrievedChunk> vectors = new ArrayList<>();
+        for (int i = 0; i < 8; i++) {
+            RetrievedChunk hit = chunk(1000L + i);
+            hit.setChunkId(2000L + i);
+            hit.setVectorScore(0.8d);
+            vectors.add(hit);
+        }
+        trace.vectorHits = vectors;
+        trace.bm25Hits = List.of();
+        trace.bm25Query = "@knowledgeId:[1 1] @text:(threadlocal)";
+        trace.mergedByRrf = new ArrayList<>(vectors);
+        trace.afterFilter = new ArrayList<>(vectors);
+        trace.finalTopK = new ArrayList<>(vectors);
+        retriever.customTrace = trace;
+
+        EvalCase evalCase = new EvalCase();
+        evalCase.setId(34);
+        evalCase.setQuery("ThreadLocal 存在哪一份文档");
+        evalCase.setExpectedDocIds(List.of("999"));
+
+        EvalResult result = ragEvalService.evaluate(List.of(evalCase), 1L, "cases.json");
+
+        assertEquals(0.0d, result.getHitRate());
+        assertEquals(0.0d, result.getRecall());
+        assertEquals(0.0d, result.getMrr());
+        assertEquals(1, retriever.diagnoseCount);
+        assertEquals(0, retriever.retrieveCount);
+        EvalCaseResult caseResult = result.getCases().get(0);
+        assertEquals(Boolean.FALSE, caseResult.isHit());
+        assertEquals(8, caseResult.getVectorHitCount());
+        assertEquals(0, caseResult.getBm25HitCount());
+        assertEquals(RetrievalMissStage.NOT_RECALLED, caseResult.getMissStage());
+        ExpectedDocHit expected = caseResult.getExpectedHits().get(0);
+        assertEquals("999", expected.getExpectedDocId());
+        assertNull(expected.getVectorRank());
+        assertNull(expected.getBm25Rank());
+        assertNull(expected.getRrfRank());
+        assertNull(expected.getFinalRank());
+        assertNull(expected.getEvalDocRank());
+        assertEquals(1, traceService.batches.size());
+        List<RagEvalRetrievalTrace> rows = traceService.batches.get(0);
+        assertEquals(8, rows.size());
+        assertEquals(1, rows.get(0).getVectorRank());
+        assertEquals(8, rows.get(7).getVectorRank());
+        for (RagEvalRetrievalTrace row : rows) {
+            assertNull(row.getBm25Rank());
+            assertNull(row.getBm25Score());
+            assertTrue(row.getDocumentId() == null || row.getDocumentId() != 999L);
+        }
+    }
+
+    @Test
+    void multipleExpectedDocsKeepSeparateStagesWithoutChangingMetrics() {
+        retriever.hits = List.of(chunk(100L));
+        EvalCase evalCase = evalCase();
+        evalCase.setExpectedDocIds(List.of("100", "200"));
+
+        EvalResult result = ragEvalService.evaluate(List.of(evalCase), 1L, "cases.json");
+
+        assertEquals(1.0d, result.getHitRate());
+        assertEquals(1.0d, result.getRecall());
+        assertEquals(1.0d, result.getMrr());
+        List<ExpectedDocHit> hits = result.getCases().get(0).getExpectedHits();
+        assertEquals(2, hits.size());
+        assertEquals(1, hits.get(0).getVectorRank());
+        assertEquals(1, hits.get(0).getRrfRank());
+        assertEquals(1, hits.get(0).getEvalDocRank());
+        assertNull(hits.get(1).getVectorRank());
+        assertNull(hits.get(1).getBm25Rank());
+        assertNull(hits.get(1).getRrfRank());
+        assertNull(hits.get(1).getEvalDocRank());
+        assertEquals(RetrievalMissStage.IN_EVAL_TOPK, result.getCases().get(0).getMissStage());
+        assertEquals(1, traceService.batches.get(0).size());
     }
 
     private static EvalCase evalCase() {
@@ -180,11 +294,22 @@ class RagEvalHistoryHookTest {
 
     private static final class RecordingRetriever extends HybridRetriever {
         private List<RetrievedChunk> hits = List.of();
+        private RecallTrace customTrace;
         private RuntimeException toThrow;
         private int retrieveCount;
+        private int diagnoseCount;
 
         private RecordingRetriever() {
             super(null, null);
+        }
+
+        @Override
+        public RecallTrace diagnose(String query, Long knowledgeId) {
+            diagnoseCount++;
+            if (toThrow != null) {
+                throw toThrow;
+            }
+            return customTrace != null ? customTrace : snapshot(hits);
         }
 
         @Override
@@ -194,6 +319,37 @@ class RagEvalHistoryHookTest {
                 throw toThrow;
             }
             return hits;
+        }
+
+        /** 桩只代表一次 diagnose，不再调用 retrieve。 */
+        private static RecallTrace snapshot(List<RetrievedChunk> chunks) {
+            RecallTrace trace = new RecallTrace();
+            trace.vectorHits = new ArrayList<>(chunks);
+            trace.bm25Hits = List.of();
+            trace.bm25Query = "@knowledgeId:[1 1] @text:(q)";
+            trace.mergedByRrf = new ArrayList<>(chunks);
+            trace.afterFilter = new ArrayList<>(chunks);
+            trace.finalTopK = new ArrayList<>(chunks);
+            return trace;
+        }
+    }
+
+    private static final class RecordingTraceService extends RagEvalRetrievalTraceService {
+        private final List<List<RagEvalRetrievalTrace>> batches = new ArrayList<>();
+        private Long lastRunId;
+        private RuntimeException error;
+
+        private RecordingTraceService() {
+            super(null, null, null);
+        }
+
+        @Override
+        public void saveRunTraces(Long runId, List<RagEvalRetrievalTrace> rows) {
+            if (error != null) {
+                throw error;
+            }
+            lastRunId = runId;
+            batches.add(rows == null ? List.of() : List.copyOf(rows));
         }
     }
 

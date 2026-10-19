@@ -56,7 +56,7 @@
       v-model="drawerVisible"
       :title="selectedCase ? `Case #${selectedCase.id}` : 'Case 详情'"
       direction="rtl"
-      size="480px"
+      size="720px"
       append-to-body
       class="eval-drawer"
       @close="drawerVisible = false"
@@ -143,6 +143,12 @@
           </ul>
           <p v-else class="eval-drawer__empty">无 Expected Documents</p>
         </section>
+
+        <EvalRetrievalTrace
+          v-if="selectedCase"
+          :run-id="detail.id"
+          :case-id="selectedCase.id"
+        />
       </div>
     </el-drawer>
   </section>
@@ -152,6 +158,7 @@
 import { computed, ref } from 'vue'
 import type { EvalCase, EvalCaseResult, EvalCaseView, EvalFailedCase, EvalRunDetail } from '@/types/eval'
 import { formatCaseRate, formatLatency, formatMrr, formatScore } from './format'
+import EvalRetrievalTrace from './EvalRetrievalTrace.vue'
 
 const props = withDefaults(defineProps<{
   detail: EvalRunDetail
