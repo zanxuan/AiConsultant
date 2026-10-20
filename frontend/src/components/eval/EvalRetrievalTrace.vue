@@ -93,6 +93,10 @@ const props = defineProps<{
   caseId?: number | string | null
 }>()
 
+const emit = defineEmits<{
+  loaded: [trace: RetrievalTrace | null]
+}>()
+
 const loading = ref(false)
 const error = ref('')
 const trace = ref<RetrievalTrace | null>(null)
@@ -131,8 +135,10 @@ async function load() {
   const seq = ++requestSeq
   error.value = ''
   trace.value = null
+  emit('loaded', null)
   if (props.runId == null || props.runId === '' || props.caseId == null || props.caseId === '') {
     trace.value = { saved: false }
+    emit('loaded', trace.value)
     return
   }
   loading.value = true
@@ -140,9 +146,11 @@ async function load() {
     const data = await getEvalRetrievalTraceApi(props.runId, props.caseId)
     if (seq !== requestSeq) return
     trace.value = data
+    emit('loaded', data ?? null)
   } catch (caught) {
     if (seq !== requestSeq) return
     error.value = caught instanceof Error ? caught.message : '请稍后重试'
+    emit('loaded', null)
   } finally {
     if (seq === requestSeq) loading.value = false
   }

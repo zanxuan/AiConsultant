@@ -4,15 +4,15 @@
 
 Total Cases: 50
 
-Hit Rate@5: 92%
+Hit Rate@5: 94%
 
-Recall@5: 92%
+Recall@5: 94%
 
 MRR: 0.84
 
-Avg Latency: 363 ms
+Avg Latency: 368 ms
 
-P95 Latency: 428 ms
+P95 Latency: 489 ms
 
 ---
 
@@ -44,7 +44,7 @@ Case Id: 16
 
 ### Retrieve Latency
 
-397 ms
+254 ms
 
 ---
 
@@ -74,39 +74,11 @@ Case Id: 29
 
 ### Retrieve Latency
 
-341 ms
+322 ms
 
 ---
 
 ## Case 3
-
-Case Id: 34
-
-### Query
-
-如何避免线程之间互相污染对方的用户上下文数据？
-
-### Expected Documents
-
-- ThreadLocal.pdf
-
-### Retrieved Documents
-
-1. 缓存和数据库的一致性.pdf
-2. 线程池.pdf
-3. 消息的顺序性.pdf
-
-### Top Score
-
-0.02
-
-### Retrieve Latency
-
-252 ms
-
----
-
-## Case 4
 
 Case Id: 37
 
@@ -122,6 +94,7 @@ Case Id: 37
 ### Retrieved Documents
 
 1. 缓存和数据库的一致性.pdf
+2. 缓存击穿穿透雪崩.pdf
 
 ### Top Score
 
@@ -129,7 +102,7 @@ Case Id: 37
 
 ### Retrieve Latency
 
-324 ms
+260 ms
 
 ---
 

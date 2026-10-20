@@ -6,15 +6,19 @@
         <div class="eval-page__field">
           <span class="eval-page__label">测试集</span>
           <el-upload
+            class="eval-page__dataset"
             :auto-upload="false"
             :show-file-list="false"
             accept=".json,application/json"
             :disabled="running"
             @change="onDatasetChange"
           >
-            <el-button :disabled="running">选择测试集</el-button>
+            <el-tooltip :disabled="!datasetName" :content="datasetName" placement="top">
+              <el-button class="eval-page__dataset-btn" :disabled="running">
+                {{ datasetName || '选择测试集' }}
+              </el-button>
+            </el-tooltip>
           </el-upload>
-          <span v-if="datasetFile" class="eval-page__file">{{ datasetFile.name }}</span>
         </div>
         <div class="eval-page__field">
           <span class="eval-page__label">知识库</span>
@@ -145,10 +149,22 @@
             <el-button link type="primary" @click="loadDetail(selectedId)">重试</el-button>
           </p>
           <EvalOverview v-else-if="detail && section === 'overview'" :detail="detail" />
-          <EvalCasePanel v-else-if="detail && section === 'cases'" :detail="detail" />
+          <EvalCasePanel
+            v-else-if="detail && section === 'cases'"
+            v-model:keyword="caseKeyword"
+            v-model:status-filter="caseStatus"
+            :detail="detail"
+            :active-case-id="activeCaseId"
+          />
           <EvalConfigPanel v-else-if="detail && section === 'config'" :detail="detail" />
           <EvalMetricsPanel v-else-if="detail && section === 'metrics'" :detail="detail" />
-          <EvalCasePanel v-else-if="detail && section === 'failed'" :detail="detail" only-failed />
+          <EvalCasePanel
+            v-else-if="detail && section === 'failed'"
+            v-model:keyword="failedKeyword"
+            :detail="detail"
+            only-failed
+            :active-case-id="activeCaseId"
+          />
         </div>
       </div>
 
@@ -171,8 +187,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, nextTick, onMounted, ref } from 'vue'
+import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import type { UploadFile } from 'element-plus'
 import PageContainer from '@/components/common/PageContainer.vue'
@@ -191,6 +207,18 @@ import {
   statusLabel,
   statusTagType,
 } from '@/components/eval/format'
+import type { EvalCaseStatusFilter } from '@/components/eval/case-view'
+import {
+  consumeEvalCaseListSnapshot,
+  consumeReturnToEvalList,
+  markReturnToEvalList,
+  parseEvalCasePath,
+  peekEvalCaseListSnapshot,
+  readMainScrollTop,
+  saveEvalCaseListSnapshot,
+  writeMainScrollTop,
+  type EvalCaseListSnapshot,
+} from '@/components/eval/list-state'
 import type { EvalRun, EvalRunDetail } from '@/types/eval'
 import { useAuth } from '@/composables/useAuth'
 import { usePagination } from '@/composables/usePagination'
@@ -212,11 +240,18 @@ interface ComparePick {
   createTime: string
 }
 
+const route = useRoute()
 const router = useRouter()
 const { hasToken } = useAuth()
 const { pagination, setTotal, resetPage } = usePagination(10)
 
 const datasetFile = ref<File | null>(null)
+const datasetName = computed(() => {
+  const name = datasetFile.value?.name?.trim() ?? ''
+  if (!name) return ''
+  const withoutSuffix = name.replace(/\.json$/i, '')
+  return withoutSuffix || name
+})
 const knowledgeId = ref<number | string | null>(null)
 const running = ref(false)
 const historyList = ref<EvalRun[]>([])
@@ -229,6 +264,10 @@ const detailLoading = ref(false)
 const detailError = ref('')
 const comparing = ref(false)
 const compareSelection = ref<ComparePick[]>([])
+const caseKeyword = ref('')
+const caseStatus = ref<EvalCaseStatusFilter>('all')
+const failedKeyword = ref('')
+const activeCaseId = ref('')
 let detailRequest = 0
 
 const historyEmptyText = computed(() => {
@@ -326,6 +365,10 @@ function onOpenHistory(row: EvalRun) {
     toggleCompare(row)
     return
   }
+  caseKeyword.value = ''
+  caseStatus.value = 'all'
+  failedKeyword.value = ''
+  activeCaseId.value = ''
   selectedId.value = String(row.id)
   section.value = 'overview'
   loadDetail(selectedId.value)
@@ -404,7 +447,95 @@ async function onRun() {
   }
 }
 
-onMounted(fetchHistory)
+function queryText(value: unknown) {
+  return typeof value === 'string' ? value : ''
+}
+
+function applyListSnapshot(snapshot: EvalCaseListSnapshot) {
+  pagination.page = snapshot.page
+  pagination.pageSize = snapshot.pageSize
+  selectedId.value = snapshot.runId
+  section.value = snapshot.section
+  activeCaseId.value = snapshot.caseId
+  if (snapshot.section === 'failed') {
+    failedKeyword.value = snapshot.keyword
+    return
+  }
+  caseKeyword.value = snapshot.keyword
+  caseStatus.value = snapshot.statusFilter
+}
+
+async function restoreMainScroll(top: number) {
+  await nextTick()
+  writeMainScrollTop(top)
+  await new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
+  writeMainScrollTop(top)
+}
+
+/**
+ * 从用例详情返回时恢复离开前的列表。
+ * 同一次会话用内存标记识别返回；刷新详情后无法回到原列表时，靠 fromCase 查询参数打开对应评测。
+ */
+async function restoreListFromCase() {
+  const fromQuery = route.query.fromCase === '1'
+  if (!consumeReturnToEvalList() && !fromQuery) return false
+  const forward = typeof window.history.state?.forward === 'string' ? window.history.state.forward : ''
+  const fromForward = parseEvalCasePath(forward)
+  const querySection = queryText(route.query.section)
+  const fromQueryLocation = fromQuery
+    ? {
+        runId: queryText(route.query.runId),
+        caseId: queryText(route.query.caseId),
+        section: querySection === 'failed' || querySection === 'cases' ? querySection : '',
+      }
+    : null
+  if (!fromForward && !fromQueryLocation) return false
+
+  const returned = fromForward ?? fromQueryLocation
+  const snapshot = peekEvalCaseListSnapshot()
+  const runId = returned?.runId || ''
+  if (!runId) {
+    if (fromQuery) await router.replace({ name: 'eval' }).catch(() => {})
+    return false
+  }
+  const scrollTop = snapshot && snapshot.runId === runId ? snapshot.scrollTop : 0
+  if (snapshot && snapshot.runId === runId) {
+    consumeEvalCaseListSnapshot()
+    applyListSnapshot(snapshot)
+    if (returned?.caseId) activeCaseId.value = returned.caseId
+  } else {
+    selectedId.value = runId
+    section.value = returned?.section === 'failed' ? 'failed' : 'cases'
+    activeCaseId.value = returned?.caseId || ''
+  }
+
+  await Promise.all([fetchHistory(), loadDetail(selectedId.value)])
+  await restoreMainScroll(scrollTop)
+  if (fromQuery) await router.replace({ name: 'eval' }).catch(() => {})
+  return true
+}
+
+onBeforeRouteLeave((to) => {
+  if (to.name !== 'eval-case') return
+  if (section.value !== 'cases' && section.value !== 'failed') return
+  const caseId = Array.isArray(to.params.caseId) ? to.params.caseId[0] : String(to.params.caseId ?? '')
+  markReturnToEvalList()
+  saveEvalCaseListSnapshot({
+    section: section.value,
+    runId: String(detail.value?.id ?? selectedId.value),
+    caseId,
+    keyword: section.value === 'failed' ? failedKeyword.value : caseKeyword.value,
+    statusFilter: section.value === 'failed' ? 'all' : caseStatus.value,
+    page: pagination.page,
+    pageSize: pagination.pageSize,
+    scrollTop: readMainScrollTop(),
+  })
+})
+
+onMounted(async () => {
+  const restored = await restoreListFromCase()
+  if (!restored) fetchHistory()
+})
 </script>
 
 <style lang="scss">

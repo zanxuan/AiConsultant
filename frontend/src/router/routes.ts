@@ -58,6 +58,12 @@ export const routes: RouteRecordRaw[] = [
         meta: { title: '评测对比', requiresAuth: true },
       },
       {
+        path: 'eval/runs/:runId/cases/:caseId',
+        name: 'eval-case',
+        component: () => import('@/views/eval/case.vue'),
+        meta: { title: '用例详情', requiresAuth: true },
+      },
+      {
         path: 'history',
         name: 'history',
         component: () => import('@/views/history/index.vue'),

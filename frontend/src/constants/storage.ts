@@ -5,3 +5,6 @@ export const USER_INFO_KEY = 'user_info'
 
 /** 侧边栏是否折叠 */
 export const SIDEBAR_COLLAPSED_KEY = 'sidebar_collapsed'
+
+/** 从用例详情返回评测列表时，恢复筛选、分页和滚动位置 */
+export const EVAL_CASE_LIST_STATE_KEY = 'eval_case_list_state'

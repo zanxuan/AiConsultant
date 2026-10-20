@@ -53,6 +53,7 @@
   align-items: center;
   gap: 10px;
   min-width: 0;
+  max-width: 100%;
 }
 
 .eval-page__label {
@@ -61,13 +62,30 @@
   font-size: 14px;
 }
 
-.eval-page__file {
-  max-width: 240px;
+.eval-page__dataset {
+  display: inline-grid;
+  max-width: min(240px, 100%);
+  min-width: 0;
+
+  .el-upload {
+    display: inline-grid;
+    max-width: 100%;
+    min-width: 0;
+  }
+}
+
+.eval-page__dataset-btn.el-button {
+  min-width: 0;
+  max-width: 100%;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: #64748b;
-  font-size: 13px;
+
+  > span {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
 
 .eval-page__hint {
@@ -178,21 +196,6 @@
   .eval-page__metrics {
     grid-template-columns: 1fr;
   }
-}
-
-.eval-drawer {
-  .el-drawer__body {
-    overflow: auto;
-    padding: 8px 20px 24px;
-  }
-}
-
-.eval-drawer__query {
-  margin: 0 0 8px;
-  font-size: 16px;
-  line-height: 1.6;
-  color: #1f2d3d;
-  font-weight: 600;
 }
 
 .eval-drawer__section {
@@ -372,4 +375,195 @@
   color: #475569;
   font-size: 12px;
   line-height: 1.5;
+}
+
+.eval-case__back-bar {
+  position: sticky;
+  // 滚动容器 .main-layout__content 的 padding 是 20px 24px。
+  // sticky 的吸附边在内容盒，正文会从顶栏和返回栏之间的内边距里穿过去。
+  // 负向 top / margin 把返回栏的背景铺进这圈内边距，按钮仍留在原来的位置。
+  top: -20px;
+  z-index: 5;
+  margin: -20px -24px 0;
+  padding: 20px 24px 12px;
+  background: #f3f6f8;
+}
+
+.eval-case__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #0f4c5c;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  cursor: pointer;
+
+  &:hover {
+    color: #0a3340;
+  }
+}
+
+.eval-case__tabs {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #e6ecef;
+}
+
+.eval-case__tab {
+  position: relative;
+  margin: 0;
+  padding: 0 0 10px;
+  border: 0;
+  background: transparent;
+  color: #64748b;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
+  cursor: pointer;
+
+  &:hover {
+    color: #0f4c5c;
+  }
+
+  &.is-active {
+    color: #0f4c5c;
+
+    &::after {
+      content: '';
+      position: absolute;
+      right: 0;
+      bottom: -1px;
+      left: 0;
+      height: 2px;
+      background: #0f4c5c;
+    }
+  }
+}
+
+.eval-case__body {
+  min-height: 180px;
+}
+
+.eval-case__trace .eval-drawer__section {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.eval-case__header {
+  margin-bottom: 16px;
+}
+
+.eval-case__title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  h2 {
+    margin: 0;
+    color: #1f2d3d;
+    font-size: 20px;
+    font-weight: 700;
+    word-break: break-all;
+  }
+}
+
+.eval-case__kicker {
+  margin: 14px 0 0;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.eval-case__query {
+  margin: 6px 0 0;
+  color: #1f2d3d;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.eval-case__metrics {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.eval-case__split {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.eval-case__column {
+  min-width: 0;
+  padding: 14px;
+  background: #f8fbfb;
+  border: 1px solid #e6ecef;
+  border-radius: 12px;
+
+  h3 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 12px;
+    color: #334155;
+    font-size: 14px;
+    font-weight: 600;
+
+    em {
+      font-style: normal;
+      color: #0f4c5c;
+    }
+  }
+
+  .el-tag {
+    flex-shrink: 0;
+  }
+}
+
+.eval-case__subhead {
+  margin: 0 0 16px;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.eval-case__steps {
+  .el-step__title {
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
+  .el-step__description {
+    padding-right: 12px;
+    padding-bottom: 12px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+}
+
+@media (max-width: 1100px) {
+  .eval-case__metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .eval-case__split,
+  .eval-case__metrics {
+    grid-template-columns: 1fr;
+  }
 }
