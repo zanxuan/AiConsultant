@@ -1,8 +1,10 @@
-/** 与后端 EvalCase 对齐 */
+/** 与后端 EvalCase 对齐。chunk 字段缺失表示旧记录，不能当成空数组。 */
 export interface EvalCase {
   id: number
+  sourceCaseId?: string | null
   query: string
-  expectedDocIds: string[]
+  expectedDocIds?: string[] | null
+  groundTruthChunkIds?: Array<string | number | null> | null
 }
 
 /** GET /eval/dataset */
@@ -17,6 +19,10 @@ export interface EvalFailedCase {
   query: string
   expectedDocIds: string[]
   retrievedDocIds: string[]
+  /** 旧快照没有这些字段时为 null 或缺失 */
+  groundTruthChunkIds?: Array<string | number | null> | null
+  retrievedChunkIds?: Array<string | number | null> | null
+  scoreNote?: string | null
   topScore: number | null
   latencyMs?: number | null
 }
@@ -32,6 +38,10 @@ export interface EvalCaseResult {
   hit: boolean
   recall: number
   mrr: number
+  /** 旧快照没有这些字段时为 null 或缺失，不能默认成 [] */
+  groundTruthChunkIds?: Array<string | number | null> | null
+  retrievedChunkIds?: Array<string | number | null> | null
+  scoreNote?: string | null
   /** 旧记录没有这些字段 */
   vectorHitCount?: number | null
   bm25HitCount?: number | null
@@ -135,6 +145,12 @@ export interface RetrievalEvalDoc {
   expected?: boolean | null
 }
 
+/** GET /eval/runs/{id}/chunk-contents。content 为空表示这条原文读不到 */
+export interface EvalChunkContent {
+  chunkId?: string | number | null
+  content?: string | null
+}
+
 /** GET /eval/runs/{id}/cases/{caseId}/retrieval-trace */
 export interface RetrievalTrace {
   runId?: number | string
@@ -167,12 +183,18 @@ export interface EvalRunQuery {
   pageSize?: number
 }
 
-/** 页面 Case 列表展示模型 */
+/** 页面 Case 列表展示模型。chunk 列表为 null 表示沿用文档级展示。 */
 export interface EvalCaseView {
   id: number
   query: string
   expectedDocIds: string[]
   retrievedDocIds: string[]
+  /** true 只表示结果里带了 chunk 字段，不重新计算指标 */
+  chunkScored: boolean
+  groundTruthChunkIds: string[] | null
+  /** 评测前 5 条，空 chunk ID 保留为 null，名次不前移 */
+  retrievedChunkIds: Array<string | null> | null
+  scoreNote: string | null
   topScore: number | null
   latencyMs: number | null
   failed: boolean

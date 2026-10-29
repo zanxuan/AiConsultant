@@ -7,6 +7,7 @@ import com.zx.consultant.common.exception.BaseException;
 import com.zx.consultant.common.result.PageResult;
 import com.zx.consultant.common.result.Result;
 import com.zx.consultant.common.utils.BaseContext;
+import com.zx.consultant.rag.eval.vo.EvalChunkContentVO;
 import com.zx.consultant.rag.eval.vo.EvalRunExecuteVO;
 import com.zx.consultant.rag.eval.vo.RagEvalRetrievalTraceVO;
 import com.zx.consultant.rag.eval.vo.RagEvalRunDetailVO;
@@ -72,7 +73,7 @@ public class RagEvalController {
     @PostMapping(value = "/run", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "上传测试集并评测", description = "multipart 提交 dataset 与 knowledgeId，返回 runId 与评测结果")
     public Result<EvalRunExecuteVO> runUploaded(
-            @Parameter(description = "EvalCase JSON 数组，格式与 golden-set 一致")
+            @Parameter(description = "EvalCase JSON 数组。支持 golden-set，也支持 question、groundTruthChunkIds 和 test-数字形式的用例 ID")
             @RequestParam("dataset") MultipartFile dataset,
             @Parameter(description = "知识库 ID")
             @RequestParam("knowledgeId") Long knowledgeId) {
@@ -125,6 +126,19 @@ public class RagEvalController {
             @Parameter(description = "评测记录 ID", required = true)
             @PathVariable("id") Long id) {
         return Result.success(ragEvalRunService.getDetail(id, BaseContext.getCurrentId()));
+    }
+
+    /**
+     * 按切块主键读取原文。只服务于当前用户的这次评测，不重新检索。
+     */
+    @GetMapping("/runs/{id}/chunk-contents")
+    @Operation(summary = "读取标准 Chunk 原文", description = "仅记录所属用户可读取本次评测知识库中的切块原文")
+    public Result<List<EvalChunkContentVO>> chunkContents(
+            @Parameter(description = "评测记录 ID", required = true)
+            @PathVariable("id") Long id,
+            @Parameter(description = "Chunk ID，可重复或用逗号分隔")
+            @RequestParam(value = "chunkIds", required = false) List<String> chunkIds) {
+        return Result.success(retrievalTraceService.listChunkContents(id, chunkIds, BaseContext.getCurrentId()));
     }
 
     /**

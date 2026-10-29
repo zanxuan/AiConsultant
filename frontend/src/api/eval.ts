@@ -7,6 +7,7 @@ import type {
   EvalRunDetail,
   EvalRunExecute,
   EvalRunQuery,
+  EvalChunkContent,
   RetrievalTrace,
 } from '@/types/eval'
 
@@ -59,6 +60,16 @@ export function getEvalRunDetailApi(id: number | string) {
   return request<EvalRunDetail>({
     url: API.EVAL.RUN_DETAIL(id),
     method: 'get',
+  })
+}
+
+/** GET /api/v1/eval/runs/{id}/chunk-contents — 按切块主键读原文，chunkIds 保持字符串 */
+export function getEvalChunkContentsApi(runId: number | string, chunkIds: string[]) {
+  return request<EvalChunkContent[]>({
+    url: API.EVAL.CHUNK_CONTENTS(runId),
+    method: 'get',
+    params: { chunkIds },
+    paramsSerializer: { indexes: null },
   })
 }
 

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -11,11 +12,13 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.zx.consultant.common.exception.BaseException;
 import com.zx.consultant.document.entity.Chunk;
+import com.zx.consultant.document.entity.Document;
 import com.zx.consultant.document.service.ChunkService;
 import com.zx.consultant.document.service.DocumentService;
 import com.zx.consultant.rag.eval.entity.RagEvalRetrievalTrace;
 import com.zx.consultant.rag.eval.mapper.RagEvalRetrievalTraceMapper;
 import com.zx.consultant.rag.eval.vo.RagEvalRunDetailVO;
+import com.zx.consultant.rag.eval.vo.EvalChunkContentVO;
 import com.zx.consultant.rag.eval.vo.RagEvalRetrievalTraceVO;
 import com.zx.consultant.rag.eval.vo.RagEvalRetrievalTraceVO.RetrievalEvalDocVO;
 import com.zx.consultant.rag.eval.vo.RagEvalRetrievalTraceVO.RetrievalTraceChunkVO;
@@ -137,6 +140,37 @@ public class RagEvalRetrievalTraceService extends ServiceImpl<RagEvalRetrievalTr
         return List.of();
     }
 
+    private static final int CHUNK_CONTENT_LIMIT = 20;
+
+    /**
+     * 按 chunk 主键读取原文，供标准 Chunk 预览。
+     * 只返回本次评测知识库里的切块，不读文档全文，也不改评测结果。
+     */
+    public List<EvalChunkContentVO> listChunkContents(Long runId, List<String> chunkIds, Long userId) {
+        RagEvalRunDetailVO detail = ragEvalRunService.getDetail(runId, userId);
+        List<String> requested = normalizeChunkIds(chunkIds);
+        if (requested.size() > CHUNK_CONTENT_LIMIT) {
+            throw new BaseException("一次最多读取 " + CHUNK_CONTENT_LIMIT + " 个 Chunk");
+        }
+        Map<String, Long> parsed = new LinkedHashMap<>();
+        for (String chunkId : requested) {
+            Long id = parseChunkId(chunkId);
+            if (id != null) {
+                parsed.put(chunkId, id);
+            }
+        }
+        Map<Long, String> contents = loadOwnedContents(parsed.values(), detail.getKnowledgeId());
+        List<EvalChunkContentVO> rows = new ArrayList<>();
+        for (String chunkId : requested) {
+            EvalChunkContentVO row = new EvalChunkContentVO();
+            row.setChunkId(chunkId);
+            Long id = parsed.get(chunkId);
+            row.setContent(id == null ? null : contents.get(id));
+            rows.add(row);
+        }
+        return rows;
+    }
+
     /** 文档名和正文走现有文档、切块数据，明细表里没有全文。 */
     private void enrich(RagEvalRetrievalTraceVO view) {
         if (view == null || !view.isSaved()) {
@@ -154,6 +188,81 @@ public class RagEvalRetrievalTraceService extends ServiceImpl<RagEvalRetrievalTr
         for (RetrievalEvalDocVO doc : view.getEvalDocs()) {
             doc.setDocumentName(documentName(names, doc.getDocumentId()));
         }
+    }
+
+    private static List<String> normalizeChunkIds(List<String> chunkIds) {
+        List<String> ids = new ArrayList<>();
+        if (chunkIds == null) {
+            return ids;
+        }
+        for (String raw : chunkIds) {
+            if (raw == null) {
+                continue;
+            }
+            for (String part : raw.split(",")) {
+                String id = part.trim();
+                if (!id.isEmpty()) {
+                    ids.add(id);
+                }
+            }
+        }
+        return ids;
+    }
+
+    /** 只接受十进制整数字符串，不经过浮点数 */
+    private static Long parseChunkId(String chunkId) {
+        if (chunkId == null || !chunkId.matches("\\d{1,19}")) {
+            return null;
+        }
+        try {
+            return Long.parseLong(chunkId);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    /** 切块必须属于这次评测的知识库，避免凭 ID 读到其他库的原文 */
+    private Map<Long, String> loadOwnedContents(Collection<Long> chunkIds, Long knowledgeId) {
+        Map<Long, String> contents = new HashMap<>();
+        if (chunkService == null || documentService == null || knowledgeId == null
+                || chunkIds == null || chunkIds.isEmpty()) {
+            return contents;
+        }
+        try {
+            Collection<Chunk> stored = chunkService.listByIds(chunkIds);
+            if (stored == null || stored.isEmpty()) {
+                return contents;
+            }
+            Set<Long> documentIds = new HashSet<>();
+            for (Chunk chunk : stored) {
+                if (chunk != null && chunk.getDocumentId() != null) {
+                    documentIds.add(chunk.getDocumentId());
+                }
+            }
+            Map<Long, Long> knowledgeByDocument = new HashMap<>();
+            if (!documentIds.isEmpty()) {
+                Collection<Document> documents = documentService.listByIds(documentIds);
+                if (documents != null) {
+                    for (Document document : documents) {
+                        if (document != null && document.getId() != null) {
+                            knowledgeByDocument.put(document.getId(), document.getKnowledgeId());
+                        }
+                    }
+                }
+            }
+            for (Chunk chunk : stored) {
+                if (chunk == null || chunk.getId() == null) {
+                    continue;
+                }
+                Long owner = knowledgeByDocument.get(chunk.getDocumentId());
+                if (knowledgeId.equals(owner)) {
+                    contents.put(chunk.getId(), chunk.getContent());
+                }
+            }
+        } catch (Exception e) {
+            log.warn("读取标准 Chunk 原文失败", e);
+        }
+        return contents;
     }
 
     private Map<Long, String> loadContents(List<RetrievalTraceChunkVO> chunks) {

@@ -152,6 +152,9 @@ class RetrievalTraceSnapshotTest {
         assertNull(historical.getBm25Query());
         assertNull(historical.getExpectedHits());
         assertNull(historical.getMissStage());
+        assertNull(historical.getGroundTruthChunkIds());
+        assertNull(historical.getRetrievedChunkIds());
+        assertNull(historical.getScoreNote());
 
         RagEvalRetrievalTraceVO missing = RetrievalTraceSnapshots.toView(
                 1L, 34, historical, List.of("999"), List.of());

@@ -4,12 +4,24 @@
       v-for="row in rows"
       :key="rowKey(row)"
       class="eval-drawer__doc eval-trace__row"
-      :class="{ 'is-expected': isExpected(row), 'is-filtered': row.filtered }"
+      :class="{
+        'is-expected': rowMark(row) === 'standard' || (!chunkScored && isExpected(row)),
+        'is-same-doc': rowMark(row) === 'same-document',
+        'is-outside': outsideEval(row),
+        'is-filtered': row.filtered,
+      }"
     >
       <div class="eval-drawer__doc-head">
         <span>{{ rankText(displayRank(row)) }}</span>
         <strong>{{ row.documentName || `Document ${row.documentId ?? '—'}` }}</strong>
-        <el-tag v-if="isExpected(row)" size="small" effect="plain" type="success">期望文档</el-tag>
+        <el-tag v-if="chunkScored && rowMark(row) === 'standard'" size="small" effect="plain" type="success">
+          命中标准 Chunk
+        </el-tag>
+        <el-tag v-else-if="chunkScored && rowMark(row) === 'same-document'" size="small" effect="plain" type="info">
+          同一文档
+        </el-tag>
+        <el-tag v-else-if="!chunkScored && isExpected(row)" size="small" effect="plain" type="success">期望文档</el-tag>
+        <el-tag v-if="outsideEval(row)" size="small" effect="plain" type="info">不计入 Hit@5</el-tag>
         <el-tag v-if="row.filtered" size="small" effect="plain" type="danger">已过滤</el-tag>
       </div>
       <div class="eval-drawer__meta">
@@ -25,17 +37,26 @@
 
 <script setup lang="ts">
 import type { RetrievalTraceChunk } from '@/types/eval'
+import { chunkMark, inEvalChunkScope } from './case-view'
 
 const props = withDefaults(defineProps<{
   rows?: RetrievalTraceChunk[]
   expectedIds?: string[]
+  chunkScored?: boolean
+  groundTruthChunkIds?: string[]
+  sameDocumentIds?: string[]
   scoreKind?: 'vector' | 'bm25' | 'rrf' | 'final'
   showFilter?: boolean
+  showEvalScope?: boolean
 }>(), {
   rows: () => [],
   expectedIds: () => [],
+  chunkScored: false,
+  groundTruthChunkIds: () => [],
+  sameDocumentIds: () => [],
   scoreKind: 'rrf',
   showFilter: false,
+  showEvalScope: false,
 })
 
 function rowKey(row: RetrievalTraceChunk) {
@@ -44,6 +65,17 @@ function rowKey(row: RetrievalTraceChunk) {
 
 function isExpected(row: RetrievalTraceChunk) {
   return props.expectedIds.map(String).includes(String(row.documentId ?? ''))
+}
+
+function rowMark(row: RetrievalTraceChunk) {
+  if (!props.chunkScored) return 'plain' as const
+  return chunkMark(props.groundTruthChunkIds, row.chunkId, row.documentId, new Set(props.sameDocumentIds))
+}
+
+function outsideEval(row: RetrievalTraceChunk) {
+  if (!props.chunkScored || !props.showEvalScope || props.scoreKind !== 'final') return false
+  const rank = row.finalRank
+  return rank != null && !inEvalChunkScope(rank)
 }
 
 function displayRank(row: RetrievalTraceChunk) {

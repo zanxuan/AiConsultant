@@ -18,6 +18,7 @@ import com.zx.consultant.knowledge.mapper.KnowledgeBaseMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zx.consultant.rag.entity.RetrievedChunk;
 import com.zx.consultant.rag.eval.entity.RagEvalRetrievalTrace;
@@ -207,35 +208,29 @@ public class RagEvalService {
             retrieveLatenciesMs.add(latencyMs);
             List<RetrievedChunk> chunks = trace.finalTopK == null ? List.of() : trace.finalTopK;
             List<String> retrievedDocIds = toRetrievedDocIds(chunks, TOP_K);
-
-            boolean hit = isHit(retrievedDocIds, evalCase.getExpectedDocIds());
-            double caseRecall = hit ? 1.0 : 0.0;
-            double caseMrr = reciprocalRank(retrievedDocIds, evalCase.getExpectedDocIds());
-            if (hit) {
+            // 有标准 chunk 时按 chunk 打分；字段缺失才沿用文档判断
+            CaseScore score = scoreCase(evalCase, chunks, retrievedDocIds);
+            if (score.hit()) {
                 hitCount++;
             } else {
-                FailedCase failed = new FailedCase();
-                failed.setId(evalCase.getId());
-                failed.setQuery(query);
-                failed.setExpectedDocIds(evalCase.getExpectedDocIds());
-                failed.setRetrievedDocIds(retrievedDocIds);
-                failed.setTopScore(topScore(chunks));
-                failed.setLatencyMs(latencyMs);
-                failedCases.add(failed);
+                failedCases.add(failedCase(evalCase, query, retrievedDocIds, chunks, latencyMs, score));
             }
-            recallSum += caseRecall;
-            mrrSum += caseMrr;
+            recallSum += score.recall();
+            mrrSum += score.reciprocalRank();
 
             EvalCaseResult caseResult = new EvalCaseResult();
             caseResult.setId(evalCase.getId());
             caseResult.setQuery(query);
             caseResult.setExpectedDocIds(evalCase.getExpectedDocIds());
             caseResult.setRetrievedDocIds(retrievedDocIds);
+            caseResult.setGroundTruthChunkIds(score.groundTruthChunkIds());
+            caseResult.setRetrievedChunkIds(score.retrievedChunkIds());
+            caseResult.setScoreNote(score.scoreNote());
             caseResult.setTopScore(topScore(chunks));
             caseResult.setLatencyMs(latencyMs);
-            caseResult.setHit(hit);
-            caseResult.setRecall(caseRecall);
-            caseResult.setMrr(caseMrr);
+            caseResult.setHit(score.hit());
+            caseResult.setRecall(score.recall());
+            caseResult.setMrr(score.reciprocalRank());
             // 成功和失败用例共用这一份快照，不额外再检索一次
             RetrievalTraceSnapshots.fillSummary(caseResult, trace, evalCase.getExpectedDocIds(), retrievedDocIds);
             if (evalCase.getId() != null) {
@@ -365,15 +360,37 @@ public class RagEvalService {
     }
 
     /**
-     * 与 golden-set 使用同一套 Jackson 解析，把 JSON 数组反序列化为 EvalCase。
+     * 把 JSON 数组反序列化为 EvalCase。旧 golden-set 与新测试集走同一个入口，
+     * 字段兼容由 {@link EvalCaseDeserializer} 处理，这里不计算指标。
      */
     public List<EvalCase> parseCases(InputStream input, String sourceName) {
         try {
             List<EvalCase> cases = objectMapper.readValue(input, new TypeReference<List<EvalCase>>() {});
             return cases == null ? List.of() : cases;
         } catch (Exception e) {
-            throw new IllegalStateException("读取测试集失败: " + sourceName, e);
+            String detail = parseFailureDetail(e);
+            String message = detail == null
+                    ? "读取测试集失败: " + sourceName
+                    : "读取测试集失败: " + sourceName + "：" + detail;
+            throw new IllegalStateException(message, e);
         }
+    }
+
+    /** 把 ID 格式等解析原因带到入口异常上，避免只剩“读取测试集失败” */
+    private static String parseFailureDetail(Throwable error) {
+        Throwable current = error;
+        String detail = null;
+        while (current != null) {
+            if (current instanceof JsonMappingException mapping
+                    && mapping.getOriginalMessage() != null
+                    && !mapping.getOriginalMessage().isBlank()) {
+                detail = mapping.getOriginalMessage();
+            } else if (current.getMessage() != null && !current.getMessage().isBlank()) {
+                detail = current.getMessage();
+            }
+            current = current.getCause();
+        }
+        return detail;
     }
 
     /**
@@ -396,7 +413,41 @@ public class RagEvalService {
     }
 
     /**
-     * chunk → documentId，保序去重，截断 TopK。
+     * 有 groundTruthChunkIds 时只按前 TOP_K 个 chunk 打分，文档 ID 不参与对错。
+     * 字段为 null 时保持原来的文档级 Hit / Recall / MRR。
+     */
+    private CaseScore scoreCase(EvalCase evalCase, List<RetrievedChunk> chunks, List<String> retrievedDocIds) {
+        if (evalCase.getGroundTruthChunkIds() != null) {
+            ChunkEvalMetrics.ChunkMatch match = ChunkEvalMetrics.match(
+                    evalCase.getGroundTruthChunkIds(), chunks, TOP_K);
+            return new CaseScore(match.hit(), match.recall(), match.reciprocalRank(),
+                    match.groundTruthChunkIds(), match.retrievedChunkIds(), match.scoreNote());
+        }
+        boolean hit = isHit(retrievedDocIds, evalCase.getExpectedDocIds());
+        // 旧测试集的单题 Recall 仍是命中 1、未命中 0，不按文档集合比例计算
+        double recall = hit ? 1.0d : 0.0d;
+        double documentRank = reciprocalRank(retrievedDocIds, evalCase.getExpectedDocIds());
+        return new CaseScore(hit, recall, documentRank, null, null, null);
+    }
+
+    /** 失败题只表示前 TOP_K 未命中。文档列表和 chunk 列表分开保存 */
+    private FailedCase failedCase(EvalCase evalCase, String query, List<String> retrievedDocIds,
+            List<RetrievedChunk> chunks, long latencyMs, CaseScore score) {
+        FailedCase failed = new FailedCase();
+        failed.setId(evalCase.getId());
+        failed.setQuery(query);
+        failed.setExpectedDocIds(evalCase.getExpectedDocIds());
+        failed.setRetrievedDocIds(retrievedDocIds);
+        failed.setGroundTruthChunkIds(score.groundTruthChunkIds());
+        failed.setRetrievedChunkIds(score.retrievedChunkIds());
+        failed.setScoreNote(score.scoreNote());
+        failed.setTopScore(topScore(chunks));
+        failed.setLatencyMs(latencyMs);
+        return failed;
+    }
+
+    /**
+     * chunk → documentId，保序去重，截断 TopK。只用于文档展示和旧格式打分。
      */
     List<String> toRetrievedDocIds(List<RetrievedChunk> chunks, int topK) {
         LinkedHashSet<String> docIds = new LinkedHashSet<>();
@@ -564,5 +615,15 @@ public class RagEvalService {
             index = n - 1;
         }
         return sorted.get(index);
+    }
+
+    /** 单题打分。chunk 字段只在 chunk 模式有值，避免覆盖文档列表 */
+    private record CaseScore(
+            boolean hit,
+            double recall,
+            double reciprocalRank,
+            List<String> groundTruthChunkIds,
+            List<String> retrievedChunkIds,
+            String scoreNote) {
     }
 }

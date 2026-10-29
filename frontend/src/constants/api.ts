@@ -32,6 +32,7 @@ export const API = {
     RUN: '/eval/run',
     RUNS: '/eval/runs',
     RUN_DETAIL: (id: number | string) => `/eval/runs/${id}`,
+    CHUNK_CONTENTS: (id: number | string) => `/eval/runs/${id}/chunk-contents`,
     RETRIEVAL_TRACE: (runId: number | string, caseId: number | string) =>
       `/eval/runs/${runId}/cases/${caseId}/retrieval-trace`,
   },

@@ -370,6 +370,15 @@
   border-color: #86efac;
 }
 
+.eval-drawer__doc.is-same-doc {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+.eval-drawer__doc.is-outside:not(.is-filtered) {
+  background: #f8fafc;
+}
+
 .eval-trace__content {
   margin: 6px 0 0 24px;
   color: #475569;

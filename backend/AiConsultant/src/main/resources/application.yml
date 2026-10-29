@@ -21,7 +21,8 @@ app:
     local-dir: uploads
   rag:
     redis:
-      index-name: embedding-index   # 与 Vector / BM25 共用；可按环境改为 embedding-index-dev / -prod
+      index-name: embedding-index   # 向量索引。保留现有索引，不删除、不重建
+      bm25-index-name: embedding-bm25-zh  # 独立中文 BM25 索引，LANGUAGE chinese，文档前缀仍是 embedding:
     retriever:
       max-results: 10       # 默认召回数量
       min-score: 0.75      # 向量相似度下限（余弦，约 0~1）；融合后使用，检索阶段不提前丢弃
