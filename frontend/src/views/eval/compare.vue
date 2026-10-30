@@ -1,6 +1,8 @@
 <template>
-  <PageContainer title="评测对比" desc="两次历史评测的已保存指标，差值按 B−A 计算">
+  <PageContainer :title="casePanel ? '用例对比' : '评测对比'" :desc="pageDesc">
     <template #extra>
+      <el-button v-if="runA && runB && casePanel" @click="casePanel = false">返回指标对比</el-button>
+      <el-button v-else-if="runA && runB" type="primary" @click="casePanel = true">用例对比</el-button>
       <el-button @click="goBack">返回评测</el-button>
     </template>
 
@@ -10,31 +12,34 @@
         <el-button v-if="canRetry" link type="primary" @click="load">重试</el-button>
       </p>
       <template v-else-if="runA && runB">
-        <section class="eval-page__card">
-          <div class="eval-page__list-title">指标对比</div>
-          <el-table
-            :data="rows"
-            class="eval-page__table eval-page__table--static"
-            header-cell-class-name="eval-page__table-header"
-          >
-            <el-table-column label="指标" prop="label" min-width="140" />
-            <el-table-column label="评测 A" min-width="140" align="right">
-              <template #default="{ row }">{{ row.aText }}</template>
-            </el-table-column>
-            <el-table-column label="评测 B" min-width="140" align="right">
-              <template #default="{ row }">{{ row.bText }}</template>
-            </el-table-column>
-            <el-table-column label="差值（B−A）" min-width="180" align="right">
-              <template #default="{ row }">
-                <span :class="deltaClass(row.tone)">{{ row.deltaText }}</span>
-              </template>
-            </el-table-column>
-          </el-table>
-        </section>
-        <div class="eval-compare__pair">
-          <EvalCompareSide label="评测 A" :detail="runA" />
-          <EvalCompareSide label="评测 B" :detail="runB" />
-        </div>
+        <EvalCompareCases v-if="casePanel" :run-a="runA" :run-b="runB" />
+        <template v-else>
+          <section class="eval-page__card">
+            <div class="eval-page__list-title">指标对比</div>
+            <el-table
+              :data="rows"
+              class="eval-page__table eval-page__table--static"
+              header-cell-class-name="eval-page__table-header"
+            >
+              <el-table-column label="指标" prop="label" min-width="140" />
+              <el-table-column label="评测 A" min-width="140" align="right">
+                <template #default="{ row }">{{ row.aText }}</template>
+              </el-table-column>
+              <el-table-column label="评测 B" min-width="140" align="right">
+                <template #default="{ row }">{{ row.bText }}</template>
+              </el-table-column>
+              <el-table-column label="差值（B−A）" min-width="180" align="right">
+                <template #default="{ row }">
+                  <span :class="deltaClass(row.tone)">{{ row.deltaText }}</span>
+                </template>
+              </el-table-column>
+            </el-table>
+          </section>
+          <div class="eval-compare__pair">
+            <EvalCompareSide label="评测 A" :detail="runA" />
+            <EvalCompareSide label="评测 B" :detail="runB" />
+          </div>
+        </template>
       </template>
     </div>
   </PageContainer>
@@ -44,6 +49,7 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import PageContainer from '@/components/common/PageContainer.vue'
+import EvalCompareCases from '@/components/eval/EvalCompareCases.vue'
 import EvalCompareSide from '@/components/eval/EvalCompareSide.vue'
 import { buildCompareRows, type CompareTone } from '@/components/eval/compare'
 import { getEvalRunDetailApi } from '@/api/eval'
@@ -54,6 +60,7 @@ const router = useRouter()
 const loading = ref(false)
 const error = ref('')
 const canRetry = ref(false)
+const casePanel = ref(false)
 const runA = ref<EvalRunDetail | null>(null)
 const runB = ref<EvalRunDetail | null>(null)
 let requestSeq = 0
@@ -61,8 +68,14 @@ let requestSeq = 0
 const idA = computed(() => String(route.query.a ?? '').trim())
 const idB = computed(() => String(route.query.b ?? '').trim())
 const rows = computed(() => (runA.value && runB.value ? buildCompareRows(runA.value, runB.value) : []))
+const pageDesc = computed(() => (
+  casePanel.value
+    ? '左侧为评测 A 的用例，右侧为评测 B 的用例'
+    : '两次历史评测的已保存指标，差值按 B−A 计算'
+))
 
 watch([idA, idB], () => {
+  casePanel.value = false
   load()
 }, { immediate: true })
 
