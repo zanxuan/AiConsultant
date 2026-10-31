@@ -31,6 +31,12 @@ public class Conversation {
      * 关联的知识库 ID (指定该会话基于哪个知识库进行问答)
      */
     private Long knowledgeId;
+
+    /**
+     * 知识库名称，只用于列表回显，不落库。
+     */
+    @TableField(exist = false)
+    private String knowledgeName;
     
     /**
      * 会话标题 (用于在前端侧边栏展示)

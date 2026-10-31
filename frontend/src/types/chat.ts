@@ -20,8 +20,16 @@ export interface ChatMessage {
   showLoginLink?: boolean
   /** 仅前端运行时；历史消息不带，缺省视为已完成 */
   status?: 'thinking' | 'completed' | 'error'
-  /** status === 'thinking' 时的阶段文案，不写入 content */
+  /** status === 'thinking' 时的当前阶段文案，不写入 content */
   progress?: string
+  /** 本次问答流里已经出现过的阶段，完成后仍保留，直到整段流结束 */
+  progressSteps?: ChatProgressStep[]
+}
+
+/** 问答过程中的一条 SSE 阶段，只在前端展示 */
+export interface ChatProgressStep {
+  text: string
+  done: boolean
 }
 
 /** POST /api/v1/chat 请求体 */

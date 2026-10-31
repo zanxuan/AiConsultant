@@ -3,39 +3,49 @@
     class="message-item"
     :class="[
       `message-item--${roleKey.toLowerCase()}`,
-      { 'message-item--thinking': isThinking, 'message-item--error': isError },
+      { 'message-item--thinking': isThinking && !showBody, 'message-item--error': isError },
     ]"
   >
-    <div class="message-item__bubble">
-      <div v-if="isThinking" class="message-item__thinking">
-        <span class="message-item__spinner" aria-hidden="true" />
-        <span>{{ message.progress || '正在思考...' }}</span>
+    <div class="message-item__stack">
+      <div v-if="visibleSteps.length" class="message-item__steps">
+        <div
+          v-for="(step, index) in visibleSteps"
+          :key="index"
+          class="message-item__thinking"
+          :class="{ 'is-done': step.done }"
+        >
+          <span v-if="step.done" class="message-item__mark" aria-hidden="true">✓</span>
+          <span v-else class="message-item__spinner" aria-hidden="true" />
+          <span>{{ step.done ? completedProgressLabel(step.text) : step.text }}</span>
+        </div>
       </div>
-      <div v-else-if="isError" class="message-item__content message-item__content--error">
-        {{ message.content || '问答失败' }}
+      <div v-if="showBody" class="message-item__bubble">
+        <div v-if="isError" class="message-item__content message-item__content--error">
+          {{ message.content || '问答失败' }}
+        </div>
+        <div
+          v-else-if="isAssistant"
+          class="message-item__content message-item__content--md"
+          v-html="renderedHtml"
+        />
+        <div v-else class="message-item__content">{{ message.content || '...' }}</div>
+        <a
+          v-if="message.showLoginLink"
+          href="#"
+          class="message-item__login-link"
+          @click.prevent="userStore.openLoginDialog()"
+        >
+          立即登录
+        </a>
+        <SourcePanel v-if="!isThinking && message.sources?.length" :sources="message.sources" />
       </div>
-      <div
-        v-else-if="isAssistant"
-        class="message-item__content message-item__content--md"
-        v-html="renderedHtml"
-      />
-      <div v-else class="message-item__content">{{ message.content || '...' }}</div>
-      <a
-        v-if="message.showLoginLink"
-        href="#"
-        class="message-item__login-link"
-        @click.prevent="userStore.openLoginDialog()"
-      >
-        立即登录
-      </a>
-      <SourcePanel v-if="!isThinking && message.sources?.length" :sources="message.sources" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { ChatMessage } from '@/types/chat'
+import type { ChatMessage, ChatProgressStep } from '@/types/chat'
 import { MessageRole } from '@/constants/enum'
 import { renderMarkdown } from '@/utils/markdown'
 import SourcePanel from './SourcePanel.vue'
@@ -56,6 +66,34 @@ const isAssistant = computed(
 const isThinking = computed(() => props.message.status === 'thinking')
 
 const isError = computed(() => props.message.status === 'error')
+
+/** 流未结束时展示全部阶段；结束后不再占用回答区域 */
+const visibleSteps = computed<ChatProgressStep[]>(() => {
+  if (props.message.status === 'completed' || props.message.status === 'error') return []
+  if (props.message.progressSteps?.length) return props.message.progressSteps
+  if (props.message.status === 'thinking') {
+    return [{ text: props.message.progress || '正在思考...', done: false }]
+  }
+  return []
+})
+
+const showBody = computed(() => {
+  if (isError.value) return true
+  if (!isAssistant.value) return true
+  if (props.message.content) return true
+  return !isThinking.value && !visibleSteps.value.length
+})
+
+/** 「正在读取对话上下文...」结束后展示为「已完成读取对话上下文」 */
+function completedProgressLabel(text: string) {
+  let body = text.trim().replace(/[.…。\s]+$/u, '')
+  if (body.startsWith('正在')) {
+    body = `已完成${body.slice(2)}`
+  } else if (!body.startsWith('已完成')) {
+    body = `已完成${body}`
+  }
+  return body
+}
 
 const renderedHtml = computed(() => {
   const text = props.message.content
@@ -100,12 +138,32 @@ const renderedHtml = computed(() => {
     }
   }
 
-  &__bubble {
+  &__stack {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
     max-width: min(100%, 92%);
+  }
+
+  &--user &__stack {
+    align-items: flex-end;
+  }
+
+  &__bubble {
+    max-width: 100%;
     padding: 12px 14px;
     border-radius: 12px;
     line-height: 1.6;
     word-break: break-word;
+  }
+
+  &__steps {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 4px 2px;
+    color: #64748b;
   }
 
   &__thinking {
@@ -114,6 +172,19 @@ const renderedHtml = computed(() => {
     gap: 8px;
     font-size: 14px;
     line-height: 1.5;
+
+    &.is-done {
+      color: #94a3b8;
+    }
+  }
+
+  &__mark {
+    flex-shrink: 0;
+    width: 12px;
+    text-align: center;
+    font-size: 12px;
+    line-height: 1;
+    color: #0f4c5c;
   }
 
   &__spinner {

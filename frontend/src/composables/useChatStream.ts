@@ -42,8 +42,24 @@ export function useChatStream() {
     if (patch.content != null) last.content = patch.content
     if (patch.sources) last.sources = patch.sources
     if ('status' in patch) last.status = patch.status
-    // 允许 complete / error 时把 progress 清成 undefined
+    // 允许 complete / error 时把进度清掉
     if ('progress' in patch) last.progress = patch.progress
+    if ('progressSteps' in patch) last.progressSteps = patch.progressSteps
+  }
+
+  /** 新阶段到来时，上一条改为已完成，当前这条单独留在最下面 */
+  function pushProgress(ac: AbortController, label: string) {
+    if (!isCurrentRequest(ac)) return
+    const last = chatStore.messages[chatStore.messages.length - 1]
+    if (last?.role !== MessageRole.ASSISTANT) return
+    const steps = (last.progressSteps ?? []).map((step) => ({ ...step }))
+    const current = steps[steps.length - 1]
+    if (current && !current.done && current.text === label) return
+    if (current && !current.done) current.done = true
+    steps.push({ text: label, done: false })
+    last.progressSteps = steps
+    last.progress = label
+    last.status = 'thinking'
   }
 
   /** Spring 可能把纯文本 progress 编成 JSON 字符串，展示时去掉外层引号 */
@@ -86,6 +102,8 @@ export function useChatStream() {
         role: MessageRole.ASSISTANT,
         content: '',
         status: 'thinking',
+        progress: THINKING_FALLBACK,
+        progressSteps: [{ text: THINKING_FALLBACK, done: false }],
       })
 
       const result = await sendChatApi({
@@ -101,16 +119,12 @@ export function useChatStream() {
       await consumeChatSse(result.taskId, {
         signal: ac.signal,
         onProgress(message) {
-          patchLastAssistant(ac, { progress: toThinkingLabel(message) })
+          pushProgress(ac, toThinkingLabel(message))
         },
         onAnswer(chunk) {
           if (!chunk) return
+          // 回答开始后阶段列表仍保留，直到整段流结束
           chatStore.appendAssistantChunk(chunk)
-          // MessageItem 在 thinking 时只展示 progress，必须离开 thinking 才能渲染正文
-          patchLastAssistant(ac, {
-            status: undefined,
-            progress: undefined,
-          })
         },
         onComplete(payload) {
           patchLastAssistant(ac, {
@@ -118,6 +132,7 @@ export function useChatStream() {
             sources: payload.references || payload.sources || [],
             status: 'completed',
             progress: undefined,
+            progressSteps: undefined,
           })
         },
       })
@@ -129,6 +144,7 @@ export function useChatStream() {
         status: 'error',
         content: error.value,
         progress: undefined,
+        progressSteps: undefined,
       })
     } finally {
       // 只清理本次请求，避免覆盖新对话里已开始的下一次 send

@@ -22,7 +22,13 @@ const props = defineProps<{
 const listRef = ref<HTMLElement>()
 
 watch(
-  () => props.messages.map((m) => `${m.status ?? ''}\0${m.progress ?? ''}\0${m.content}`).join('\n'),
+  () =>
+    props.messages
+      .map((m) => {
+        const steps = (m.progressSteps ?? []).map((step) => `${step.done ? 1 : 0}:${step.text}`).join('|')
+        return `${m.status ?? ''}\0${m.progress ?? ''}\0${steps}\0${m.content}`
+      })
+      .join('\n'),
   async () => {
     await nextTick()
     if (listRef.value) {
