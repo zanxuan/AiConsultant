@@ -1,0 +1,516 @@
+[
+  {
+    "id": "test-001",
+    "question": "青屿空港货运枢纽的内部代号是什么？",
+    "groundTruthAnswer": "内部代号为 QYH-6。",
+    "evidenceQuotes": [
+      "青屿空港货运枢纽（Qingyu Airfreight Hub）的内部代号为 QYH-6，位于虚构城市 “岚桥市”。"
+    ],
+    "sourceDocumentId": "2116158479097040897",
+    "category": "BASIC",
+    "groundTruthChunkIds": [
+      "2116158480242085889"
+    ]
+  },
+  {
+    "id": "test-002",
+    "question": "枢纽现场使用的时间标准是什么？",
+    "groundTruthAnswer": "一律采用岚桥市当地时间（CST）。",
+    "evidenceQuotes": [
+      "时间一律采用岚桥市当地时间（CST）。"
+    ],
+    "sourceDocumentId": "2116158479097040897",
+    "category": "BASIC",
+    "groundTruthChunkIds": [
+      "2116158480242085889"
+    ]
+  },
+  {
+    "id": "test-003",
+    "question": "货温和限制性货物由谁负责？",
+    "groundTruthAnswer": "货温与限制性货物由 Frostline 负责。",
+    "evidenceQuotes": [
+      "货温与限制性货物由 Frostline 负责"
+    ],
+    "sourceDocumentId": "2116158479097040897",
+    "category": "BASIC",
+    "groundTruthChunkIds": [
+      "2116158480242085889"
+    ]
+  },
+  {
+    "id": "test-004",
+    "question": "冷藏货位 C-Cold 的控制温度范围是多少？",
+    "groundTruthAnswer": "冷藏货位 C-Cold 的控制范围为 2.0°C 至 8.0°C。",
+    "evidenceQuotes": [
+      "冷藏货位 C-Cold 的控制范围为 2.0°C 至 8.0°C。"
+    ],
+    "sourceDocumentId": "2116158479097040897",
+    "category": "BASIC",
+    "groundTruthChunkIds": [
+      "2116158480271446018"
+    ]
+  },
+  {
+    "id": "test-005",
+    "question": "Harbor 夜波的截载时间和机坪交接截止分别是什么时间？",
+    "groundTruthAnswer": "Harbor 夜波的截载时间是 22:10，机坪交接截止是 23:00。",
+    "evidenceQuotes": [
+      "波次 截载时间 机坪交接截止",
+      "Harbor 夜波 22:10 23:00"
+    ],
+    "sourceDocumentId": "2116158479097040897",
+    "category": "BASIC",
+    "groundTruthChunkIds": [
+      "2116158480271446018"
+    ]
+  },
+  {
+    "id": "test-006",
+    "question": "L1 的首次响应目标是多少？",
+    "groundTruthAnswer": "L1 的首次响应目标是 10 分钟。",
+    "evidenceQuotes": [
+      "级别 首次响应目标 示例",
+      "L1 10 分钟 HX-3 隔离失效、冷链硬越限、窗口内主分拣中断且时效货未扫完、复磅互锁被擅自解除"
+    ],
+    "sourceDocumentId": "2116158479097040897",
+    "category": "BASIC",
+    "groundTruthChunkIds": [
+      "2116158480275640322"
+    ]
+  },
+  {
+    "id": "test-007",
+    "question": "紧急截载演练口令 PETREL-5560 能用来解除互锁、打开隔离门或批准放行吗？",
+    "groundTruthAnswer": "不能。该口令只用于演练点名，不能解除互锁、打开隔离门或批准放行。",
+    "evidenceQuotes": [
+      "紧急截载演练使用虚构口令 PETREL-5560。该口令只用于演练点名，不能解除互锁、打开隔离门或批准放行。"
+    ],
+    "sourceDocumentId": "2116158479097040897",
+    "category": "BASIC",
+    "groundTruthChunkIds": [
+      "2116158480275640323"
+    ]
+  },
+  {
+    "id": "test-008",
+    "question": "本文生效范围内，已发布的路由版本是什么？",
+    "groundTruthAnswer": "已发布路由版本为 RT-6.4.2。",
+    "evidenceQuotes": [
+      "在本文生效范围内，已发布路由版本为 RT-6.4.2。"
+    ],
+    "sourceDocumentId": "2116158479097040897",
+    "category": "BASIC",
+    "groundTruthChunkIds": [
+      "2116158480292417538"
+    ]
+  },
+  {
+    "id": "test-009",
+    "question": "待封存分单超过多少票会触发 F-08？",
+    "groundTruthAnswer": "待封存分单超过 2,000 票时触发 F-08。",
+    "evidenceQuotes": [
+      "待封存分单超过 2,000 票时触发 F-08。"
+    ],
+    "sourceDocumentId": "2116158479097040897",
+    "category": "BASIC",
+    "groundTruthChunkIds": [
+      "2116158480300806145"
+    ]
+  },
+  {
+    "id": "test-010",
+    "question": "一次导出超过多少行时必须双人批准？由谁批准？",
+    "groundTruthAnswer": "一次导出超过 8,000 行时，须由 Seal Office 与 Hub Captain 双人批准。",
+    "evidenceQuotes": [
+      "一次导出超过 8,000 行时，须由 Seal Office 与 Hub Captain 双人批准。"
+    ],
+    "sourceDocumentId": "2116158479097040897",
+    "category": "BASIC",
+    "groundTruthChunkIds": [
+      "2116158480351137794"
+    ]
+  },
+  {
+    "id": "test-011",
+    "question": "固定维护窗口安排在星期几的什么时段？",
+    "groundTruthAnswer": "固定维护窗口为每周一和周四 00:40 至 02:10。",
+    "evidenceQuotes": [
+      "固定维护窗口为每周一和周四 00:40 至 02:10。"
+    ],
+    "sourceDocumentId": "2116158479097040897",
+    "category": "BASIC",
+    "groundTruthChunkIds": [
+      "2116158480275640322"
+    ]
+  },
+  {
+    "id": "test-012",
+    "question": "货物等级分为哪几类？",
+    "groundTruthAnswer": "货物等级分为 GEN（普通货）、THR（时效货）、COLD（冷藏）、FROST（冷冻）和 HX-3（限制性隔离货）。",
+    "evidenceQuotes": [
+      "货物等级分为 GEN（普通货）、THR（时效货）、COLD（冷藏）、FROST（冷冻）和 HX-3（限制性隔离货）。"
+    ],
+    "sourceDocumentId": "2116158479097040897",
+    "category": "BASIC",
+    "groundTruthChunkIds": [
+      "2116158480284028929"
+    ]
+  },
+  {
+    "id": "test-013",
+    "question": "这班人在现场干活时，最高指挥是哪个角色？",
+    "groundTruthAnswer": "当班最高现场指挥角色是 Hub Captain。",
+    "evidenceQuotes": [
+      "当班最高现场指挥角色是 Hub Captain。"
+    ],
+    "sourceDocumentId": "2116158479097040897",
+    "category": "SEMANTIC",
+    "groundTruthChunkIds": [
+      "2116158480242085889"
+    ]
+  },
+  {
+    "id": "test-014",
+    "question": "要冻起来保存的货位，温度得落在哪个区间里？",
+    "groundTruthAnswer": "冷冻货位 F-Freeze 的控制范围为 −25.0°C 至 −18.0°C。",
+    "evidenceQuotes": [
+      "冷冻货位 F-Freeze 的控制范围为 −25.0°C 至 −18.0°C。"
+    ],
+    "sourceDocumentId": "2116158479097040897",
+    "category": "SEMANTIC",
+    "groundTruthChunkIds": [
+      "2116158480271446018"
+    ]
+  },
+  {
+    "id": "test-015",
+    "question": "扫描点要是一直没有心跳，连着丢几次才算通信出了问题？",
+    "groundTruthAnswer": "心跳连续中断五次即视为通信异常。",
+    "evidenceQuotes": [
+      "心跳连续中断五次即视为通信异常。"
+    ],
+    "sourceDocumentId": "2116158479097040897",
+    "category": "SEMANTIC",
+    "groundTruthChunkIds": [
+      "2116158480284028929"
+    ]
+  },
+  {
+    "id": "test-016",
+    "question": "复磅上的锁没拿到枢纽长书面同意就解开了，这事按哪一级处理？",
+    "groundTruthAnswer": "未经 Hub Captain 书面批准而解除 Weigh Lock，按 L1 处理。",
+    "evidenceQuotes": [
+      "未经 Hub Captain 书面批准而解除 Weigh Lock，按 L1 处理。"
+    ],
+    "sourceDocumentId": "2116158479097040897",
+    "category": "SEMANTIC",
+    "groundTruthChunkIds": [
+      "2116158480300806145"
+    ]
+  },
+  {
+    "id": "test-017",
+    "question": "只到 L2、还没到 L1 的时候，应急协调组 Kite Line 还用叫过来吗？",
+    "groundTruthAnswer": "不用。Kite Line 仅 L1 使用；L2 和 L3 不召集 Kite Line。",
+    "evidenceQuotes": [
+      "L1 创建后由 Hub Captain 召集 Kite Line。L2 和 L3 不召集 Kite Line。",
+      "Kite Line：仅 L1 使用的应急协调组代号。"
+    ],
+    "sourceDocumentId": "2116158479097040897",
+    "category": "SEMANTIC",
+    "groundTruthChunkIds": [
+      "2116158480275640323",
+      "2116158480355332097"
+    ]
+  },
+  {
+    "id": "test-018",
+    "question": "舱单已经封存进系统之后，原先记下的时间还能再改吗？",
+    "groundTruthAnswer": "不能。舱单封存后不得改写原始时间戳。",
+    "evidenceQuotes": [
+      "Manifest Seal 保存已经交接的舱单，封存后不得改写原始时间戳。"
+    ],
+    "sourceDocumentId": "2116158479097040897",
+    "category": "SEMANTIC",
+    "groundTruthChunkIds": [
+      "2116158480292417538"
+    ]
+  },
+  {
+    "id": "test-019",
+    "question": "货刚进来，要办收货、过安检还要称重，该去哪几个位置？",
+    "groundTruthAnswer": "在收运带办理，位置为月台 I-01、安检称重 I-02。",
+    "evidenceQuotes": [
+      "收运带负责收货、安检和称重，位置为月台 I-01、安检称重 I-02。"
+    ],
+    "sourceDocumentId": "2116158479097040897",
+    "category": "SEMANTIC",
+    "groundTruthChunkIds": [
+      "2116158480284028929"
+    ]
+  },
+  {
+    "id": "test-020",
+    "question": "这波货到没到截载点，是听口头估的时间，还是听正式发出来的时钟？",
+    "groundTruthAnswer": "口头预计不能代替已发布的截载时间。判断截载是否到达时只采信 Bank Clock，截载与交接截止以 Bank Clock 的发布值为准。",
+    "evidenceQuotes": [
+      "口头预计不能代替已发布的截载时间；截载与交接截止以 Bank Clock 的发布值为准。",
+      "判断截载是否到达时只采信 Bank Clock。"
+    ],
+    "sourceDocumentId": "2116158479097040897",
+    "category": "SEMANTIC",
+    "groundTruthChunkIds": [
+      "2116158480271446018",
+      "2116158480363720705"
+    ]
+  },
+  {
+    "id": "test-021",
+    "question": "Dawn 早波的波次窗口从几点开始，到几点结束？",
+    "groundTruthAnswer": "从 05:40 开始，到 07:40 结束。Dawn 早波截载时间是 06:50，机坪交接截止是 07:40；波次窗口从该波次截载前 70 分钟起，到机坪交接截止止。",
+    "evidenceQuotes": [
+      "波次 截载时间 机坪交接截止",
+      "Dawn 早波 06:50 07:40",
+      "波次窗口从该波次截载前 70 分钟起，到该波次机坪交接截止止。"
+    ],
+    "sourceDocumentId": "2116158479097040897",
+    "category": "REASONING",
+    "groundTruthChunkIds": [
+      "2116158480271446018",
+      "2116158480275640322"
+    ]
+  },
+  {
+    "id": "test-022",
+    "question": "当前处于波次窗口内，M-Main 已连续停机满 3 分钟，距当前截载还有 30 分钟，并且仍有未完成出港扫描的 THR。应按哪一级建立事件？",
+    "groundTruthAnswer": "应按 L1 建立。波次窗口内停机已满 3 分钟，距当前截载不足 45 分钟，且仍有未完成出港扫描的 THR。",
+    "evidenceQuotes": [
+      "M-Main 连续停机满 3 分钟后，在波次窗口内按截载余量定级。距当前截载大于或等于 45 分钟时为 L2。不足 45 分钟且仍有未完成出港扫描的 THR 时为 L1。不足 45 分钟但 THR 出港扫描已完成时为 L2。停机未满 3 分钟不按此条建立 L1 或 L2。"
+    ],
+    "sourceDocumentId": "2116158479097040897",
+    "category": "REASONING",
+    "groundTruthChunkIds": [
+      "2116158480300806146"
+    ]
+  },
+  {
+    "id": "test-023",
+    "question": "某票货收运重量为 100 kg，复磅重量为 104 kg。是否触发 F-22？能否组板？",
+    "groundTruthAnswer": "触发 F-22，并阻止组板。绝对差为 4 kg，大于 3 kg；相对差为 4%，大于 2%。两项同时满足。",
+    "evidenceQuotes": [
+      "相对差按 “复磅重量与收运重量之差的绝对值 ÷ 收运重量” 计算。绝对差大于 3 kg 且相对差大于 2% 时，触发 F-22 并阻止组板。"
+    ],
+    "sourceDocumentId": "2116158479097040897",
+    "category": "REASONING",
+    "groundTruthChunkIds": [
+      "2116158480300806145"
+    ]
+  },
+  {
+    "id": "test-024",
+    "question": "某票货没有收运重量，复磅重量为 20 kg。能否因为重量差超过 3 kg 就触发 F-22 并阻止组板？货应停在哪里？",
+    "groundTruthAnswer": "不能触发 F-22，也不按该规则阻止组板。收运重量缺失时不计算 F-22，货物停在 I-02，交 Ledger 处理。",
+    "evidenceQuotes": [
+      "收运重量为 0 或缺失时不计算 F-22，货物停在 I-02，交 Ledger 处理。"
+    ],
+    "sourceDocumentId": "2116158479097040897",
+    "category": "REASONING",
+    "groundTruthChunkIds": [
+      "2116158480300806145"
+    ]
+  },
+  {
+    "id": "test-025",
+    "question": "当前不在波次窗口内，待分拣件数达到 4,500 件。应该建立 L2，还是只安排清线？",
+    "groundTruthAnswer": "只安排清线，不建立 L2。窗口外超过 4,000 件只安排清线，不建立 L2。",
+    "evidenceQuotes": [
+      "波次窗口内，待分拣件数超过 1,500 件时，Yardmaster 增开人工道；超过 4,000 件时建立 L2。窗口外超过 4,000 件只安排清线，不建立 L2。"
+    ],
+    "sourceDocumentId": "2116158479097040897",
+    "category": "REASONING",
+    "groundTruthChunkIds": [
+      "2116158480300806146"
+    ]
+  },
+  {
+    "id": "test-026",
+    "question": "同一运单在两个扫描点的路由码不一致，但后一次扫描已经通过复磅校验。会触发 F-31 吗？现在能否组板？",
+    "groundTruthAnswer": "不触发 F-31。货物仍留在异常道，须由 Ledger 在当班内作出书面路由裁定后才能组板。",
+    "evidenceQuotes": [
+      "同一运单路由码不一致，但后一次扫描已通过复磅校验时，不触发 F-31。货物仍留在异常道，由 Ledger 在当班内作出书面路由裁定后才能组板。"
+    ],
+    "sourceDocumentId": "2116158479097040897",
+    "category": "REASONING",
+    "groundTruthChunkIds": [
+      "2116158480300806145"
+    ]
+  },
+  {
+    "id": "test-027",
+    "question": "某 L2 事件已经完成故障确认，确认后又过了 70 分钟，触发能力仍未恢复。此时会自动升级为 L1 吗？",
+    "groundTruthAnswer": "不会自动升级为 L1。确认后满 60 分钟只记录恢复期望未达成；要到确认后满 90 分钟仍未恢复触发能力时，才升级为 L1。70 分钟尚未满 90 分钟。",
+    "evidenceQuotes": [
+      "L2 的恢复期望是故障确认后 60 分钟。确认后满 90 分钟仍未恢复触发能力时，升级为 L1。满 60 分钟只记录恢复期望未达成，不自动升级。"
+    ],
+    "sourceDocumentId": "2116158479097040897",
+    "category": "REASONING",
+    "groundTruthChunkIds": [
+      "2116158480275640323"
+    ]
+  },
+  {
+    "id": "test-028",
+    "question": "L2 事件创建后已经 15 分钟，仍然没有人确认，Northwind 已经通知了 Hub Captain。事件级别变了吗？90 分钟升级时钟开始了吗？",
+    "groundTruthAnswer": "级别没有改变。该通知不提前启动 90 分钟时钟。90 分钟升级时钟从故障确认起算，不从事件创建起算；此时仍无人确认，升级时钟尚未开始。",
+    "evidenceQuotes": [
+      "L2 创建后 15 分钟仍无人确认时，Northwind 通知 Hub Captain；该通知不改变级别，也不提前启动 90 分钟时钟。",
+      "L2 的 90 分钟升级时钟从故障确认起算，不从告警产生或事件创建起算。"
+    ],
+    "sourceDocumentId": "2116158479097040897",
+    "category": "REASONING",
+    "groundTruthChunkIds": [
+      "2116158480334360577"
+    ]
+  },
+  {
+    "id": "test-029",
+    "question": "冷冻货位温度超出 −25.0°C 至 −18.0°C，校准有效，越限已经持续满 15 分钟。L2 从故障确认起算的 90 分钟还没到。现在应按哪条规则定级？",
+    "groundTruthAnswer": "应按越限持续时间升为 L1。这是越限持续时间条件，早于并优先于 L2 的 90 分钟管理升级。",
+    "evidenceQuotes": [
+      "FROST 超出 −25.0°C 至 −18.0°C，校准有效且持续满 5 分钟时建立 L2；持续满 15 分钟时升为 L1。这是越限持续时间条件，早于并优先于 L2 的 90 分钟管理升级。",
+      "FROST 满 15 分钟升为 L1，指的是越限持续时间，不是 90 分钟管理升级。"
+    ],
+    "sourceDocumentId": "2116158479097040897",
+    "category": "REASONING",
+    "groundTruthChunkIds": [
+      "2116158480305000449",
+      "2116158480388886530"
+    ]
+  },
+  {
+    "id": "test-030",
+    "question": "货温样本校准无效，货位内有 VX-LOT，现场还没有确认探头失效。能不能按冷链越限建立温控级别？首次响应按多久？现在算不算已经失去看护？",
+    "groundTruthAnswer": "不建立温控级别，改为 L2 数据质量事件，由 Frostline 核查探头。涉及 VX-LOT 时仍适用 L2 的 40 分钟首次响应。在现场确认探头失效或货位已无法读取之前，不视为失去看护。",
+    "evidenceQuotes": [
+      "校准无效时不建立温控级别，改为 L2 数据质量事件，由 Frostline 核查探头。在现场确认探头失效或货位已无法读取之前，不视为失去看护。涉及 VX-LOT 时，仍适用 L2 的 40 分钟首次响应。"
+    ],
+    "sourceDocumentId": "2116158479097040897",
+    "category": "REASONING",
+    "groundTruthChunkIds": [
+      "2116158480309194753"
+    ]
+  },
+  {
+    "id": "test-031",
+    "question": "现场无法确认 HX-3 隔离门是否闭合，而且当时不在该项已批准的维护作业中。应该怎么建单？能不能改按通信异常处理？",
+    "groundTruthAnswer": "按 F-05 建立 L1，不得降为通信类事件。",
+    "evidenceQuotes": [
+      "无法确认隔离门是否闭合，且当时不在该项已批准维护中时，按 F-05 建立 L1，不得降为通信类事件。"
+    ],
+    "sourceDocumentId": "2116158479097040897",
+    "category": "REASONING",
+    "groundTruthChunkIds": [
+      "2116158480309194753"
+    ]
+  },
+  {
+    "id": "test-032",
+    "question": "事件准备关闭时，为遏制这个事件而隔离的集装器要不要解除？Q-Hold 里因为单证没齐暂扣的货，能不能跟着一起放行？",
+    "groundTruthAnswer": "为遏制本事件而隔离的集装器应当解除。Q-Hold 的单证暂扣不在此次解除范围内，也不因设备事件关闭或集装器解除隔离而自动放行。",
+    "evidenceQuotes": [
+      "关闭前收回临时权限和临时配置，解除为遏制本事件而隔离的集装器，恢复暂停的 GEN 作业，并更新交接记录。Q-Hold 的单证暂扣不在此次解除范围内。",
+      "Q-Hold 中因单证未齐而暂扣的货物，不因设备事件关闭或集装器解除隔离而自动放行。"
+    ],
+    "sourceDocumentId": "2116158479097040897",
+    "category": "REASONING",
+    "groundTruthChunkIds": [
+      "2116158480388886530",
+      "2116158480351137794"
+    ]
+  },
+  {
+    "id": "test-033",
+    "question": "已发布路由版本 RT-6.4.2 的完整校验和是多少？",
+    "groundTruthAnswer": "现有文档无法确定完整校验和。本文只写明已发布路由版本为 RT-6.4.2，并写明不公布完整校验和。",
+    "evidenceQuotes": [
+      "在本文生效范围内，已发布路由版本为 RT-6.4.2。本文不公布完整校验和。"
+    ],
+    "sourceDocumentId": "2116158479097040897",
+    "category": "BOUNDARY",
+    "groundTruthChunkIds": [
+      "2116158480292417538"
+    ]
+  },
+  {
+    "id": "test-034",
+    "question": "今天当班的 Hub Captain 叫什么名字，联系电话是多少？",
+    "groundTruthAnswer": "现有文档无法确定姓名和电话。Hub Captain 是当班枢纽长这一角色，不是具体人名；本文没有给出姓名、电话或外部账号。",
+    "evidenceQuotes": [
+      "Hub Captain：当班枢纽长这一角色，不是具体人名。",
+      "本文没有姓名、电话或外部账号的，不得编造。"
+    ],
+    "sourceDocumentId": "2116158479097040897",
+    "category": "BOUNDARY",
+    "groundTruthChunkIds": [
+      "2116158480355332097",
+      "2116158480363720705"
+    ]
+  },
+  {
+    "id": "test-035",
+    "question": "F-14 还没关闭时，是否必须推迟整个波次？",
+    "groundTruthAnswer": "现有文档无法确定是否必须推迟整个波次。本文只规定由 Hub Captain 决定，没有给出必须推迟或不得推迟的进一步条件。",
+    "evidenceQuotes": [
+      "是否因此推迟整个波次，由 Hub Captain 决定。",
+      "航班临时改期、现场人力不足、外部航司拒收，以及 F-14 期间是否推迟整个波次，本文只规定到 Hub Captain 判断，不得自行增加放行权限。"
+    ],
+    "sourceDocumentId": "2116158479097040897",
+    "category": "BOUNDARY",
+    "groundTruthChunkIds": [
+      "2116158480300806146",
+      "2116158480363720705"
+    ]
+  },
+  {
+    "id": "test-036",
+    "question": "外部航司拒收这票货时，现场可以按什么条件放行？",
+    "groundTruthAnswer": "现有文档无法确定放行条件。外部航司拒收只规定到 Hub Captain 判断，本文没有写明放行条件或额外放行角色，也不得自行增加放行权限。",
+    "evidenceQuotes": [
+      "航班临时改期、现场人力不足、外部航司拒收，以及 F-14 期间是否推迟整个波次，本文只规定到 Hub Captain 判断，不得自行增加放行权限。"
+    ],
+    "sourceDocumentId": "2116158479097040897",
+    "category": "BOUNDARY",
+    "groundTruthChunkIds": [
+      "2116158480363720705"
+    ]
+  },
+  {
+    "id": "test-037",
+    "question": "未经 Hub Captain 书面批准就解除 Weigh Lock，应当扣除多少绩效分？",
+    "groundTruthAnswer": "现有文档无法确定绩效扣分。本文只规定未经书面批准解除 Weigh Lock 按 L1 处理，没有绩效扣分规则。",
+    "evidenceQuotes": [
+      "未经 Hub Captain 书面批准而解除 Weigh Lock，按 L1 处理。"
+    ],
+    "sourceDocumentId": "2116158479097040897",
+    "category": "BOUNDARY",
+    "groundTruthChunkIds": [
+      "2116158480300806145"
+    ]
+  },
+  {
+    "id": "test-038",
+    "question": "航班临时改期超过多少分钟，就必须重新发布 Bank Clock 的截载时间？",
+    "groundTruthAnswer": "现有文档无法确定这个分钟数。本文允许单个航班偏离标准时刻，并规定口头预计不能代替已发布的截载时间，截载与交接截止以 Bank Clock 的发布值为准；临时改期只规定到 Hub Captain 判断，没有给出必须重新发布的时限。",
+    "evidenceQuotes": [
+      "单个航班可以偏离标准时刻，但口头预计不能代替已发布的截载时间；截载与交接截止以 Bank Clock 的发布值为准。",
+      "航班临时改期、现场人力不足、外部航司拒收，以及 F-14 期间是否推迟整个波次，本文只规定到 Hub Captain 判断，不得自行增加放行权限。"
+    ],
+    "sourceDocumentId": "2116158479097040897",
+    "category": "BOUNDARY",
+    "groundTruthChunkIds": [
+      "2116158480271446018",
+      "2116158480363720705"
+    ]
+  }
+]

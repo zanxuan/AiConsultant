@@ -1,0 +1,608 @@
+[
+  {
+    "id": "test-001",
+    "question": "F-08 由哪个团队负责？",
+    "groundTruthAnswer": "F-08 由 Ledger 负责。",
+    "evidenceQuotes": [
+      "Ledger 负责路由、复磅、舱单和 F-08。"
+    ],
+    "sourceDocumentId": "2116158523942539265",
+    "category": "BASIC",
+    "groundTruthChunkIds": [
+      "2116158524508770305"
+    ]
+  },
+  {
+    "id": "test-002",
+    "question": "什么情况构成 F-14，比较对象必须是哪个时钟？",
+    "groundTruthAnswer": "扫描节点与 Bank Clock 的偏差超过 30 秒构成 F-14。比较对象只能是 Bank Clock，不能是手持终端本地时钟或口头报时。",
+    "evidenceQuotes": [
+      "F-14 表示扫描节点与 Bank Clock 的偏差超过 30 秒。比较对象只能是 Bank Clock，不能是手持终端本地时钟或口头报时。"
+    ],
+    "sourceDocumentId": "2116158523942539265",
+    "category": "BASIC",
+    "groundTruthChunkIds": [
+      "2116158524529741828"
+    ]
+  },
+  {
+    "id": "test-003",
+    "question": "待封存分单超过多少票会触发 F-08？",
+    "groundTruthAnswer": "待封存分单超过 2,000 票时触发 F-08。",
+    "evidenceQuotes": [
+      "待封存分单超过 2,000 票时触发 F-08，责任在 Ledger，恢复标准是低于 300 票并保持 10 分钟不再回升。"
+    ],
+    "sourceDocumentId": "2116158523942539265",
+    "category": "BASIC",
+    "groundTruthChunkIds": [
+      "2116158524542324737"
+    ]
+  },
+  {
+    "id": "test-004",
+    "question": "SN-77 连续多少次收不到心跳，才生成通信异常？",
+    "groundTruthAnswer": "连续五次收不到心跳，才生成通信异常。单次漏跳或未满五次，还不是这条故障。",
+    "evidenceQuotes": [
+      "连续五次收不到心跳，才生成通信异常。单次漏跳或未满五次，还不是这条故障。"
+    ],
+    "sourceDocumentId": "2116158523942539265",
+    "category": "BASIC",
+    "groundTruthChunkIds": [
+      "2116158524571684866"
+    ]
+  },
+  {
+    "id": "test-005",
+    "question": "固定维护窗口安排在每周哪几天、什么时间？",
+    "groundTruthAnswer": "固定维护窗口为每周一或周四 00:40 至 02:10。",
+    "evidenceQuotes": [
+      "查看是否落在每周一或周四 00:40 至 02:10 的固定维护窗口"
+    ],
+    "sourceDocumentId": "2116158523942539265",
+    "category": "BASIC",
+    "groundTruthChunkIds": [
+      "2116158524521353218"
+    ]
+  },
+  {
+    "id": "test-006",
+    "question": "临时配置的失效时间最长是多少？到期没有续批时还能不能继续使用？",
+    "groundTruthAnswer": "失效时间最长 72 小时。到期未续批的配置立即无效，不能再作为放行、开闸或解除互锁的依据。",
+    "evidenceQuotes": [
+      "失效时间最长 72 小时，到期未续批的配置立即无效，不能再作为放行、开闸或解除互锁的依据。"
+    ],
+    "sourceDocumentId": "2116158523942539265",
+    "category": "BASIC",
+    "groundTruthChunkIds": [
+      "2116158524521353218"
+    ]
+  },
+  {
+    "id": "test-007",
+    "question": "演练口令 PETREL-5560 允许用于什么，禁止用于什么？",
+    "groundTruthAnswer": "PETREL-5560 只用于演练点名。不得用它登录、解除 Weigh Lock、打开隔离门或批准放行，也不得把它写入排障记录。",
+    "evidenceQuotes": [
+      "演练口令 PETREL-5560 只用于演练点名。不得用它登录、解除 Weigh Lock、打开隔离门或批准放行，也不得把它写入排障记录。"
+    ],
+    "sourceDocumentId": "2116158523942539265",
+    "category": "BASIC",
+    "groundTruthChunkIds": [
+      "2116158524521353217"
+    ]
+  },
+  {
+    "id": "test-008",
+    "question": "导出达到多少行时，需要 Seal Office 审批？",
+    "groundTruthAnswer": "超过 8,000 行的导出由 Seal Office 审批。",
+    "evidenceQuotes": [
+      "Seal Office 负责封存抽检和超过 8,000 行的导出审批。"
+    ],
+    "sourceDocumentId": "2116158523942539265",
+    "category": "BASIC",
+    "groundTruthChunkIds": [
+      "2116158524508770305"
+    ]
+  },
+  {
+    "id": "test-009",
+    "question": "F-17 指的是什么故障？",
+    "groundTruthAnswer": "F-17 是冷链空气闸门连续开启超过 4 分钟。",
+    "evidenceQuotes": [
+      "F-17 是冷链空气闸门连续开启超过 4 分钟。"
+    ],
+    "sourceDocumentId": "2116158523942539265",
+    "category": "BASIC",
+    "groundTruthChunkIds": [
+      "2116158524601044994"
+    ]
+  },
+  {
+    "id": "test-010",
+    "question": "C-Cold 的控制温度范围是多少？",
+    "groundTruthAnswer": "C-Cold 的控制范围是 2.0°C 至 8.0°C。",
+    "evidenceQuotes": [
+      "C-Cold 的控制范围是 2.0°C 至 8.0°C"
+    ],
+    "sourceDocumentId": "2116158523942539265",
+    "category": "BASIC",
+    "groundTruthChunkIds": [
+      "2116158524601044994"
+    ]
+  },
+  {
+    "id": "test-011",
+    "question": "L1、L2、L3 的首次响应时限分别是多少，从什么时刻起算？",
+    "groundTruthAnswer": "首次响应从事件创建起算。L1 为 10 分钟，L2 为 40 分钟，L3 为 6 小时。",
+    "evidenceQuotes": [
+      "首次响应从事件创建起算：L1 为 10 分钟，L2 为 40 分钟，L3 为 6 小时。"
+    ],
+    "sourceDocumentId": "2116158523942539265",
+    "category": "BASIC",
+    "groundTruthChunkIds": [
+      "2116158524609433602"
+    ]
+  },
+  {
+    "id": "test-012",
+    "question": "指南写明的已发布路由版本是什么？",
+    "groundTruthAnswer": "已发布路由版本是 RT-6.4.2。",
+    "evidenceQuotes": [
+      "已发布路由版本是 RT-6.4.2。"
+    ],
+    "sourceDocumentId": "2116158523942539265",
+    "category": "BASIC",
+    "groundTruthChunkIds": [
+      "2116158524546519042"
+    ]
+  },
+  {
+    "id": "test-013",
+    "question": "TP-12 多久上报一次样本，哪些样本可以用来给定温控级别？",
+    "groundTruthAnswer": "TP-12 每 60 秒上报一次样本。只有校准有效的样本能用于温控定级。",
+    "evidenceQuotes": [
+      "TP-12 每 60 秒上报一次样本，只有校准有效的样本能用于温控定级。"
+    ],
+    "sourceDocumentId": "2116158523942539265",
+    "category": "BASIC",
+    "groundTruthChunkIds": [
+      "2116158524601044994"
+    ]
+  },
+  {
+    "id": "test-014",
+    "question": "Kite Line 由谁召集，在什么时候召集？",
+    "groundTruthAnswer": "Kite Line 只在 L1 创建时由 Hub Captain 召集。",
+    "evidenceQuotes": [
+      "Kite Line 只在 L1 创建时由 Hub Captain 召集。"
+    ],
+    "sourceDocumentId": "2116158523942539265",
+    "category": "BASIC",
+    "groundTruthChunkIds": [
+      "2116158524508770305"
+    ]
+  },
+  {
+    "id": "test-015",
+    "question": "扫描节点时间和现场对不上时，能不能拿手持终端自己的时钟来判断偏了多少？",
+    "groundTruthAnswer": "不能。比较对象只能是 Bank Clock，不能是手持终端本地时钟或口头报时。",
+    "evidenceQuotes": [
+      "比较对象只能是 Bank Clock，不能是手持终端本地时钟或口头报时。"
+    ],
+    "sourceDocumentId": "2116158523942539265",
+    "category": "SEMANTIC",
+    "groundTruthChunkIds": [
+      "2116158524529741828"
+    ]
+  },
+  {
+    "id": "test-016",
+    "question": "待封存的分单和待分拣的件数，能不能当成同一个积压数来处理？",
+    "groundTruthAnswer": "不能。现场有两个不能互换的计数，待分拣件数和待封存分单要分开记。",
+    "evidenceQuotes": [
+      "现场有两个不能互换的计数。",
+      "待分拣件数和待封存分单要分开记。"
+    ],
+    "sourceDocumentId": "2116158523942539265",
+    "category": "SEMANTIC",
+    "groundTruthChunkIds": [
+      "2116158524542324737",
+      "2116158524517158913"
+    ]
+  },
+  {
+    "id": "test-017",
+    "question": "扫描器只是漏了一两次心跳，要不要马上重启？",
+    "groundTruthAnswer": "不要重启。单次漏跳或未满五次还不是通信异常，应继续监视。",
+    "evidenceQuotes": [
+      "单次漏跳或未满五次，还不是这条故障。",
+      "未满五次的，继续监视，不重启。"
+    ],
+    "sourceDocumentId": "2116158523942539265",
+    "category": "SEMANTIC",
+    "groundTruthChunkIds": [
+      "2116158524571684866"
+    ]
+  },
+  {
+    "id": "test-018",
+    "question": "温度探头显示校准无效时，能不能按货温超标直接定温控级别？",
+    "groundTruthAnswer": "不能。校准无效时不建立温控级别，改为 L2 数据质量事件。",
+    "evidenceQuotes": [
+      "校准无效时不建立温控级别，改为 L2 数据质量事件。"
+    ],
+    "sourceDocumentId": "2116158523942539265",
+    "category": "SEMANTIC",
+    "groundTruthChunkIds": [
+      "2116158524601044994"
+    ]
+  },
+  {
+    "id": "test-019",
+    "question": "主分拣设备 MX-550 和月台上的扫描器，现场归谁管？",
+    "groundTruthAnswer": "归 Yardmaster 负责。Yardmaster 负责 MX-550、月台、SN-77 和人工道。",
+    "evidenceQuotes": [
+      "Yardmaster 负责 MX-550、月台、SN-77 和人工道。"
+    ],
+    "sourceDocumentId": "2116158523942539265",
+    "category": "SEMANTIC",
+    "groundTruthChunkIds": [
+      "2116158524508770305"
+    ]
+  },
+  {
+    "id": "test-020",
+    "question": "楼面看板的颜色已经恢复正常，能不能认为货物流程已经恢复？",
+    "groundTruthAnswer": "不能。页面能打开或看板颜色恢复，不算货物流程恢复。",
+    "evidenceQuotes": [
+      "页面能打开或看板颜色恢复，不算货物流程恢复。"
+    ],
+    "sourceDocumentId": "2116158523942539265",
+    "category": "SEMANTIC",
+    "groundTruthChunkIds": [
+      "2116158524529741827"
+    ]
+  },
+  {
+    "id": "test-021",
+    "question": "告警只做了签收，并说明已经开始处置，这算不算故障已经确认？",
+    "groundTruthAnswer": "不算。只签收告警、只说明处置已经开始，不算故障已经确认，也不算恢复。",
+    "evidenceQuotes": [
+      "只签收告警，只说明处置已经开始，不算故障已经确认，也不算恢复。"
+    ],
+    "sourceDocumentId": "2116158523942539265",
+    "category": "SEMANTIC",
+    "groundTruthChunkIds": [
+      "2116158524521353218"
+    ]
+  },
+  {
+    "id": "test-022",
+    "question": "普通区的温湿度告警，能不能改记成冷链的 COLD 或 FROST？",
+    "groundTruthAnswer": "不能。普通区告警不得改写成 COLD 或 FROST。",
+    "evidenceQuotes": [
+      "普通区告警不得改写成 COLD 或 FROST。"
+    ],
+    "sourceDocumentId": "2116158523942539265",
+    "category": "SEMANTIC",
+    "groundTruthChunkIds": [
+      "2116158524601044996"
+    ]
+  },
+  {
+    "id": "test-023",
+    "question": "交班时只在记录里写“无异常”，这次交接完成了吗？",
+    "groundTruthAnswer": "没有完成。不得只写“无异常”。接班人要复述未关闭的 L1 和 L2，并确认打得开对应证据。双方都在记录中确认后，交接才完成。",
+    "evidenceQuotes": [
+      "不得只写“无异常”。接班人复述未关闭的 L1 和 L2，并确认打得开对应证据。双方都在记录中确认后，交接才完成。"
+    ],
+    "sourceDocumentId": "2116158523942539265",
+    "category": "SEMANTIC",
+    "groundTruthChunkIds": [
+      "2116158524622016514"
+    ]
+  },
+  {
+    "id": "test-024",
+    "question": "人工道已经增开，是不是就可以说主分拣通道 M-Main 恢复了？",
+    "groundTruthAnswer": "不可以。人工道只分担积压，不表示 M-Main 已恢复。",
+    "evidenceQuotes": [
+      "人工道只分担积压，不表示 M-Main 已恢复。"
+    ],
+    "sourceDocumentId": "2116158523942539265",
+    "category": "SEMANTIC",
+    "groundTruthChunkIds": [
+      "2116158524542324737"
+    ]
+  },
+  {
+    "id": "test-025",
+    "question": "F-14 尚未关闭，校正后的 12 分钟观察也没有结束，此时待封存分单已经超过 2,000 票。能不能先封存新舱单，把 F-08 的票数压下去？",
+    "groundTruthAnswer": "不能。观察未结束时，即使分单超过 2,000 票，也不得封存新舱单。应先处理时钟，不得为了压低 F-08 而封存。",
+    "evidenceQuotes": [
+      "观察未结束时，即使分单超过 2,000 票，也不得封存新舱单。此时应先按第三节处理时钟，而不是先压 F-08。",
+      "F-14 期间若待封存分单升高，不得为了压低 F-08 而封存。"
+    ],
+    "sourceDocumentId": "2116158523942539265",
+    "category": "REASONING",
+    "groundTruthChunkIds": [
+      "2116158524542324738",
+      "2116158524533936129"
+    ]
+  },
+  {
+    "id": "test-026",
+    "question": "当前处于波次窗口内，M-Main 已连续停机满 3 分钟，距 Bank Clock 截载不足 45 分钟，并且仍有 THR 出港扫描未完成。这个停机应定什么级别，是否需要等满 90 分钟？",
+    "groundTruthAnswer": "定为 L1，不等 90 分钟。出现 L1 时由 Hub Captain 召集 Kite Line。",
+    "evidenceQuotes": [
+      "窗口内连续停机满 3 分钟后才定级：距截载大于或等于 45 分钟为 L2；不足 45 分钟且仍有未完成出港扫描的 THR 为 L1；不足 45 分钟但 THR 出港扫描已完成为 L2。",
+      "窗口内、距截载不足 45 分钟且 THR 出港扫描未完成的停机，满 3 分钟即 L1，不等 90 分钟。",
+      "Hub Captain 在出现 L1 时召集 Kite Line。"
+    ],
+    "sourceDocumentId": "2116158523942539265",
+    "category": "REASONING",
+    "groundTruthChunkIds": [
+      "2116158524575879172",
+      "2116158524596850690",
+      "2116158524584267777"
+    ]
+  },
+  {
+    "id": "test-027",
+    "question": "当前不在波次窗口内，M-Main 已连续停机满 15 分钟，并且会使下一波次窗口无法开始 THR 扫描。应按什么级别处理？",
+    "groundTruthAnswer": "改判为 L2。窗口外连续停机满 15 分钟本为 L3；若将使下一波次窗口无法开始 THR 扫描，则改判为 L2。",
+    "evidenceQuotes": [
+      "窗口外连续停机满 15 分钟为 L3；若将使下一波次窗口无法开始 THR 扫描，改判为 L2。"
+    ],
+    "sourceDocumentId": "2116158523942539265",
+    "category": "REASONING",
+    "groundTruthChunkIds": [
+      "2116158524575879172"
+    ]
+  },
+  {
+    "id": "test-028",
+    "question": "某票货物的收运重量可以计算，复磅与收运的绝对差为 4 kg，相对差为 1%。是否触发 F-22，能否阻止组板？",
+    "groundTruthAnswer": "不触发 F-22，也不阻止组板。绝对差大于 3 kg 和相对差大于 2% 必须同时成立才拦截；只满足一项时只记录差异。",
+    "evidenceQuotes": [
+      "F-22 只在两项同时成立时触发：复磅与收运的绝对差大于 3 kg，并且相对差大于 2%。相对差等于两者之差的绝对值除以收运重量。只满足一项时记录差异，不触发 F-22，不阻止组板。",
+      "收运重量可用时，两项都大于阈值才拦截；只超过 3 kg 或只超过 2% 的，只记差异。"
+    ],
+    "sourceDocumentId": "2116158523942539265",
+    "category": "REASONING",
+    "groundTruthChunkIds": [
+      "2116158524546519042",
+      "2116158524546519043"
+    ]
+  },
+  {
+    "id": "test-029",
+    "question": "同一运单在两个扫描点的路由码不一致，后一次扫描已经通过当时的复磅校验。要不要报 F-31，现在能不能装入 QY-PMC 或 QY-AKE？",
+    "groundTruthAnswer": "不报 F-31。货物仍留在异常道，必须等 Ledger 当班书面裁定后才能组板；没有裁定不得组板。",
+    "evidenceQuotes": [
+      "同一运单在两个扫描点路由码不一致时，先看后一次扫描是否通过当时的复磅校验。未通过的，触发 F-31，货物进异常道，不得装入 QY-PMC 或 QY-AKE。已经通过的，不触发 F-31，货物仍留在异常道，等 Ledger 当班书面裁定后才能组板。",
+      "已通过的，不报 F-31，同样留在异常道，等待 Ledger 的书面裁定。没有裁定不得组板，不得用“已改路由”四个字代替裁定。"
+    ],
+    "sourceDocumentId": "2116158523942539265",
+    "category": "REASONING",
+    "groundTruthChunkIds": [
+      "2116158524546519042",
+      "2116158524546519043"
+    ]
+  },
+  {
+    "id": "test-030",
+    "question": "TP-12 校准有效，C-Cold 出现大于或等于 12°C 的连续两个有效样本。要不要等满 8 分钟再定级，应定哪一级？",
+    "groundTruthAnswer": "不要等软性分钟数走完。这种情况直接建立 L1。出现 L1 时 Hub Captain 召集 Kite Line。",
+    "evidenceQuotes": [
+      "校准有效时，先看硬越限，不要等软性分钟数走完。连续两个有效样本不得合并成一次平均值。C-Cold 出现小于或等于 0°C，或大于或等于 12°C 的连续两个有效样本，直接建立 L1。",
+      "出现 L1 时 Hub Captain 召集 Kite Line。"
+    ],
+    "sourceDocumentId": "2116158523942539265",
+    "category": "REASONING",
+    "groundTruthChunkIds": [
+      "2116158524601044995"
+    ]
+  },
+  {
+    "id": "test-031",
+    "question": "C-Cold 校准有效，温度已超出 2.0°C 至 8.0°C 并持续满 8 分钟，但还没有出现小于或等于 0°C、也没有出现大于或等于 12°C 的连续有效样本，货位内有 VX-LOT。应定 L1 还是 L2？",
+    "groundTruthAnswer": "定为 L1。未达到硬越限时按软性条件处理：C-Cold 超出控制范围且持续满 8 分钟，有 VX-LOT 直接为 L1；没有 VX-LOT 才为 L2。",
+    "evidenceQuotes": [
+      "未达到硬越限时再看软性条件。C-Cold 超出 2.0°C 至 8.0°C 且持续满 8 分钟：货位内没有 VX-LOT 为 L2，有 VX-LOT 直接为 L1。"
+    ],
+    "sourceDocumentId": "2116158523942539265",
+    "category": "REASONING",
+    "groundTruthChunkIds": [
+      "2116158524601044996"
+    ]
+  },
+  {
+    "id": "test-032",
+    "question": "同一事件中，SN-77 已经连续正常心跳满 8 分钟，但 F-14 校正后的 12 分钟观察尚未完成。能不能用这 8 分钟代替时钟观察并开始封存？",
+    "groundTruthAnswer": "不能。这 8 分钟只覆盖通信域，不能代替 F-14 的 12 分钟观察。F-14 在偏差不超过 30 秒、12 分钟观察完成、且观察期内没有新的同类告警这三项齐备之前，不得封存。",
+    "evidenceQuotes": [
+      "这 8 分钟只覆盖通信域。同一事件若还有 F-14，仍须另做 12 分钟，不得用 8 分钟代替。",
+      "F-14 可以关闭，须同时满足：偏差已经不超过 30 秒，校正后的 12 分钟观察已经完成，观察期内没有新的同类告警。三项缺一，都不得封存，也不得把已扫描但未封存的运单视为可以交接。"
+    ],
+    "sourceDocumentId": "2116158523942539265",
+    "category": "REASONING",
+    "groundTruthChunkIds": [
+      "2116158524575879170",
+      "2116158524533936130"
+    ]
+  },
+  {
+    "id": "test-033",
+    "question": "Weigh Lock 已被解除，但没有 Hub Captain 的书面批准。应按什么级别处理，要不要等 90 分钟，组板能否继续？",
+    "groundTruthAnswer": "按 L1 处理，不等待 90 分钟。由 Hub Captain 召集 Kite Line，并停止继续组板。",
+    "evidenceQuotes": [
+      "未经 Hub Captain 书面批准就解除 Weigh Lock，按 L1 处理。",
+      "没有书面批准的，按 L1 处理，由 Hub Captain 召集 Kite Line，并停止继续组板。",
+      "未经批准解除 Weigh Lock 直接是 L1，不等待 90 分钟。"
+    ],
+    "sourceDocumentId": "2116158523942539265",
+    "category": "REASONING",
+    "groundTruthChunkIds": [
+      "2116158524546519042",
+      "2116158524550713346",
+      "2116158524567490562"
+    ]
+  },
+  {
+    "id": "test-034",
+    "question": "Bank Clock 上 Dawn 的截载仍是 06:50，当前时间是 05:30，M-Main 刚开始停机。现在能不能按 Dawn 窗口内满 3 分钟即定级的规则处理？",
+    "groundTruthAnswer": "不能。截载仍为 06:50 时，05:40 之前不属于 Dawn 窗口，适用窗口外规则。窗口外连续停机不满 15 分钟的，不按本条建立级别。",
+    "evidenceQuotes": [
+      "05:40 之前还不属于 Dawn 窗口，适用窗口外的 15 分钟规则。",
+      "不满 15 分钟的窗口外停机，不按本条建级。",
+      "截载若不是 06:50，不得沿用 06:05，应按实际发布值重算。"
+    ],
+    "sourceDocumentId": "2116158523942539265",
+    "category": "REASONING",
+    "groundTruthChunkIds": [
+      "2116158524584267777",
+      "2116158524575879172"
+    ]
+  },
+  {
+    "id": "test-035",
+    "question": "某个 L2 从故障确认起已经满 60 分钟，触发能力仍未恢复。会不会因此自动升为 L1？什么条件下才会管理升级？",
+    "groundTruthAnswer": "不会自动升为 L1。满 60 分钟只记录恢复期望未达成。管理升级从故障确认起算，满 90 分钟且触发能力仍未恢复，才升为 L1。",
+    "evidenceQuotes": [
+      "L2 为确认后 60 分钟；满 60 分钟仍未恢复，只记录恢复期望未达成，不自动升级。",
+      "L2 的管理升级从故障确认起算，满 90 分钟触发能力仍未恢复，才升为 L1。"
+    ],
+    "sourceDocumentId": "2116158523942539265",
+    "category": "REASONING",
+    "groundTruthChunkIds": [
+      "2116158524609433602"
+    ]
+  },
+  {
+    "id": "test-036",
+    "question": "M-Main 已不可用且停机事实已经记录。路由版本核对为 RT-6.4.2，但校验和只是按版本号认定通过，没有与 Ledger 已发布值核对一致。能不能把新导入切换到 M-Aux？",
+    "groundTruthAnswer": "不能切换。切换前必须同时核对路由版本为 RT-6.4.2，以及校验和与 Ledger 已发布值完全一致。只核对版本号时不得切换。",
+    "evidenceQuotes": [
+      "切换前由 Yardmaster 核对两件事情，缺一不可：路由版本为 RT-6.4.2，校验和与 Ledger 已发布值完全一致。文档不公布完整校验和。不得凭记忆、截图片段或版本号本身认定校验和已通过。只核对版本号时，不得切换。"
+    ],
+    "sourceDocumentId": "2116158523942539265",
+    "category": "REASONING",
+    "groundTruthChunkIds": [
+      "2116158524588462082"
+    ]
+  },
+  {
+    "id": "test-037",
+    "question": "F-14 校正后偏差仍超过 30 秒，下一条应该执行的对时命令是什么？",
+    "groundTruthAnswer": "现有文档无法确定下一条对时命令。指南没有写明校时仍失败后的技术命令，不得编造新的同步步骤。此时应停止继续改时，保留对照记录，由 Yardmaster 继续负责该节点并告知 Hub Captain。",
+    "evidenceQuotes": [
+      "文档没有写明校时仍失败后的下一条技术命令。偏差无法降到 30 秒以内时，停止继续改时，保留对照记录，由 Yardmaster 继续负责该节点，并告知 Hub Captain。不要编造新的同步步骤。",
+      "本指南没有写明的校时命令、机械修复参数、探头重新校准差值、校验和完整取值、后续路由版本、导出文件存放位置、航班临时改期、现场人力不足和外部航司拒收，都不在排查中补造。"
+    ],
+    "sourceDocumentId": "2116158523942539265",
+    "category": "BOUNDARY",
+    "groundTruthChunkIds": [
+      "2116158524533936130",
+      "2116158524622016515"
+    ]
+  },
+  {
+    "id": "test-038",
+    "question": "TP-12 重新校准后，与参考仪表相差多少度以内才算校准有效？",
+    "groundTruthAnswer": "现有文档无法确定允许差值。指南没有规定参考仪表比对、重新校准的步骤或允许差值，不得编造这些数值。",
+    "evidenceQuotes": [
+      "文档没有规定参考仪表比对、重新校准的步骤或允许差值，不得编造这些数值。",
+      "本指南没有写明的校时命令、机械修复参数、探头重新校准差值、校验和完整取值、后续路由版本、导出文件存放位置、航班临时改期、现场人力不足和外部航司拒收，都不在排查中补造。"
+    ],
+    "sourceDocumentId": "2116158523942539265",
+    "category": "BOUNDARY",
+    "groundTruthChunkIds": [
+      "2116158524601044994",
+      "2116158524622016515"
+    ]
+  },
+  {
+    "id": "test-039",
+    "question": "路由版本 RT-6.4.2 的完整校验和是多少？",
+    "groundTruthAnswer": "现有文档无法确定完整校验和。文档写明已发布路由版本是 RT-6.4.2，但完整校验和不在文档中。",
+    "evidenceQuotes": [
+      "在配套概览的事实范围内，已发布路由版本是 RT-6.4.2。完整校验和不在文档中。",
+      "文档不公布完整校验和。不得凭记忆、截图片段或版本号本身认定校验和已通过。"
+    ],
+    "sourceDocumentId": "2116158523942539265",
+    "category": "BOUNDARY",
+    "groundTruthChunkIds": [
+      "2116158524546519042",
+      "2116158524588462082"
+    ]
+  },
+  {
+    "id": "test-040",
+    "question": "收运重量单位是千克、复磅重量单位是磅时，应使用什么换算系数再判断是否触发 F-22？",
+    "groundTruthAnswer": "现有文档无法确定换算系数。重量单位不一致时，指南没有规定折算办法，不得自行换算后制造 F-22，货物停住并交 Ledger。",
+    "evidenceQuotes": [
+      "重量单位缺失，或收运与复磅单位不一致的，文档没有规定折算办法，不得自行换算后制造 F-22，货物按手册第 5 章停住并交 Ledger。"
+    ],
+    "sourceDocumentId": "2116158523942539265",
+    "category": "BOUNDARY",
+    "groundTruthChunkIds": [
+      "2116158524546519043"
+    ]
+  },
+  {
+    "id": "test-041",
+    "question": "普通区湿度回到 35% 至 75% 之后，还必须保持多少分钟，湿度观察才算完成？",
+    "groundTruthAnswer": "现有文档无法确定湿度观察分钟数。湿度回到 35% 至 75% 是该项指标恢复的必要条件，但文档没有为湿度单独规定观察分钟数，不得自行设定一个新的时长。",
+    "evidenceQuotes": [
+      "湿度回到 35% 至 75% 是该项指标恢复的必要条件。两份文档没有为湿度单独规定观察分钟数，不得自设一个新的时长。"
+    ],
+    "sourceDocumentId": "2116158523942539265",
+    "category": "BOUNDARY",
+    "groundTruthChunkIds": [
+      "2116158524605239298"
+    ]
+  },
+  {
+    "id": "test-042",
+    "question": "Q-Hold 温度超出 15°C 至 25°C 时，应定为 L1、L2 还是 L3？",
+    "groundTruthAnswer": "现有文档无法确定 Q-Hold 温度越限的事件等级。运营概览没有为 Q-Hold 温度规定事件等级，不得套用 COLD 或 FROST 阈值定级，也不得在本指南里补一个级别。货位是 Q-Hold 时，只核对它是否仍与冷链物理隔开，以及单证未齐的货物是否仍暂扣。",
+    "evidenceQuotes": [
+      "Q-Hold 保持 15°C 至 25°C 并与冷链隔开；运营概览没有为 Q-Hold 温度规定事件等级。",
+      "货位若是 Q-Hold，只核对它是否仍与冷链物理隔开、单证未齐的货物是否仍暂扣。不得套用 COLD 或 FROST 阈值给 Q-Hold 定级。",
+      "两份文档都没有指定级别的故障，不得在本指南里补一个级别。"
+    ],
+    "sourceDocumentId": "2116158523942539265",
+    "category": "BOUNDARY",
+    "groundTruthChunkIds": [
+      "2116158524601044994",
+      "2116158524601044995",
+      "2116158524521353217"
+    ]
+  },
+  {
+    "id": "test-043",
+    "question": "开始排查时，必须回看故障发生前多少小时的变更和运行记录？",
+    "groundTruthAnswer": "现有文档无法确定固定的回看小时数。文档没有规定必须回看故障前若干小时的固定窗口，应按审批单和事件时间线核对，不得自行设定回看时长。",
+    "evidenceQuotes": [
+      "两份文档没有规定“必须回看故障前若干小时”的固定窗口，排查时按审批单和事件时间线核对，不要自设一个回看时长。"
+    ],
+    "sourceDocumentId": "2116158523942539265",
+    "category": "BOUNDARY",
+    "groundTruthChunkIds": [
+      "2116158524521353218"
+    ]
+  },
+  {
+    "id": "test-044",
+    "question": "同一类故障在多少天之内出现几次，就必须建立问题记录？",
+    "groundTruthAnswer": "现有文档无法确定天数和次数门槛。指南没有规定若干天内出现几次就必须建立问题记录，不得自行设定次数门槛。",
+    "evidenceQuotes": [
+      "文档没有规定若干天内出现几次就必须建问题记录，不得自设次数门槛。"
+    ],
+    "sourceDocumentId": "2116158523942539265",
+    "category": "BOUNDARY",
+    "groundTruthChunkIds": [
+      "2116158524622016515"
+    ]
+  }
+]
