@@ -172,7 +172,9 @@ public class RagEvalService {
             CalculatedEval calculated = calculate(cases, knowledgeId);
             result = calculated.result;
             printReport(datasetName, result);
-            evalReportWriter.write(result);
+            // 每次评测单独落一份 Markdown，文件名带时间和 runId，避免同一天覆盖
+            evalReportWriter.write(result, new EvalReportMeta(
+                    runId, datasetName, datasetSource, knowledgeId, knowledgeName));
             // 报告写完再落检索明细。运行中途失败时不保存这批尚未提交的快照。
             saveTracesQuietly(runId, calculated.traces);
             markSuccessQuietly(runId, result, startNs, modelName, knowledgeName);

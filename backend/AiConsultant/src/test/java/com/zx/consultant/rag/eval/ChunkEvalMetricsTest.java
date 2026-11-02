@@ -288,7 +288,7 @@ class ChunkEvalMetricsTest {
         }
 
         @Override
-        public Path write(EvalResult result) {
+        public Path write(EvalResult result, EvalReportMeta meta) {
             return Path.of("noop");
         }
     }

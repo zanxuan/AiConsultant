@@ -74,6 +74,11 @@ class RagEvalHistoryHookTest {
         assertEquals(5, runService.config.get("evalTopK"));
         assertEquals("docs/eval/golden-set.json", runService.config.get("goldenSetPath"));
         assertEquals(List.of("write", "success"), events);
+        assertEquals(11L, writer.lastMeta.getRunId());
+        assertEquals("golden-set.json", writer.lastMeta.getDatasetName());
+        assertEquals(RagEvalDatasetSource.GOLDEN_SET, writer.lastMeta.getDatasetSource());
+        assertEquals(1L, writer.lastMeta.getKnowledgeId());
+        assertNull(writer.lastMeta.getKnowledgeName());
         assertEquals(result, runService.successResult);
         assertTrue(runService.failures.isEmpty());
         assertEquals(1, retriever.diagnoseCount);
@@ -356,14 +361,16 @@ class RagEvalHistoryHookTest {
     private static final class RecordingWriter extends EvalReportWriter {
         private RuntimeException toThrow;
         private List<String> events = new ArrayList<>();
+        private EvalReportMeta lastMeta;
 
         private RecordingWriter() {
             super(null);
         }
 
         @Override
-        public Path write(EvalResult result) {
+        public Path write(EvalResult result, EvalReportMeta meta) {
             events.add("write");
+            this.lastMeta = meta;
             if (toThrow != null) {
                 throw toThrow;
             }

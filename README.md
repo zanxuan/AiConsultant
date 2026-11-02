@@ -230,6 +230,8 @@ Memory 在 Workflow 执行前后完成上下文加载与持久化，不作为 RA
 
 双路都有分数时，不能因为其中一路低于阈值就直接丢弃结果。
 
+查询组词的对照实验和指标变化见 `docs/BM25查询实验报告.md`。
+
 ### 2. Intent Orchestration 与 PendingTask
 
 将用户请求拆分为不同 Intent，并根据任务类型选择对应处理流程。
@@ -325,7 +327,7 @@ GET /api/v1/traces/{traceId}
 - 不上传测试集时，运行评测仍执行固定 Golden Set。
 - 保存每次评测的运行快照至 `rag_eval_run`。
 - 保存逐 Chunk 检索轨迹至 `rag_eval_retrieval_trace`。
-- Markdown 评测报告保存在 `docs/eval/result/`。
+- 每次评测另写一份 Markdown 报告到 `docs/eval/result/`，文件名带时间和运行记录 ID，同一天多次运行不会互相覆盖。
 
 **评测指标**
 
