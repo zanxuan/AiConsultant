@@ -31,4 +31,11 @@ public class FailedCase {
 
     /** 该失败 case 的 HybridRetriever 检索耗时（ms） */
     private Long latencyMs;
+
+    /** 重排序失败并退回 RRF 时为 true。未调用时为 null，报告不额外打印 */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private Boolean rerankFallback;
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String rerankFallbackReason;
 }

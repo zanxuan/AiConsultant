@@ -70,6 +70,9 @@ public class EvalReportWriter {
         sb.append("MRR: ").append(String.format("%.2f", result.getMrr())).append("\n\n");
         sb.append("Avg Latency: ").append(formatLatencyMs(result.getAvgLatencyMs())).append("\n\n");
         sb.append("P95 Latency: ").append(formatLatencyMs(result.getP95LatencyMs())).append("\n\n");
+        if (result.getRerankFallbackCount() != null) {
+            sb.append("Rerank Fallback: ").append(result.getRerankFallbackCount()).append("\n\n");
+        }
         sb.append("---\n\n");
         sb.append("# Failed Cases\n\n");
 
@@ -99,6 +102,10 @@ public class EvalReportWriter {
                 }
                 sb.append("### Retrieve Latency\n\n");
                 sb.append(formatLatencyMs(item.getLatencyMs())).append("\n\n");
+                if (Boolean.TRUE.equals(item.getRerankFallback())) {
+                    sb.append("### Rerank Fallback\n\n");
+                    sb.append(text(item.getRerankFallbackReason())).append("\n\n");
+                }
                 sb.append("---\n\n");
             }
         }

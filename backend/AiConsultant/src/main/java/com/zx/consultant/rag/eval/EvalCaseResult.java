@@ -64,4 +64,12 @@ public class EvalCaseResult {
      * 只记录事实，不写关键词不足、语义漂移等推测根因。
      */
     private String missStage;
+
+    /** 重排序失败并退回 RRF 时为 true。未调用重排序时为 null */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private Boolean rerankFallback;
+
+    /** 与 {@link #rerankFallback} 配套的原因。成功或未调用时为 null */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String rerankFallbackReason;
 }

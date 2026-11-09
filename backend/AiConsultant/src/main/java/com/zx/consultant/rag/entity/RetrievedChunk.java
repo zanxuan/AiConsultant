@@ -26,8 +26,14 @@ public class RetrievedChunk {
     /** RediSearch BM25 分（无界，不可与 vectorScore 直接比较） */
     private Double bm25Score;
 
-    /** Hybrid / RRF 融合后的最终分 */
+    /** Hybrid / RRF 融合后的最终分。重排序不改写这个分，避免和 RRF 量纲混在一起 */
     private Double finalScore;
+
+    /**
+     * 交叉编码器相关性分，只在重排序开启且调用成功时有值。
+     * 用来决定返回顺序，不参与阈值过滤。
+     */
+    private Double rerankScore;
 
     private Integer page;
 }

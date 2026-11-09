@@ -2,6 +2,7 @@ package com.zx.consultant.rag.eval;
 
 import java.util.ArrayList;
 import java.util.List;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 
 @Data
@@ -25,4 +26,11 @@ public class EvalResult {
 
     /** 全部 case 检索耗时的 P95（ms）；无 case 时为 null */
     private Long p95LatencyMs;
+
+    /**
+     * 重排序开启时，调用失败并退回 RRF 顺序的题数。
+     * 关闭时为 null，报告不打印这一行。
+     */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private Integer rerankFallbackCount;
 }

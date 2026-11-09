@@ -1,6 +1,7 @@
 package com.zx.consultant.rag.eval;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.LocalDateTime;
@@ -40,6 +41,16 @@ class EvalReportWriterTest {
     }
 
     @Test
+    void rerankFallbackLineAppearsOnlyWhenCounted() {
+        EvalResult result = summary();
+        result.setRerankFallbackCount(2);
+
+        String text = new EvalReportWriter(null).render(result, null);
+
+        assertTrue(text.contains("Rerank Fallback: 2"));
+    }
+
+    @Test
     void missingMetaStaysOnOneLine() {
         String text = new EvalReportWriter(null).render(summary(), null);
 
@@ -48,6 +59,7 @@ class EvalReportWriterTest {
         assertTrue(text.contains("Dataset Source: N/A"));
         assertTrue(text.contains("Knowledge Id: N/A"));
         assertTrue(text.contains("Knowledge: N/A"));
+        assertFalse(text.contains("Rerank Fallback"));
     }
 
     private static EvalResult summary() {

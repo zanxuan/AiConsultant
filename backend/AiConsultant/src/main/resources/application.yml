@@ -27,6 +27,11 @@ app:
       max-results: 10       # 默认召回数量
       min-score: 0.75      # 向量相似度下限（余弦，约 0~1）；融合后使用，检索阶段不提前丢弃
       bm25-min-score: 1.0  # RediSearch 原始 BM25 下限（无界正数，不能与 min-score 混用）
+      rerank:
+        enabled: true     # 关闭时不调用模型，融合后的顺序与原来一致
+        model: gte-rerank-v2
+        url: https://dashscope.aliyuncs.com/api/v1/services/rerank/text-rerank/text-rerank
+        timeout-ms: 8000   # 单次重排序请求超时，超时后回退到 RRF 顺序
     eval:
       # 固定 golden-set 入口使用的知识库；上传测试集时以前端传入的 knowledgeId 为准
       knowledge-id: 2084568960212553729

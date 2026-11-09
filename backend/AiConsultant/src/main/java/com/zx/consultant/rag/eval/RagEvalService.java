@@ -69,6 +69,13 @@ public class RagEvalService {
     @Value("${app.rag.retriever.rrf-k:60}")
     private Integer rrfK;
 
+    /** 只写入配置快照和回退计数。关闭时不改变指标和报告格式 */
+    @Value("${app.rag.retriever.rerank.enabled:false}")
+    private Boolean rerankEnabled;
+
+    @Value("${app.rag.retriever.rerank.model:gte-rerank-v2}")
+    private String rerankModel;
+
     /**
      * 供 HTTP 入口写入评测知识库 ID，对应配置 app.rag.eval.knowledge-id。
      * 不改变 evaluate() 的计算逻辑。
@@ -201,6 +208,8 @@ public class RagEvalService {
         List<EvalCaseResult> caseResults = new ArrayList<>();
         List<Long> retrieveLatenciesMs = new ArrayList<>();
         List<RagEvalRetrievalTrace> traces = new ArrayList<>();
+        int rerankFallbackCount = 0;
+        boolean rerankOn = Boolean.TRUE.equals(rerankEnabled);
 
         for (EvalCase evalCase : cases) {
             String query = evalCase.getQuery();
@@ -215,7 +224,12 @@ public class RagEvalService {
             if (score.hit()) {
                 hitCount++;
             } else {
-                failedCases.add(failedCase(evalCase, query, retrievedDocIds, chunks, latencyMs, score));
+                FailedCase failed = failedCase(evalCase, query, retrievedDocIds, chunks, latencyMs, score);
+                if (trace.rerankFallback) {
+                    failed.setRerankFallback(true);
+                    failed.setRerankFallbackReason(trace.rerankFallbackReason);
+                }
+                failedCases.add(failed);
             }
             recallSum += score.recall();
             mrrSum += score.reciprocalRank();
@@ -233,6 +247,11 @@ public class RagEvalService {
             caseResult.setHit(score.hit());
             caseResult.setRecall(score.recall());
             caseResult.setMrr(score.reciprocalRank());
+            if (trace.rerankFallback) {
+                rerankFallbackCount++;
+                caseResult.setRerankFallback(true);
+                caseResult.setRerankFallbackReason(trace.rerankFallbackReason);
+            }
             // 成功和失败用例共用这一份快照，不额外再检索一次
             RetrievalTraceSnapshots.fillSummary(caseResult, trace, evalCase.getExpectedDocIds(), retrievedDocIds);
             if (evalCase.getId() != null) {
@@ -251,6 +270,9 @@ public class RagEvalService {
         result.setCases(caseResults);
         result.setAvgLatencyMs(averageLatencyMs(retrieveLatenciesMs));
         result.setP95LatencyMs(p95LatencyMs(retrieveLatenciesMs));
+        if (rerankOn) {
+            result.setRerankFallbackCount(rerankFallbackCount);
+        }
         return new CalculatedEval(result, traces);
     }
 
@@ -353,6 +375,8 @@ public class RagEvalService {
         config.put("retrieverMinScore", retrieverMinScore);
         config.put("retrieverBm25MinScore", retrieverBm25MinScore);
         config.put("rrfK", rrfK);
+        config.put("rerankEnabled", Boolean.TRUE.equals(rerankEnabled));
+        config.put("rerankModel", rerankModel);
         config.put("goldenSetPath", datasetSource == RagEvalDatasetSource.GOLDEN_SET ? goldenSetPath : null);
         return config;
     }
@@ -564,6 +588,9 @@ public class RagEvalService {
                 formatLatencyMs(result.getP95LatencyMs()),
                 result.getFailedCases() == null ? 0 : result.getFailedCases().size());
         System.out.print(report);
+        if (result.getRerankFallbackCount() != null) {
+            System.out.println("Rerank Fallback: " + result.getRerankFallbackCount());
+        }
     }
 
     /**

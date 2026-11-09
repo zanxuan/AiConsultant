@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import com.zx.consultant.rag.entity.RetrievedChunk;
@@ -20,6 +21,9 @@ import lombok.extern.slf4j.Slf4j;
  * <p>
  * 融合后按两路原始分过滤：只有向量分和 BM25 分都低于各自阈值时才丢弃。
  * 缺失的一路分数不按 0 处理。无结果时的日志仍保留，低分短路由 RetrieveNode 决定。
+ * <p>
+ * 重排序是截断之后的可选一步，默认关闭。关闭时本类的召回、融合、过滤和截断与原来一致。
+ * 开启后只重排已经留下的 TopK，不改写 finalScore，失败时仍返回 RRF 顺序。
  */
 @Slf4j
 @Component
@@ -46,8 +50,20 @@ public class HybridRetriever {
     @Value("${app.rag.retriever.bm25-min-score:1.0}")
     private Double bm25MinScore;
 
+    /** 默认关闭。单元测试直接 new 时该字段为 null，同样不调用重排序 */
+    @Value("${app.rag.retriever.rerank.enabled:false}")
+    private Boolean rerankEnabled;
+
+    /** 不进构造器，避免改现有 new HybridRetriever(vector, bm25) 的测试 */
+    private ChunkReranker chunkReranker;
+
     /** 仅诊断线程写入；为空时 retrieve() 不采集中间结果 */
     private static final ThreadLocal<RecallTrace> TRACE = new ThreadLocal<>();
+
+    @Autowired(required = false)
+    void setChunkReranker(ChunkReranker chunkReranker) {
+        this.chunkReranker = chunkReranker;
+    }
 
     /**
      * 混合检索
@@ -68,10 +84,12 @@ public class HybridRetriever {
             trace.bm25Query = bm25Query;
         }
 
-        log.info("Hybrid 检索开始, knowledgeId={}, vectorHits={}, bm25Hits={}, rrfK={}, topK={}",
-                knowledgeId, vectorHits.size(), bm25Hits.size(), rrfK, maxResults);
+        log.info("Hybrid 检索开始, knowledgeId={}, vectorHits={}, bm25Hits={}, rrfK={}, topK={}, rerank={}",
+                knowledgeId, vectorHits.size(), bm25Hits.size(), rrfK, maxResults, Boolean.TRUE.equals(rerankEnabled));
 
         List<RetrievedChunk> ranked = fuseWithRrf(vectorHits, bm25Hits);
+        // 只重排融合截断后的列表。finalScore 仍是 RRF 分，快照在重排之后再拍
+        ranked = applyRerank(query, ranked, trace);
 
         if (trace != null) {
             trace.finalTopK = copyAll(ranked);
@@ -84,6 +102,65 @@ public class HybridRetriever {
                     knowledgeId, ranked.size(), maxVectorScore(ranked), minScore, bm25MinScore);
         }
         return ranked;
+    }
+
+    /**
+     * 候选不足两条，或开关关闭时，直接返回 RRF 顺序。
+     * 模型没打出与候选一一对应的分数时，不改顺序，并在诊断快照里记下回退原因。
+     */
+    private List<RetrievedChunk> applyRerank(String query, List<RetrievedChunk> ranked, RecallTrace trace) {
+        if (!Boolean.TRUE.equals(rerankEnabled) || ranked == null || ranked.size() < 2) {
+            return ranked;
+        }
+        if (query == null || query.isBlank()) {
+            return ranked;
+        }
+        if (chunkReranker == null) {
+            markRerankFallback(trace, 0L, "reranker bean missing");
+            log.warn("Rerank 已开启但没有重排序实现，保留 RRF 顺序");
+            return ranked;
+        }
+
+        ChunkReranker.RerankScores outcome = chunkReranker.score(query, ranked);
+        if (outcome == null || !outcome.applied() || outcome.scores().length != ranked.size()) {
+            String reason;
+            if (outcome != null && outcome.fallbackReason() != null) {
+                reason = outcome.fallbackReason();
+            } else if (outcome != null && outcome.scores() != null) {
+                reason = "score length mismatch";
+            } else {
+                reason = "rerank returned no scores";
+            }
+            long latencyMs = outcome == null ? 0L : outcome.latencyMs();
+            markRerankFallback(trace, latencyMs, reason);
+            log.warn("Rerank 回退到 RRF 顺序, reason={}, latencyMs={}", reason, latencyMs);
+            return ranked;
+        }
+
+        double[] scores = outcome.scores();
+        for (int i = 0; i < ranked.size(); i++) {
+            ranked.get(i).setRerankScore(scores[i]);
+        }
+        // List.sort 稳定，相关性分相同的切块仍保持原来的 RRF 先后
+        ranked.sort(Comparator.comparing(
+                RetrievedChunk::getRerankScore,
+                Comparator.nullsLast(Comparator.reverseOrder())));
+        if (trace != null) {
+            trace.rerankApplied = true;
+            trace.rerankLatencyMs = outcome.latencyMs();
+        }
+        log.info("Rerank 完成, docs={}, latencyMs={}", ranked.size(), outcome.latencyMs());
+        return ranked;
+    }
+
+    private static void markRerankFallback(RecallTrace trace, long latencyMs, String reason) {
+        if (trace == null) {
+            return;
+        }
+        trace.rerankApplied = false;
+        trace.rerankFallback = true;
+        trace.rerankFallbackReason = reason;
+        trace.rerankLatencyMs = latencyMs;
     }
 
     /**
@@ -322,6 +399,7 @@ public class HybridRetriever {
         copy.setVectorScore(source.getVectorScore());
         copy.setBm25Score(source.getBm25Score());
         copy.setFinalScore(source.getFinalScore());
+        copy.setRerankScore(source.getRerankScore());
         copy.setPage(source.getPage());
         return copy;
     }
@@ -338,6 +416,12 @@ public class HybridRetriever {
         public List<RetrievedChunk> finalTopK = new ArrayList<>();
         /** 本次 BM25 实际执行的 Redis 查询串；没有执行查询时为空 */
         public String bm25Query;
+        /** 重排序成功改写了 finalTopK 的顺序。关闭或候选不足两条时为 false */
+        public boolean rerankApplied;
+        /** 开关打开且本应重排，但调用失败，finalTopK 仍是 RRF 顺序 */
+        public boolean rerankFallback;
+        public String rerankFallbackReason;
+        public Long rerankLatencyMs;
     }
 
     public static class FilteredCandidate {
