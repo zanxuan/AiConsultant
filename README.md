@@ -287,7 +287,7 @@ Retry Once
     +---- Success --> Return Answer
     |
     v
-qwen-turbo Fallback
+qwen3.8-flash Fallback
     |
     v
 Return Answer
@@ -295,7 +295,7 @@ Return Answer
 
 - 主模型使用 `qwen-plus`。
 - 首次调用失败后重试一次。
-- 两次调用均失败后，降级至 `qwen-turbo`。
+- 两次调用均失败后，降级至 `qwen3.8-flash`。
 - Trace 记录模型使用情况及降级原因。
 
 当前流式聊天流程未实现流式模型 Fallback：qwen-plus 流式调用失败后发送 error 事件并关闭 SSE，不发送 complete 事件。
