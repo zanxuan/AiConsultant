@@ -19,6 +19,9 @@
           <div class="eval-page__metric-label">{{ item.label }}</div>
         </div>
       </div>
+      <p class="eval-page__note eval-page__note--after">生成答案：{{ generationText(caseView.answer) }}</p>
+      <p class="eval-page__note">忠实度理由：{{ generationText(caseView.faithfulnessReason) }}</p>
+      <p class="eval-page__note">正确性理由：{{ generationText(caseView.correctnessReason) }}</p>
     </section>
 
     <div class="eval-case__tabs" role="tablist">
@@ -316,8 +319,15 @@ const metrics = computed(() => {
     { label: 'Latency', value: formatLatency(row.latencyMs) },
     { label: 'Top Score', value: formatScore(row.topScore) },
     { label: 'Status', value: row.failed ? 'Failed' : 'Passed' },
+    { label: '忠实度', value: formatCaseRate(row.faithfulness) },
+    { label: '答案正确性', value: formatCaseRate(row.correctness) },
   ]
 })
+
+function generationText(value?: string | null) {
+  if (value == null || value.trim() === '') return '—'
+  return value
+}
 
 // 对比页左右两侧会复用同一个组件实例切换用例，切走后清掉上一条的展开和原文缓存。
 watch(() => [String(props.runId), caseKey(props.caseView.id)] as const, () => {

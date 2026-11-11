@@ -3,300 +3,350 @@
     "id": 1,
     "query": "Redis有哪些持久化方式？",
     "expectedDocIds": ["2084569201779298306"],
-    "type": "easy"
+    "type": "easy",
+    "groundTruthAnswer": "Redis 有 RDB 和 AOF 两种持久化，也可以混合使用。RDB 把当前内存数据做成二进制全量快照；AOF 记录写命令，并可以重写去掉无效命令。"
   },
   {
     "id": 2,
     "query": "什么是MySQL的MVCC？",
     "expectedDocIds": ["2084569065988706305"],
-    "type": "easy"
+    "type": "easy",
+    "groundTruthAnswer": "MVCC 是多版本并发控制。每次修改都把旧版本记到 undo log，用回滚指针串成版本链；再用 ReadView 对比事务 id，判断哪个版本对当前事务可见。"
   },
   {
     "id": 3,
     "query": "创建线程有哪几种方式？",
     "expectedDocIds": ["2084619495913455617"],
-    "type": "easy"
+    "type": "easy",
+    "groundTruthAnswer": "真正创建线程只有一种方式，就是调用 Thread 的 start()。start() 会调用 native 的 start0，创建操作系统线程并执行 run()。实现 Runnable 或 Callable 只是创建任务，不是创建线程。"
   },
   {
     "id": 4,
     "query": "Spring IOC是什么？",
     "expectedDocIds": ["2084619207727022082"],
-    "type": "easy"
+    "type": "easy",
+    "groundTruthAnswer": "IOC 是控制反转，把对象的创建和销毁交给 Spring 容器。容器再通过依赖注入把依赖放进对象，更换实现时不用修改使用方代码。"
   },
   {
     "id": 5,
     "query": "什么是AOP面向切面编程？",
     "expectedDocIds": ["2084619224890114049"],
-    "type": "easy"
+    "type": "easy",
+    "groundTruthAnswer": "AOP 是面向切面编程，在不改业务方法的情况下，动态地在方法执行前后做增强。例如方法执行前自动开启事务、执行后自动提交，或在执行前把方法提交到线程池。"
   },
   {
     "id": 6,
     "query": "RocketMQ是什么？",
     "expectedDocIds": ["2084619301536825345"],
-    "type": "easy"
+    "type": "easy",
+    "groundTruthAnswer": "RocketMQ 由生产者集群、消费者集群、Broker 集群和 NameServer 集群组成。Broker 接收消息并持久化到磁盘，NameServer 是管理 Broker 和 Topic 的轻量注册中心。消息按 Topic 分类，Topic 内部有多个队列。"
   },
   {
     "id": 7,
     "query": "什么是CAS算法？",
     "expectedDocIds": ["2084619386102382593"],
-    "type": "easy"
+    "type": "easy",
+    "groundTruthAnswer": "CAS 是乐观锁，即 compare and swap。线程先看到旧值，更新时如果共享变量仍等于这个旧值，就把它改成新值；不一致就说明已经被别的线程改过。"
   },
   {
     "id": 8,
     "query": "synchronized关键字的作用是什么？",
     "expectedDocIds": ["2084619447859314689"],
-    "type": "easy"
+    "type": "easy",
+    "groundTruthAnswer": "synchronized 是锁，保证同一段代码同一时刻只有拿到锁的线程能执行，从而保证原子性。加锁时用读屏障从主存重读数据，解锁时用写屏障把修改刷回主存，从而保证可见性。"
   },
   {
     "id": 9,
     "query": "ThreadLocal是什么？",
     "expectedDocIds": ["2084619513584058369"],
-    "type": "easy"
+    "type": "easy",
+    "groundTruthAnswer": "ThreadLocal 让每个线程保存自己的变量副本，线程之间互不影响。数据存在该线程私有的 ThreadLocalMap 里，key 是 ThreadLocal，value 是这份数据。"
   },
   {
     "id": 10,
     "query": "MySQL索引有哪些类型？",
     "expectedDocIds": ["2084569119692574722"],
-    "type": "easy"
+    "type": "easy",
+    "groundTruthAnswer": "MySQL 用 B+ 树存索引。按存储结构分聚集索引和非聚集索引。主键索引是聚集索引，叶子节点存整行数据；唯一索引、普通索引、前缀索引是二级索引，叶子节点存主键，查整行时要回表。"
   },
   {
     "id": 11,
     "query": "Redis高可用有哪些方案？",
     "expectedDocIds": ["2084569223350603778"],
-    "type": "easy"
+    "type": "easy",
+    "groundTruthAnswer": "Redis 高可用用主从、哨兵和集群。主从是只写主节点、从节点读，通过全量复制和增量复制把主节点数据同步到从节点。"
   },
   {
     "id": 12,
     "query": "什么是缓存击穿、缓存穿透和缓存雪崩？",
     "expectedDocIds": ["2084569172121374722"],
-    "type": "easy"
+    "type": "easy",
+    "groundTruthAnswer": "缓存击穿是一个高并发访问的 key 突然失效，大量请求打到数据库。缓存穿透是要查的数据在缓存和数据库里都不存在，请求每次都落到数据库。缓存雪崩是同一时段大量 key 一起失效，或者 Redis 宕机，请求把数据库打垮。"
   },
   {
     "id": 13,
     "query": "Bean的生命周期有哪些阶段？",
     "expectedDocIds": ["2084619188655521793"],
-    "type": "easy"
+    "type": "easy",
+    "groundTruthAnswer": "Bean 要经过实例化、属性赋值、初始化、使用和销毁。初始化会调用 InitializingBean 的 afterPropertiesSet 或指定的 initMethod，以及 BeanPostProcessor 的 postProcessAfterInitialization。销毁前会调用 DisposableBean 的 destroy 或 destroyMethod。"
   },
   {
     "id": 14,
     "query": "线程池的核心参数有哪些？",
     "expectedDocIds": ["2084619470403698689"],
-    "type": "easy"
+    "type": "easy",
+    "groundTruthAnswer": "线程池有七个参数：核心线程数、最大线程数、临时线程的空闲时间、时间单位、阻塞队列、拒绝策略和线程工厂。"
   },
   {
     "id": 15,
     "query": "MySQL事务的ACID特性是什么？",
     "expectedDocIds": ["2084569101686427649"],
-    "type": "easy"
+    "type": "easy",
+    "groundTruthAnswer": "原子性是一组 SQL 要么全成功要么全失败，靠 undo log 回滚。持久性是提交后的修改不丢失，靠 redo log 做崩溃恢复。隔离性是并发事务互不干扰，靠 MVCC、锁和 undo log。一致性是事务前后数据总量保持一致，由前三个特性共同保证。"
   },
   {
     "id": 16,
     "query": "服务器异常关闭后，之前的数据如何恢复？",
     "expectedDocIds": ["2084569201779298306"],
-    "type": "semantic"
+    "type": "semantic",
+    "groundTruthAnswer": "Redis 的数据在内存里，宕机会丢。恢复靠已经落到磁盘的 RDB 快照或 AOF 命令日志，重启后从这些文件把数据读回来。"
   },
   {
     "id": 17,
     "query": "数据库突然断电，已经提交的事务如何保证不丢失？",
     "expectedDocIds": ["2084569050411061249", "2084569084238123010"],
-    "type": "semantic"
+    "type": "semantic",
+    "groundTruthAnswer": "提交的修改可能还在 Buffer Pool 里，数据页还没刷盘。MySQL 把数据页上的物理修改记进 redo log 并刷盘，断电后读取 redo log 把这些修改恢复回来。"
   },
   {
     "id": 18,
     "query": "如何保证一条消息只被消费一次？",
     "expectedDocIds": ["2084619350895394818"],
-    "type": "semantic"
+    "type": "semantic",
+    "groundTruthAnswer": "生产者重试和消费者在 ack 前宕机都会造成重复消息，所以要在消费端做幂等。可以给消息分配唯一 id，用 Redis 的 setnx 记录是否消费过；也可以用订单号这类业务唯一键先查再写，或加数据库唯一索引。"
   },
   {
     "id": 19,
     "query": "消息发送失败了怎么办，系统如何保证消息不丢？",
     "expectedDocIds": ["2084619334139150338"],
-    "type": "semantic"
+    "type": "semantic",
+    "groundTruthAnswer": "消息可能在生产者发到 MQ、MQ 自身宕机、消费者尚未处理完这三处丢失。分别用生产者 ack、MQ 持久化加集群，以及消费者处理完再 ack。消费失败要放进重试队列，不要只在本地内存重试，否则 Rebalance 时可能把未确认的消息丢掉。"
   },
   {
     "id": 20,
     "query": "多个消费者按顺序处理同一业务单号的消息，该怎么设计？",
     "expectedDocIds": ["2084619318028828673"],
-    "type": "semantic"
+    "type": "semantic",
+    "groundTruthAnswer": "单个队列内的消息是有序的，跨队列不能保证顺序。按业务单号把相同单号的消息路由到同一个队列，再由一个消费者串行消费，只保证这个单号内的局部顺序。"
   },
   {
     "id": 21,
     "query": "缓存里有脏数据时，如何和数据库保持一致？",
     "expectedDocIds": ["2084569251997700097"],
-    "type": "semantic"
+    "type": "semantic",
+    "groundTruthAnswer": "旁路缓存以数据库为准。先更新数据库，再删除缓存。删除必须成功，可以把删除放进 MQ 异步重试，或者监听 binlog 后再删缓存，失败就重试。"
   },
   {
     "id": 22,
     "query": "大量请求同时打到一个热点key上，缓存失效瞬间会发生什么？如何应对？",
     "expectedDocIds": ["2084569172121374722"],
-    "type": "semantic"
+    "type": "semantic",
+    "groundTruthAnswer": "这是缓存击穿，热点 key 突然失效后大量请求会打到数据库。可以用互斥锁，只让一个请求查库并回填缓存，其他请求等待后再检查缓存。也可以让缓存永不过期，在数据里记逻辑过期时间，过期后异步更新，其他请求先返回旧数据。"
   },
   {
     "id": 23,
     "query": "查询一个根本不存在的key，为什么会把压力打到数据库？",
     "expectedDocIds": ["2084569172121374722"],
-    "type": "semantic"
+    "type": "semantic",
+    "groundTruthAnswer": "这是缓存穿透。这个 key 在缓存和数据库里都不存在，缓存永远不会命中，请求每次都会落到数据库。可以给不存在的 key 缓存一个较短过期时间的空值；如果每个 key 都不一样，再用布隆过滤器先判断数据是否可能存在。"
   },
   {
     "id": 24,
     "query": "主节点挂了之后，集群如何继续对外提供服务？",
     "expectedDocIds": ["2084569223350603778"],
-    "type": "semantic"
+    "type": "semantic",
+    "groundTruthAnswer": "不要只部署单机 Redis。用主从把主节点数据通过全量复制和增量复制同步到从节点，再配合哨兵或集群，主节点挂了之后仍能继续对外提供服务。"
   },
   {
     "id": 25,
     "query": "一条select语句从客户端发出后，经历了哪些内部处理步骤？",
     "expectedDocIds": ["2084569136654340097"],
-    "type": "semantic"
+    "type": "semantic",
+    "groundTruthAnswer": "先经过连接器，做 TCP 连接、校验用户名密码和访问权限。然后查查询缓存，MySQL 8.0 因为命中率低去掉了这一步。接着解析器做词法分析、语法分析并检查表和字段，优化器决定走哪个索引还是全表扫描，最后由执行器交给存储引擎执行。"
   },
   {
     "id": 26,
     "query": "为什么给常用查询字段建B+树能加快查找？",
     "expectedDocIds": ["2084569119692574722"],
-    "type": "semantic"
+    "type": "semantic",
+    "groundTruthAnswer": "B+ 树的非叶子节点只存索引值，不存行数据，单个节点能放下更多索引，树更矮，查找的磁盘 IO 更少。行数据只在叶子节点，叶子之间用双向链表相连，范围查询顺着链表走，不用回溯整棵树。"
   },
   {
     "id": 27,
     "query": "两个事务同时改同一行数据，如何做到互不干扰地看到各自版本？",
     "expectedDocIds": ["2084569065988706305"],
-    "type": "semantic"
+    "type": "semantic",
+    "groundTruthAnswer": "每次修改都生成一个新版本并记到 undo log 版本链。事务读取时用 ReadView 判断哪个版本对自己可见，所以两个事务可以读到各自可见的版本，普通 select 不用互相阻塞。"
   },
   {
     "id": 28,
     "query": "undo log和redo log分别解决什么问题？",
     "expectedDocIds": ["2084569084238123010"],
-    "type": "semantic"
+    "type": "semantic",
+    "groundTruthAnswer": "undo log 保存修改前的旧版本，事务失败时沿版本链回滚，保证原子性，也给 MVCC 提供历史版本。redo log 记录数据页上的物理修改，Buffer Pool 还没刷盘就宕机时，用它把已提交的修改恢复回来，保证持久性。"
   },
   {
     "id": 29,
     "query": "如何在不改业务代码的情况下统一加日志或权限校验？",
     "expectedDocIds": ["2084619224890114049"],
-    "type": "semantic"
+    "type": "semantic",
+    "groundTruthAnswer": "用 AOP 在方法执行前后做增强，业务方法本身不用改。文档中的做法是方法执行前自动开启事务、执行后提交，或在执行前把方法提交到线程池。"
   },
   {
     "id": 30,
     "query": "Spring容器是如何创建并管理对象依赖的？",
     "expectedDocIds": ["2084619207727022082"],
-    "type": "semantic"
+    "type": "semantic",
+    "groundTruthAnswer": "IOC 把对象的创建和销毁交给 Spring 容器，而不是在业务代码里 new 具体实现。对象创建出来后，再通过依赖注入把需要的属性放进去。"
   },
   {
     "id": 31,
     "query": "一个Bean从被实例化到销毁，中间会经历哪些回调？",
     "expectedDocIds": ["2084619188655521793"],
-    "type": "semantic"
+    "type": "semantic",
+    "groundTruthAnswer": "实例化并完成属性赋值后，初始化会调用 InitializingBean 的 afterPropertiesSet 或指定的 initMethod，再调用 BeanPostProcessor 的 postProcessAfterInitialization。销毁前会调用 DisposableBean 的 destroy 或 destroyMethod 来释放资源。"
   },
   {
     "id": 32,
     "query": "如何在多线程环境下安全地累加一个计数器且尽量少加锁？",
     "expectedDocIds": ["2084619386102382593"],
-    "type": "semantic"
+    "type": "semantic",
+    "groundTruthAnswer": "用 CAS 做乐观锁，不要每次都用悲观锁阻塞。线程比较计数器的旧值，仍然相等就把旧值换成加一后的新值；已经被别的线程改过就重试。"
   },
   {
     "id": 33,
     "query": "同一时刻只允许一个线程进入关键代码段，该用什么机制？",
     "expectedDocIds": ["2084619447859314689"],
-    "type": "semantic"
+    "type": "semantic",
+    "groundTruthAnswer": "用 synchronized。它保证拿到锁的线程才能进入这段代码，从而保证原子性，并通过加锁解锁时的内存屏障保证可见性。"
   },
   {
     "id": 34,
     "query": "如何避免线程之间互相污染对方的用户上下文数据？",
     "expectedDocIds": ["2084619513584058369"],
-    "type": "semantic"
+    "type": "semantic",
+    "groundTruthAnswer": "把用户上下文放进 ThreadLocal。每个线程有自己的 ThreadLocalMap，读到的是本线程的那份数据，不会读到其他线程的副本。"
   },
   {
     "id": 35,
     "query": "任务很多时，如何复用线程而不是每次都新建？",
     "expectedDocIds": ["2084619470403698689"],
-    "type": "semantic"
+    "type": "semantic",
+    "groundTruthAnswer": "用线程池复用已经创建好的线程。Java 线程和操作系统内核线程一一对应，频繁创建和销毁开销大。任务提交后优先交给空闲的核心线程，否则进阻塞队列，队列满了再创建临时线程，还处理不了就走拒绝策略。"
   },
   {
     "id": 36,
     "query": "系统宕机后，常见的数据恢复机制有哪些？",
     "expectedDocIds": ["2084569201779298306", "2084569050411061249", "2084569084238123010"],
-    "type": "cross"
+    "type": "cross",
+    "groundTruthAnswer": "Redis 用 RDB 快照或 AOF 日志把内存数据落到磁盘，宕机后从文件恢复。MQ 把消息持久化到磁盘，重启后还能读回。MySQL 用 redo log 恢复已经提交、但数据页还没从 Buffer Pool 刷盘的修改。"
   },
   {
     "id": 37,
     "query": "如何同时保证缓存不丢数据和数据库事务不丢已提交结果？",
     "expectedDocIds": ["2084569201779298306", "2084569084238123010"],
-    "type": "cross"
+    "type": "cross",
+    "groundTruthAnswer": "缓存侧用 Redis 的 RDB 或 AOF 把内存数据写到磁盘。数据库侧把已提交的数据页修改写入 redo log，崩溃后用 redo log 恢复还没刷盘的结果。"
   },
   {
     "id": 38,
     "query": "消息发送成功但消费者宕机，以及数据库宕机，各自如何保证数据不丢？",
     "expectedDocIds": ["2084619334139150338", "2084569084238123010"],
-    "type": "cross"
+    "type": "cross",
+    "groundTruthAnswer": "消费者宕机时，只有处理完并 ack 之后 MQ 才删除消息，没收到 ack 就重发。数据库宕机时，用 redo log 恢复已提交但数据页尚未刷盘的修改。"
   },
   {
     "id": 39,
     "query": "高并发下如何用缓存扛流量，同时避免击穿把数据库打挂？",
     "expectedDocIds": ["2084569172121374722", "2084569187866791938"],
-    "type": "cross"
+    "type": "cross",
+    "groundTruthAnswer": "用 Redis 缓存对象，让读请求先打到缓存。热点 key 失效造成击穿时，用互斥锁只允许一个请求回源数据库并更新缓存，或者使用逻辑过期，其他请求先返回旧数据并由新线程异步更新。"
   },
   {
     "id": 40,
     "query": "写库后再更新缓存失败，和消息重复消费，分别如何处理一致性问题？",
     "expectedDocIds": ["2084569251997700097", "2084619350895394818"],
-    "type": "cross"
+    "type": "cross",
+    "groundTruthAnswer": "更新数据库成功但删除缓存失败时，把删缓存放进 MQ 异步重试，或监听 binlog 后再删，失败继续重试。消息重复消费时在消费端做幂等，用消息唯一 id 加 Redis setnx，或用业务唯一键和数据库唯一索引挡住重复写入。"
   },
   {
     "id": 41,
     "query": "线程安全和消息顺序消费，各自依赖什么机制保证？",
     "expectedDocIds": ["2084619447859314689", "2084619318028828673"],
-    "type": "cross"
+    "type": "cross",
+    "groundTruthAnswer": "线程安全用 synchronized，保证同一段代码同一时刻只有一个拿到锁的线程能进入。消息顺序把同一业务单号路由到同一个队列，并由一个消费者串行消费。"
   },
   {
     "id": 42,
     "query": "Spring如何管理对象生命周期，线程池又如何管理线程生命周期？",
     "expectedDocIds": ["2084619188655521793", "2084619470403698689"],
-    "type": "cross"
+    "type": "cross",
+    "groundTruthAnswer": "Spring 管 Bean 的实例化、属性赋值、初始化、使用和销毁，初始化和销毁分别通过 afterPropertiesSet、initMethod 以及 destroy、destroyMethod 这些回调完成。线程池复用已创建的线程，核心线程不够就排队，队列满了再创建临时线程，空闲超过设定时间就销毁，仍处理不了就拒绝。"
   },
   {
     "id": 43,
     "query": "无锁更新计数和有锁保护临界区，分别对应哪些并发手段？",
     "expectedDocIds": ["2084619386102382593", "2084619447859314689"],
-    "type": "cross"
+    "type": "cross",
+    "groundTruthAnswer": "少加锁地更新计数用 CAS，比较旧值再换成新值。保护临界区用 synchronized，只有拿到锁的线程能进入。"
   },
   {
     "id": 44,
     "query": "一条SQL如何执行，以及相关索引如何帮助加速查询？",
     "expectedDocIds": ["2084569136654340097", "2084569119692574722"],
-    "type": "cross"
+    "type": "cross",
+    "groundTruthAnswer": "SQL 经过连接器、查询缓存、解析器、优化器和执行器。优化器选择走索引还是全表扫描。常用字段上的 B+ 树非叶子节点只存索引，树更矮；叶子节点用链表相连，查找和范围扫描都比逐行全表扫描少做磁盘 IO。"
   },
   {
     "id": 45,
     "query": "IOC负责组装依赖，AOP负责横切逻辑，它们各自解决什么问题？",
     "expectedDocIds": ["2084619207727022082", "2084619224890114049"],
-    "type": "cross"
+    "type": "cross",
+    "groundTruthAnswer": "IOC 把对象创建和依赖注入交给容器，避免业务代码直接 new 具体实现。AOP 在不改业务方法的前提下，在方法执行前后统一做增强，例如自动管理事务或把方法提交到线程池。"
   },
   {
     "id": 46,
     "query": "事务隔离级别有哪些？",
     "expectedDocIds": ["2084569101686427649"],
-    "type": "confusing"
+    "type": "confusing",
+    "groundTruthAnswer": "四种隔离级别是读未提交、读已提交、可重复读和串行化。可重复读是 MySQL 的默认级别。级别越高，一致性越强，执行效率越低。"
   },
   {
     "id": 47,
     "query": "事务的四种隔离级别分别能解决什么问题？",
     "expectedDocIds": ["2084569101686427649"],
-    "type": "confusing"
+    "type": "confusing",
+    "groundTruthAnswer": "读未提交解决不了脏读、不可重复读和幻读。读已提交只能解决脏读。可重复读在第一次读取时生成快照，能解决不可重复读，按该文档的说法不能解决幻读。串行化让事务一个接一个执行，并发问题都不存在，但性能差。"
   },
   {
     "id": 48,
     "query": "缓存穿透和缓存击穿有什么区别？",
     "expectedDocIds": ["2084569172121374722"],
-    "type": "confusing"
+    "type": "confusing",
+    "groundTruthAnswer": "缓存穿透是要查的数据在缓存和数据库里都不存在，请求每次都打到数据库。缓存击穿是一个高并发的热点 key 突然失效，大量请求同时打到数据库。"
   },
   {
     "id": 49,
     "query": "redo log和undo log分别用在什么场景？",
     "expectedDocIds": ["2084569084238123010"],
-    "type": "confusing"
+    "type": "confusing",
+    "groundTruthAnswer": "undo log 用在事务回滚和 MVCC：保存旧版本，失败时回滚，普通查询沿版本链找自己可见的数据。redo log 用在崩溃恢复：记录数据页的物理修改，Buffer Pool 未刷盘时靠它恢复已提交的数据。"
   },
   {
     "id": 50,
     "query": "消息可靠性投递和消息幂等消费有什么区别？",
     "expectedDocIds": ["2084619334139150338"],
-    "type": "confusing"
+    "type": "confusing",
+    "groundTruthAnswer": "可靠性解决的是消息不丢，靠生产者 ack、MQ 持久化和集群，以及消费者处理完再 ack；失败消息放进重试队列。幂等解决的是重试带来的重复消费，用消息唯一 id 加 Redis setnx，或给订单号、支付流水号加唯一索引。"
   }
 ]

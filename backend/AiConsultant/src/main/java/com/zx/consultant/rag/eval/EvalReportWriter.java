@@ -70,6 +70,12 @@ public class EvalReportWriter {
         sb.append("MRR: ").append(String.format("%.2f", result.getMrr())).append("\n\n");
         sb.append("Avg Latency: ").append(formatLatencyMs(result.getAvgLatencyMs())).append("\n\n");
         sb.append("P95 Latency: ").append(formatLatencyMs(result.getP95LatencyMs())).append("\n\n");
+        if (result.getFaithfulness() != null) {
+            sb.append("Faithfulness: ").append(formatPercent(result.getFaithfulness())).append("\n\n");
+        }
+        if (result.getCorrectness() != null) {
+            sb.append("Correctness: ").append(formatPercent(result.getCorrectness())).append("\n\n");
+        }
         if (result.getRerankFallbackCount() != null) {
             sb.append("Rerank Fallback: ").append(result.getRerankFallbackCount()).append("\n\n");
         }

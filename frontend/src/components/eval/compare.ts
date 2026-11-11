@@ -30,6 +30,8 @@ const METRICS: {
   { key: 'p95LatencyMs', label: 'P95', format: 'latency', direction: 'lower' },
   { key: 'failedCount', label: '失败用例数', format: 'count', direction: 'lower' },
   { key: 'durationMs', label: '整次耗时', format: 'latency', direction: 'lower' },
+  { key: 'faithfulness', label: '忠实度', format: 'rate', direction: 'higher' },
+  { key: 'correctness', label: '答案正确性', format: 'rate', direction: 'higher' },
 ]
 
 /** 差值一律按 B−A。任一侧缺失时不把空值当成 0。 */

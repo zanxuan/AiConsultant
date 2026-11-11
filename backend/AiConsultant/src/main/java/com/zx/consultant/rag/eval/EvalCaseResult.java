@@ -72,4 +72,22 @@ public class EvalCaseResult {
     /** 与 {@link #rerankFallback} 配套的原因。成功或未调用时为 null */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private String rerankFallbackReason;
+
+    /** 去掉 cite 标记后的答案。生成评测关闭、失败或旧快照没有该字段时为 null */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String answer;
+
+    /** 忠实度。检索为空或未打分时为 null，不记成 0 */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private Double faithfulness;
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String faithfulnessReason;
+
+    /** 答案正确性。检索为空时为 0；没有标准答案或未打分时为 null */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private Double correctness;
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String correctnessReason;
 }

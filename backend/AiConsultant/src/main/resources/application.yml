@@ -36,6 +36,10 @@ app:
       # 固定 golden-set 入口使用的知识库；上传测试集时以前端传入的 knowledgeId 为准
       knowledge-id: 2084568960212553729
       golden-set-path: docs/eval/golden-set.json
+      # 关闭时只跑检索评测，不调用生成模型和裁判
+      generation-enabled: true
+      # 被测模型。评测客户端单独创建，不使用线上 ChatModel Bean
+      generation-model: qwen-plus
   summary:
     short-text-threshold: 3000   # 与 document.file_size（字节）比较，不超过则直接加载原文总结
     group-size: 5                # 阶段性总结每次合并的已有块数

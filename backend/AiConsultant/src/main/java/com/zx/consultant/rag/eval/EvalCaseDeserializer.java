@@ -41,6 +41,7 @@ public class EvalCaseDeserializer extends JsonDeserializer<EvalCase> {
         evalCase.setExpectedDocIds(readStringList(parser, node.get("expectedDocIds"), "expectedDocIds"));
         evalCase.setGroundTruthChunkIds(
                 readStringList(parser, node.get("groundTruthChunkIds"), "groundTruthChunkIds"));
+        evalCase.setGroundTruthAnswer(readOptionalText(parser, node.get("groundTruthAnswer"), "groundTruthAnswer"));
         return evalCase;
     }
 
@@ -130,6 +131,15 @@ public class EvalCaseDeserializer extends JsonDeserializer<EvalCase> {
             values.add(item.asText());
         }
         return values;
+    }
+
+    /** 字段缺失或 null 保持 null。出现了就必须是字符串，避免静默丢掉标准答案 */
+    private static String readOptionalText(JsonParser parser, JsonNode node, String fieldName)
+            throws JsonMappingException {
+        if (node == null || node.isNull()) {
+            return null;
+        }
+        return requireText(parser, node, fieldName);
     }
 
     private static String requireText(JsonParser parser, JsonNode node, String fieldName)

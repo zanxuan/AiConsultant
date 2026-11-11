@@ -10,6 +10,9 @@ export interface EvalSavedMetrics {
   p95LatencyMs: number | null
   failedCount: number | null
   durationMs: number | null
+  /** 旧快照和关闭生成评测时为 null，页面显示为 — */
+  faithfulness: number | null
+  correctness: number | null
 }
 
 export function savedMetrics(detail: EvalRunDetail | null | undefined): EvalSavedMetrics {
@@ -23,6 +26,8 @@ export function savedMetrics(detail: EvalRunDetail | null | undefined): EvalSave
     p95LatencyMs: firstNumber(detail?.p95LatencyMs, saved?.p95LatencyMs),
     failedCount: firstNumber(detail?.failedCount, saved?.failedCases?.length),
     durationMs: firstNumber(detail?.durationMs),
+    faithfulness: firstNumber(saved?.faithfulness),
+    correctness: firstNumber(saved?.correctness),
   }
 }
 

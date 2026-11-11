@@ -37,4 +37,10 @@ public class EvalCase {
      */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private List<String> groundTruthChunkIds;
+
+    /**
+     * 标准答案。旧 golden-set 没有该字段时为 null，不参与检索打分。
+     */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String groundTruthAnswer;
 }

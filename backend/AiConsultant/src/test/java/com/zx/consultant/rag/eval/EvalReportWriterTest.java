@@ -60,6 +60,20 @@ class EvalReportWriterTest {
         assertTrue(text.contains("Knowledge Id: N/A"));
         assertTrue(text.contains("Knowledge: N/A"));
         assertFalse(text.contains("Rerank Fallback"));
+        assertFalse(text.contains("Faithfulness"));
+        assertFalse(text.contains("Correctness"));
+    }
+
+    @Test
+    void generationLinesAppearOnlyWhenScored() {
+        EvalResult result = summary();
+        result.setFaithfulness(0.85d);
+        result.setCorrectness(0.5d);
+
+        String text = new EvalReportWriter(null).render(result, null);
+
+        assertTrue(text.contains("Faithfulness: 85%"));
+        assertTrue(text.contains("Correctness: 50%"));
     }
 
     private static EvalResult summary() {

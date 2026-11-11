@@ -33,4 +33,18 @@ public class EvalResult {
      */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private Integer rerankFallbackCount;
+
+    /**
+     * 有忠实度分数的用例的平均值。
+     * 生成评测关闭、或没有任何可打分的题时为 null。
+     */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private Double faithfulness;
+
+    /**
+     * 有正确性分数的用例的平均值，检索为空的 0 分计入。
+     * 生成评测关闭、或没有任何可打分的题时为 null。
+     */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private Double correctness;
 }

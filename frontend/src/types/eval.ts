@@ -48,6 +48,12 @@ export interface EvalCaseResult {
   bm25Query?: string | null
   expectedHits?: ExpectedDocHit[] | null
   missStage?: string | null
+  /** 旧快照或生成评测关闭时没有这些字段 */
+  answer?: string | null
+  faithfulness?: number | null
+  faithfulnessReason?: string | null
+  correctness?: number | null
+  correctnessReason?: string | null
 }
 
 /** 单个期望文档在各检索阶段的命中。空排名表示该阶段没有出现 */
@@ -72,6 +78,9 @@ export interface EvalResult {
   cases?: EvalCaseResult[]
   avgLatencyMs?: number | null
   p95LatencyMs?: number | null
+  /** 生成评测关闭或旧快照没有这两项时为 null */
+  faithfulness?: number | null
+  correctness?: number | null
 }
 
 /**
@@ -200,4 +209,9 @@ export interface EvalCaseView {
   failed: boolean
   recall: number | null
   mrr: number | null
+  answer: string | null
+  faithfulness: number | null
+  faithfulnessReason: string | null
+  correctness: number | null
+  correctnessReason: string | null
 }

@@ -44,11 +44,14 @@ class EvalCaseParseTest {
             assertEquals(textValues(raw.get("expectedDocIds")), evalCase.getExpectedDocIds());
             assertNull(evalCase.getSourceCaseId());
             assertNull(evalCase.getGroundTruthChunkIds());
+            assertEquals(raw.get("groundTruthAnswer").asText(), evalCase.getGroundTruthAnswer());
+            assertFalse(evalCase.getGroundTruthAnswer().isBlank());
         }
 
         String serialized = objectMapper.writeValueAsString(cases.get(0));
         assertFalse(serialized.contains("sourceCaseId"));
         assertFalse(serialized.contains("groundTruthChunkIds"));
+        assertTrue(serialized.contains("groundTruthAnswer"));
         assertTrue(serialized.contains("expectedDocIds"));
     }
 
@@ -158,6 +161,7 @@ class EvalCaseParseTest {
             assertFalse(evalCase.getQuery().isBlank());
             assertNull(evalCase.getExpectedDocIds());
             assertChunkIds(raw.get("groundTruthChunkIds"), evalCase.getGroundTruthChunkIds());
+            assertEquals(raw.get("groundTruthAnswer").asText(), evalCase.getGroundTruthAnswer());
         }
 
         EvalCase first = cases.get(0);

@@ -15,6 +15,7 @@ import java.util.Set;
 import com.zx.consultant.common.utils.BaseContext;
 import com.zx.consultant.knowledge.entity.KnowledgeBase;
 import com.zx.consultant.knowledge.mapper.KnowledgeBaseMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -44,6 +45,16 @@ public class RagEvalService {
     private final RagEvalRunService ragEvalRunService;
     private final KnowledgeBaseMapper knowledgeBaseMapper;
     private final RagEvalRetrievalTraceService retrievalTraceService;
+
+    /**
+     * 生成评测。测试里手工构造检索服务时可以为空，空和开关关闭都不调用模型。
+     */
+    private GenerationEvalService generationEvalService;
+
+    @Autowired(required = false)
+    public void setGenerationEvalService(GenerationEvalService generationEvalService) {
+        this.generationEvalService = generationEvalService;
+    }
 
     /** 检索评测实际使用的向量模型，不参与指标计算 */
     @Value("${langchain4j.open-ai.embedding-model.model-name:text-embedding-v3}")
@@ -210,6 +221,11 @@ public class RagEvalService {
         List<RagEvalRetrievalTrace> traces = new ArrayList<>();
         int rerankFallbackCount = 0;
         boolean rerankOn = Boolean.TRUE.equals(rerankEnabled);
+        boolean generationOn = generationOn();
+        double faithfulnessSum = 0.0d;
+        int faithfulnessCount = 0;
+        double correctnessSum = 0.0d;
+        int correctnessCount = 0;
 
         for (EvalCase evalCase : cases) {
             String query = evalCase.getQuery();
@@ -257,6 +273,18 @@ public class RagEvalService {
             if (evalCase.getId() != null) {
                 traces.addAll(RetrievalTraceSnapshots.toRows(null, evalCase.getId(), trace, retrievedDocIds));
             }
+            // 生成用同一次 finalTopK，失败只让这题的生成字段为空。检索耗时已经在上面记完
+            if (generationOn) {
+                attachGeneration(evalCase, chunks, caseResult);
+                if (caseResult.getFaithfulness() != null) {
+                    faithfulnessSum += caseResult.getFaithfulness();
+                    faithfulnessCount++;
+                }
+                if (caseResult.getCorrectness() != null) {
+                    correctnessSum += caseResult.getCorrectness();
+                    correctnessCount++;
+                }
+            }
             caseResults.add(caseResult);
         }
 
@@ -273,7 +301,34 @@ public class RagEvalService {
         if (rerankOn) {
             result.setRerankFallbackCount(rerankFallbackCount);
         }
+        if (generationOn && faithfulnessCount > 0) {
+            result.setFaithfulness(faithfulnessSum / faithfulnessCount);
+        }
+        if (generationOn && correctnessCount > 0) {
+            result.setCorrectness(correctnessSum / correctnessCount);
+        }
         return new CalculatedEval(result, traces);
+    }
+
+    /**
+     * 原题直接生成，不走改写、记忆和 SSE。单题失败不影响其余题和检索指标。
+     */
+    private void attachGeneration(EvalCase evalCase, List<RetrievedChunk> chunks, EvalCaseResult caseResult) {
+        try {
+            GenerationEvalResult generated = generationEvalService.evaluate(
+                    evalCase.getQuery(), chunks, evalCase.getGroundTruthAnswer());
+            caseResult.setAnswer(generated.getAnswer());
+            caseResult.setFaithfulness(generated.getFaithfulness());
+            caseResult.setFaithfulnessReason(generated.getFaithfulnessReason());
+            caseResult.setCorrectness(generated.getCorrectness());
+            caseResult.setCorrectnessReason(generated.getCorrectnessReason());
+        } catch (RuntimeException e) {
+            log.warn("生成评测失败, caseId={}", evalCase.getId(), e);
+        }
+    }
+
+    private boolean generationOn() {
+        return generationEvalService != null && generationEvalService.generationEnabled();
     }
 
     /**
@@ -378,6 +433,14 @@ public class RagEvalService {
         config.put("rerankEnabled", Boolean.TRUE.equals(rerankEnabled));
         config.put("rerankModel", rerankModel);
         config.put("goldenSetPath", datasetSource == RagEvalDatasetSource.GOLDEN_SET ? goldenSetPath : null);
+        if (generationEvalService != null) {
+            config.put("generationEnabled", generationEvalService.generationEnabled());
+            config.put("judgePromptVersion", generationEvalService.judgePromptVersion());
+            if (generationEvalService.generationEnabled()) {
+                config.put("generationModel", generationEvalService.generationModelName());
+                config.put("judgeModel", generationEvalService.judgeModelName());
+            }
+        }
         return config;
     }
 

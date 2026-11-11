@@ -62,6 +62,7 @@ function toCaseViewFromResult(item: EvalCaseResult): EvalCaseView {
     failed: item.hit === false,
     recall: item.recall ?? null,
     mrr: item.mrr ?? null,
+    ...generationFields(item),
   }
 }
 
@@ -81,6 +82,7 @@ function toCaseView(detail: EvalRunDetail, item: EvalCase | EvalFailedCase): Eva
     failed: full ? full.hit === false : Boolean(failedDetail),
     recall: full?.recall ?? (failedDetail ? 0 : null),
     mrr: full?.mrr ?? (failedDetail ? 0 : null),
+    ...generationFields(full),
   }
 }
 
@@ -100,6 +102,7 @@ function enrichCaseView(detail: EvalRunDetail, row: EvalCaseView): EvalCaseView 
       failed: true,
       recall: 0,
       mrr: 0,
+      ...generationFields(undefined),
     }
   }
   return { ...row }
@@ -127,6 +130,22 @@ export function isGroundTruthDoc(row: EvalCaseView, docId: string) {
 export function chunkIdText(value: number | string | null | undefined): string {
   if (value == null) return ''
   return String(value).trim()
+}
+
+function generationFields(item?: {
+  answer?: string | null
+  faithfulness?: number | null
+  faithfulnessReason?: string | null
+  correctness?: number | null
+  correctnessReason?: string | null
+} | null): Pick<EvalCaseView, 'answer' | 'faithfulness' | 'faithfulnessReason' | 'correctness' | 'correctnessReason'> {
+  return {
+    answer: item?.answer ?? null,
+    faithfulness: item?.faithfulness ?? null,
+    faithfulnessReason: item?.faithfulnessReason ?? null,
+    correctness: item?.correctness ?? null,
+    correctnessReason: item?.correctnessReason ?? null,
+  }
 }
 
 function emptyChunkFields(): Pick<EvalCaseView, 'chunkScored' | 'groundTruthChunkIds' | 'retrievedChunkIds' | 'scoreNote'> {

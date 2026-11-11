@@ -34,6 +34,14 @@
         <div class="eval-page__metric-value">{{ formatLatency(metrics.durationMs) }}</div>
         <div class="eval-page__metric-label">整次耗时</div>
       </div>
+      <div class="eval-page__metric">
+        <div class="eval-page__metric-value">{{ formatGenerationRate(metrics.faithfulness) }}</div>
+        <div class="eval-page__metric-label">忠实度</div>
+      </div>
+      <div class="eval-page__metric">
+        <div class="eval-page__metric-value">{{ formatGenerationRate(metrics.correctness) }}</div>
+        <div class="eval-page__metric-label">答案正确性</div>
+      </div>
     </div>
     <p v-if="!detail.result && !detail.errorMessage" class="eval-page__note eval-page__note--after">
       该记录没有评测结果
@@ -45,6 +53,11 @@
 import { computed } from 'vue'
 import type { EvalRunDetail } from '@/types/eval'
 import { formatCount, formatLatency, formatMrr, formatRate, savedMetrics } from './format'
+
+function formatGenerationRate(value?: number | null) {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return '—'
+  return formatRate(value)
+}
 
 const props = defineProps<{
   detail: EvalRunDetail
