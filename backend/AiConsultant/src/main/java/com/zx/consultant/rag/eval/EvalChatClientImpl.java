@@ -15,8 +15,9 @@ import org.springframework.stereotype.Component;
  * 评测模型客户端。
  * <p>
  * 被测模型使用主模型同一套接口和密钥，模型名默认 qwen-plus。
- * 裁判使用副模型。qwen-turbo 已下架，当前副模型是 qwen3.8-flash，接口仍是 compatible-mode。
- * 两个客户端都在这里单独构建，温度固定为 0，不重试，也不在失败时互相降级。
+ * 忠实度裁判走 DeepSeek，正确性裁判走副模型 qwen3.8-flash。
+ * 三个客户端都在这里单独构建，温度固定为 0，不重试，失败时也不互相降级。
+ * 线上对话用的主模型和副模型不在这里修改。
  */
 @Component
 public class EvalChatClientImpl implements EvalChatClient {
@@ -26,25 +27,43 @@ public class EvalChatClientImpl implements EvalChatClient {
 
     private final boolean generationEnabled;
     private final String generationModelName;
-    private final String judgeModelName;
+    private final String faithfulnessJudgeModelName;
+    private final String correctnessJudgeModelName;
     private final ChatModel generationModel;
-    private final ChatModel judgeModel;
+    private final ChatModel faithfulnessJudgeModel;
+    private final ChatModel correctnessJudgeModel;
 
     public EvalChatClientImpl(
             @Value("${app.rag.eval.generation-enabled:false}") boolean generationEnabled,
             @Value("${app.rag.eval.generation-model:qwen-plus}") String generationModelName,
             @Value("${langchain4j.open-ai.chat-model.base-url}") String generationBaseUrl,
             @Value("${langchain4j.open-ai.chat-model.api-key}") String generationApiKey,
-            @Value("${app.llm.secondary.model-name}") String judgeModelName,
-            @Value("${app.llm.secondary.base-url}") String judgeBaseUrl,
-            @Value("${app.llm.secondary.api-key}") String judgeApiKey,
+            @Value("${app.llm.secondary.model-name}") String correctnessJudgeModelName,
+            @Value("${app.llm.secondary.base-url}") String correctnessBaseUrl,
+            @Value("${app.llm.secondary.api-key}") String correctnessApiKey,
+            @Value("${app.rag.eval.faithfulness-judge.model-name:deepseek-flash}") String faithfulnessJudgeModelName,
+            @Value("${app.rag.eval.faithfulness-judge.base-url:https://api.deepseek.com}") String faithfulnessBaseUrl,
+            @Value("${app.rag.eval.faithfulness-judge.api-key:${DEEPSEEK_API_KEY:}}") String faithfulnessApiKey,
             @Value("${app.llm.secondary.log-requests:true}") boolean logRequests,
             @Value("${app.llm.secondary.log-responses:true}") boolean logResponses) {
         this.generationEnabled = generationEnabled;
         this.generationModelName = generationModelName;
-        this.judgeModelName = judgeModelName;
+        this.faithfulnessJudgeModelName = faithfulnessJudgeModelName;
+        this.correctnessJudgeModelName = correctnessJudgeModelName;
         this.generationModel = build(generationBaseUrl, generationApiKey, generationModelName, logRequests, logResponses);
-        this.judgeModel = build(judgeBaseUrl, judgeApiKey, judgeModelName, logRequests, logResponses);
+        this.correctnessJudgeModel = build(
+                correctnessBaseUrl, correctnessApiKey, correctnessJudgeModelName, logRequests, logResponses);
+        // 只有忠实度裁判需要关掉 DeepSeek 的思考模式
+        this.faithfulnessJudgeModel = OpenAiChatModel.builder()
+                .baseUrl(faithfulnessBaseUrl)
+                .apiKey(faithfulnessApiKey)
+                .modelName(faithfulnessJudgeModelName)
+                .temperature(EVAL_TEMPERATURE)
+                .maxRetries(0)
+                .logRequests(logRequests)
+                .logResponses(logResponses)
+                .httpClientBuilder(new ThinkingDisabledHttpClient.Builder())
+                .build();
     }
 
     @Override
@@ -53,8 +72,13 @@ public class EvalChatClientImpl implements EvalChatClient {
     }
 
     @Override
-    public String judgeModelName() {
-        return judgeModelName;
+    public String faithfulnessJudgeModelName() {
+        return faithfulnessJudgeModelName;
+    }
+
+    @Override
+    public String correctnessJudgeModelName() {
+        return correctnessJudgeModelName;
     }
 
     @Override
@@ -64,9 +88,15 @@ public class EvalChatClientImpl implements EvalChatClient {
     }
 
     @Override
-    public String judge(List<ChatMessage> messages) {
+    public String judgeFaithfulness(List<ChatMessage> messages) {
         ensureEnabled();
-        return complete(judgeModel, judgeModelName, messages);
+        return complete(faithfulnessJudgeModel, faithfulnessJudgeModelName, messages);
+    }
+
+    @Override
+    public String judgeCorrectness(List<ChatMessage> messages) {
+        ensureEnabled();
+        return complete(correctnessJudgeModel, correctnessJudgeModelName, messages);
     }
 
     /** 供测试确认温度写在评测客户端上，而不是线上 Bean */
@@ -74,8 +104,12 @@ public class EvalChatClientImpl implements EvalChatClient {
         return generationModel.defaultRequestParameters();
     }
 
-    ChatRequestParameters judgeParameters() {
-        return judgeModel.defaultRequestParameters();
+    ChatRequestParameters faithfulnessParameters() {
+        return faithfulnessJudgeModel.defaultRequestParameters();
+    }
+
+    ChatRequestParameters correctnessParameters() {
+        return correctnessJudgeModel.defaultRequestParameters();
     }
 
     private void ensureEnabled() {

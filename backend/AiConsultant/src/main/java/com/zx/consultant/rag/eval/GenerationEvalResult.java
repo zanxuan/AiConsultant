@@ -23,5 +23,9 @@ public class GenerationEvalResult {
 
     private String generationModel;
 
-    private String judgeModel;
+    /** 打忠实度的模型。未打分时也记录，方便和正确性裁判对照 */
+    private String faithfulnessJudgeModel;
+
+    /** 打正确性的模型 */
+    private String correctnessJudgeModel;
 }

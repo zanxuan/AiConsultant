@@ -40,6 +40,11 @@ app:
       generation-enabled: true
       # 被测模型。评测客户端单独创建，不使用线上 ChatModel Bean
       generation-model: qwen-plus
+      # 忠实度裁判。正确性裁判仍用下面的副模型，不改线上降级
+      faithfulness-judge:
+        base-url: https://api.deepseek.com
+        api-key: ${DEEPSEEK_API_KEY:}
+        model-name: deepseek-flash
   summary:
     short-text-threshold: 3000   # 与 document.file_size（字节）比较，不超过则直接加载原文总结
     group-size: 5                # 阶段性总结每次合并的已有块数

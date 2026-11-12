@@ -2,9 +2,10 @@ package com.zx.consultant.orchestrator;
 
 import com.zx.consultant.chat.service.CasualChatService;
 import com.zx.consultant.orchestrator.enums.Intent;
-import com.zx.consultant.orchestrator.enums.SummaryScope;
+import com.zx.consultant.orchestrator.enums.SummaryTool;
 import com.zx.consultant.orchestrator.service.ClarificationReplyClassifier;
 import com.zx.consultant.orchestrator.service.IntentService;
+import com.zx.consultant.orchestrator.service.SummaryPlanner;
 import com.zx.consultant.pending.enums.PendingTaskStatus;
 import com.zx.consultant.pending.enums.PendingTaskType;
 import com.zx.consultant.pending.model.PendingTask;
@@ -21,13 +22,15 @@ import java.util.List;
 
 
 /**
- *  根据意图分发任务。存在 PendingTask 时先判断本轮是澄清回答还是新问题，不把 conversation 锁进 Summary 模式。
+ * 根据意图分发任务。存在 PendingTask 时先判断本轮是澄清回答还是新问题，不把 conversation 锁进 Summary 模式。
+ * SUMMARY 只作为一个入口，范围由 SummaryPlanner 选一次工具；澄清恢复不经过 planner。
  */
 @Slf4j
 @Service
 public class Orchestrator {
     
     private final IntentService intentService;
+    private final SummaryPlanner summaryPlanner;
     private final WorkflowService workflowService;
     private final DocumentSummaryService documentSummaryService;
     private final KnowledgeBaseSummaryService knowledgeBaseSummaryService;
@@ -36,6 +39,7 @@ public class Orchestrator {
     private final ClarificationReplyClassifier clarificationReplyClassifier;
 
     public Orchestrator(IntentService intentService,
+                        SummaryPlanner summaryPlanner,
                         WorkflowService workflowService,
                         DocumentSummaryService documentSummaryService,
                         KnowledgeBaseSummaryService knowledgeBaseSummaryService,
@@ -43,6 +47,7 @@ public class Orchestrator {
                         PendingTaskService pendingTaskService,
                         ClarificationReplyClassifier clarificationReplyClassifier) {
         this.intentService = intentService;
+        this.summaryPlanner = summaryPlanner;
         this.workflowService = workflowService;
         this.documentSummaryService = documentSummaryService;
         this.knowledgeBaseSummaryService = knowledgeBaseSummaryService;
@@ -96,19 +101,9 @@ public class Orchestrator {
         if (intentResult.getIntent() == Intent.RAG_QA) {
             return workflowService.run(context);
         }
-        //总结链路
+        // 总结只有一个入口，范围交给工具选择
         if (intentResult.getIntent() == Intent.SUMMARY) {
-            //走单文档总结链路
-            if (intentResult.getSummaryScope() == SummaryScope.DOCUMENT) {
-                //调用总结服务生成总结结果
-                WorkflowContext result = documentSummaryService.summarize(context);
-                //完成总结
-                return finishDocumentSummary(result, context.getOriginalQuery());
-            }
-            //走多/长文档总结链路
-            if (intentResult.getSummaryScope() == SummaryScope.KNOWLEDGE_BASE) {
-                return knowledgeBaseSummaryService.summarize(context);
-            }
+            return dispatchSummary(context);
         }
         //聊天链路
         return casualChatService.execute(context);
@@ -116,7 +111,20 @@ public class Orchestrator {
 
 
     /**
-     * 用原始总结请求 + 本轮澄清回答恢复 Summary，不把文件名单独当成新的 Chat/RAG。
+     * 已确认是总结后，只选一次工具。无法解析时 planner 回退单文档，避免误跑整库总结。
+     */
+    private WorkflowContext dispatchSummary(WorkflowContext context) {
+        SummaryTool tool = summaryPlanner.choose(context.getOriginalQuery());
+        log.info("SUMMARY 选择 tool: {}", tool);
+        if (tool == SummaryTool.SUMMARIZE_KNOWLEDGE_BASE) {
+            return knowledgeBaseSummaryService.summarize(context);
+        }
+        WorkflowContext result = documentSummaryService.summarize(context);
+        return finishDocumentSummary(result, context.getOriginalQuery());
+    }
+
+    /**
+     * 用原始总结请求 + 本轮澄清回答恢复单文档总结，不把文件名单独当成新的 Chat/RAG，也不再选工具。
      */
     private WorkflowContext resumeSummaryDocument(WorkflowContext context,
                                                   PendingTask pending,

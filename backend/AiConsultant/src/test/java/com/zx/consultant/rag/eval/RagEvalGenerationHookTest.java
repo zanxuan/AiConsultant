@@ -80,7 +80,8 @@ class RagEvalGenerationHookTest {
         assertEquals(true, runs.config.get("generationEnabled"));
         assertEquals("v1", runs.config.get("judgePromptVersion"));
         assertEquals("qwen-plus", runs.config.get("generationModel"));
-        assertEquals("qwen3.8-flash", runs.config.get("judgeModel"));
+        assertEquals("deepseek-flash", runs.config.get("faithfulnessJudgeModel"));
+        assertEquals("qwen3.8-flash", runs.config.get("correctnessJudgeModel"));
     }
 
     private static EvalResult run(ScriptedClient client, RecordingRunService runs, boolean enabled) {
@@ -155,7 +156,12 @@ class RagEvalGenerationHookTest {
         }
 
         @Override
-        public String judgeModelName() {
+        public String faithfulnessJudgeModelName() {
+            return "deepseek-flash";
+        }
+
+        @Override
+        public String correctnessJudgeModelName() {
             return "qwen3.8-flash";
         }
 
@@ -176,16 +182,17 @@ class RagEvalGenerationHookTest {
         }
 
         @Override
-        public String judge(List<ChatMessage> messages) {
-            String text = userText(messages);
-            if (text.contains("【标准答案】")) {
-                calls.add("judge:correct");
-                correctnessText = text;
-                return "{\"score\": 1, \"reason\": \"与标准答案一致。\"}";
-            }
+        public String judgeFaithfulness(List<ChatMessage> messages) {
             calls.add("judge:faith");
-            faithfulnessText = text;
+            faithfulnessText = userText(messages);
             return "{\"score\": 0.85, \"reason\": \"依据了资料。\"}";
+        }
+
+        @Override
+        public String judgeCorrectness(List<ChatMessage> messages) {
+            calls.add("judge:correct");
+            correctnessText = userText(messages);
+            return "{\"score\": 1, \"reason\": \"与标准答案一致。\"}";
         }
 
         private static String userText(List<ChatMessage> messages) {

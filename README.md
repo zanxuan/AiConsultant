@@ -29,7 +29,7 @@
 
 ### 2. RAG 混合检索
 
-采用 **Vector Retrieval + BM25 + RRF** 的混合检索方案：
+采用 **Vector Retrieval + BM25 + RRF + Rerank** 的混合检索方案：
 
 - 向量检索：基于 `text-embedding-v3` 生成 Embedding，通过 Redis Vector Search 检索语义相关内容。
 - BM25 检索：基于 RediSearch 构建关键词检索索引，并针对中文检索进行优化。
@@ -37,6 +37,7 @@
 - Metadata Filter：两路检索均按照 `knowledgeId` 进行知识库范围过滤。
 - 融合后分数过滤：先计算 RRF 分数，再根据原始向量分数和 BM25 分数判断是否保留结果。
 - 默认在线召回 Top10 条结果，评测使用前 5 条结果计分。
+- Rerank：对截断后的 TopK 调用 DashScope `gte-rerank-v2` 重排。失败、超时或候选不足 2 条时保留 RRF 顺序，不改写 RRF 分数。
 
 ### 3. Intent Orchestration 与 Workflow
 
@@ -45,12 +46,13 @@
 | Intent    | 处理方式             |
 | --------- | ---------------- |
 | `RAG_QA`  | 检索知识库并生成带引用的回答   |
-| `SUMMARY` | 根据总结范围执行文档或知识库总结 |
+| `SUMMARY` | 进入总结入口，再选择单文档或整库总结 |
 | `CHAT`    | 普通对话，不执行知识库检索    |
 
 其中：
 
-- `SUMMARY` 支持 `DOCUMENT` 和 `KNOWLEDGE_BASE` 两种总结范围。
+- `SUMMARY` 不再在意图层区分范围。进入后选择 `summarize_document` 或 `summarize_knowledge_base`。
+- 询问知识库主题或有哪些内容走 `RAG_QA`；只有明确要求总结整个知识库才走整库总结。
 - `SUMMARY_DOCUMENT` 是待澄清任务类型，不是独立 Intent。
 
 具体处理方式：
@@ -89,6 +91,8 @@
 - MRR
 - Average Latency
 - P95 Latency
+- Faithfulness（忠实度）
+- Correctness（答案正确性）
 
 **指标口径按测试集粒度区分：**
 
@@ -104,6 +108,8 @@
 - 文档 ID 不参与这套 Chunk 级命中判断。
 
 因此，文档级 Golden Set 中 Hit@5 与 Recall@5 的结果相同；Chunk 级测试集中的两项指标则可能不同。
+
+生成评测在 `app.rag.eval.generation-enabled=true` 时随检索评测一起执行。它使用原题和本次最终召回结果生成答案，不经过 Query Rewrite。忠实度判断答案中的事实能否在检索上下文中找到依据，答案正确性判断答案是否覆盖标准答案。检索为空时不调用模型。
 
 ---
 
@@ -139,6 +145,9 @@
         └────┬────┘
              ▼
          RRF Fusion
+             │
+             ▼
+          Rerank
 ```
 
 ### RAG 核心流程
@@ -160,6 +169,9 @@ RRF Fusion
     |
     ▼
 Score Filtering
+    |
+    ▼
+Rerank
     |
     ▼
 Context Assembly
@@ -230,6 +242,10 @@ Memory 在 Workflow 执行前后完成上下文加载与持久化，不作为 RA
 
 双路都有分数时，不能因为其中一路低于阈值就直接丢弃结果。
 
+**Rerank**
+
+分数过滤并截断 TopK 之后，调用 DashScope `gte-rerank-v2` 对候选重排。`finalScore` 仍是 RRF 分数。请求失败、超时、返回条数对不上，或候选不足 2 条时，保留 RRF 顺序。当前 `app.rag.retriever.rerank.enabled` 为 `true`，超时 8 秒。发生回退时，评测报告记录 Rerank Fallback 次数，该题仍按 RRF 顺序计分。
+
 查询组词的对照实验和指标变化见 `docs/BM25查询实验报告.md`。
 
 ### 2. Intent Orchestration 与 PendingTask
@@ -246,7 +262,7 @@ Memory 在 Workflow 执行前后完成上下文加载与持久化，不作为 RA
 
 PendingTask 存储于 Redis，设置 TTL 为 30 分钟。用户补充信息后，可以继续执行原任务。
 
-总结请求由 `SUMMARY` 处理，范围包括 `DOCUMENT` 和 `KNOWLEDGE_BASE`；`SUMMARY_DOCUMENT` 用于标识待澄清的文档总结任务类型。
+总结请求由 `SUMMARY` 处理。进入后选择 `summarize_document` 或 `summarize_knowledge_base`；`SUMMARY_DOCUMENT` 用于标识待澄清的文档总结任务类型。询问知识库是做什么的、有哪些内容时走 `RAG_QA`。
 
 ### 3. SSE 异步任务与流式响应
 
@@ -338,6 +354,8 @@ GET /api/v1/traces/{traceId}
 | MRR         | 首个相关结果的倒数排名                |
 | Avg Latency | 平均检索耗时                     |
 | P95 Latency | 95 分位检索耗时                  |
+| Faithfulness | 答案中的事实能否在本次检索上下文中找到依据 |
+| Correctness | 答案是否覆盖标准答案中的事实          |
 
 Hit@5 和 Recall@5 的计算方式根据测试集粒度区分：
 
@@ -386,6 +404,8 @@ GET /api/v1/eval/runs/{id}
 | 检索过程 | Query、Hybrid Retrieval、召回结果、Ground Truth | 查看一次检索执行的步骤摘要      |
 | 检索链路 | 向量排名、BM25 排名、RRF、过滤原因、最终排名               | 追踪逐 Chunk 的检索与排序过程 |
 
+页签上方展示该题的生成答案、忠实度、答案正确性及裁判理由。
+
 **检索结果**
 
 这是最终召回与命中判断的展示区域：
@@ -420,18 +440,15 @@ GET /api/v1/eval/runs/{id}
 
 **Badcase 诊断**
 
-支持通过 `--diagnose-badcase` 对固定 Golden Set 中指定用例进行诊断：
+评测页面看的是一次正式运行。要单独追查几道一直未命中的题，启动后端时加上 `--diagnose-badcase`。
 
-- Case 16
-- Case 29
-- Case 34
-- Case 37
+这条命令只重跑 Golden Set 里预先标出的未命中用例，把每题的向量召回、BM25 召回、RRF 融合、过滤原因，以及期望文档在哪一阶段掉出 TopK，写到 `docs/eval/result/badcase-recall-diagnosis.json`。它不改检索阈值，也不写入 `rag_eval_run`，所以不会出现在评测历史里。具体查哪几道题写在诊断代码里，会随测试集变化。
 
-该诊断流程用于分析指定 Badcase，不写入正式评测历史。
+青屿空港是评测用的样例知识库，相关测试材料、测试集和排查记录在 `docs/eval/`。
 
-青屿空港相关测试材料、测试集和排查文档保存在 `docs/eval/`。
+**生成质量**
 
-当前评测重点是检索效果，不对 LLM 最终生成质量进行评估。
+生成评测和检索评测一起跑，由 `app.rag.eval.generation-enabled` 控制，当前为开启。被测模型使用 `qwen-plus`，用原题和本次 `finalTopK` 按线上 RAG 提示词作答，不经过 Query Rewrite。忠实度由 `deepseek-flash` 只根据检索上下文打分；答案正确性由 `qwen3.8-flash` 对照标准答案打分，不把检索资料交给裁判。检索为空时不调用模型，忠实度留空，正确性记为 0。没有标准答案时只评忠实度。裁判失败时保留原因，对应分数留空。
 
 ---
 
@@ -449,6 +466,7 @@ GET /api/v1/eval/runs/{id}
 | LLM Framework       | LangChain4j              |
 | LLM                 | DashScope Qwen           |
 | Embedding           | text-embedding-v3        |
+| Rerank              | DashScope gte-rerank-v2  |
 | Vector Database     | Redis Stack / RediSearch |
 | Full-text Search    | RediSearch BM25          |
 | Relational Database | MySQL                    |
@@ -535,6 +553,7 @@ cp .env.example .env
 ```
 API_KEY=your_dashscope_api_key
 EMBEDDING_API_KEY=your_embedding_api_key
+DEEPSEEK_API_KEY=your_deepseek_api_key
 
 DB_USERNAME=your_database_username
 DB_PASSWORD=your_database_password
@@ -542,7 +561,7 @@ DB_PASSWORD=your_database_password
 JWT_SECRET_KEY=your_jwt_secret
 ```
 
-项目通过 `LocalDotenvBootstrap` 加载本地 `.env` 文件。
+项目通过 `LocalDotenvBootstrap` 加载本地 `.env` 文件。`DEEPSEEK_API_KEY` 只用于生成评测的忠实度裁判，不跑生成评测时可以留空。
 
 本地开发默认使用 `application.yml`，不需要设置 `SPRING_PROFILES_ACTIVE=prod`。
 
@@ -673,6 +692,8 @@ GET /api/v1/eval/runs/{id}/cases/{caseId}/retrieval-trace
 
 ### V3 — Planned
 
+- [x] gte-rerank 重排序，失败回退 RRF 顺序
+- [x] 生成评测：忠实度与答案正确性
 - [ ] Long-term Memory
 - [ ] Semantic Chunking
 - [ ] Hybrid Retrieval Optimization
@@ -687,5 +708,5 @@ GET /api/v1/eval/runs/{id}/cases/{caseId}/retrieval-trace
 
 本项目主要用于探索企业知识库问答系统中的 RAG 工程实践，重点包括混合检索、任务编排、异步交互、可观测性和检索评测。
 
-项目中的评测数据用于检索效果分析，测试结果受测试集内容、文档切块版本及检索配置影响。不同测试集或不同切块版本之间的结果不应直接视为同一评测基准。
+项目中的评测数据用于检索效果和生成质量分析，测试结果受测试集内容、文档切块版本及检索配置影响。不同测试集或不同切块版本之间的结果不应直接视为同一评测基准。
 

@@ -76,8 +76,12 @@ public class GenerationEvalService {
         return evalChatClient.generationModelName();
     }
 
-    public String judgeModelName() {
-        return evalChatClient.judgeModelName();
+    public String faithfulnessJudgeModelName() {
+        return evalChatClient.faithfulnessJudgeModelName();
+    }
+
+    public String correctnessJudgeModelName() {
+        return evalChatClient.correctnessJudgeModelName();
     }
 
     /**
@@ -104,7 +108,7 @@ public class GenerationEvalService {
         GenerationEvalResult result = new GenerationEvalResult();
         result.setAnswer(answer);
         result.setGenerationModel(evalChatClient.generationModelName());
-        result.setJudgeModel(evalChatClient.judgeModelName());
+        setJudgeModels(result);
         fillFaithfulness(result, prompt.getContext(), answer);
         fillCorrectness(result, query, answer, groundTruthAnswer);
         return result;
@@ -119,8 +123,13 @@ public class GenerationEvalService {
         result.setCorrectness(0d);
         result.setCorrectnessReason(EMPTY_RETRIEVAL_REASON);
         result.setGenerationModel(evalChatClient.generationModelName());
-        result.setJudgeModel(evalChatClient.judgeModelName());
+        setJudgeModels(result);
         return result;
+    }
+
+    private void setJudgeModels(GenerationEvalResult result) {
+        result.setFaithfulnessJudgeModel(evalChatClient.faithfulnessJudgeModelName());
+        result.setCorrectnessJudgeModel(evalChatClient.correctnessJudgeModelName());
     }
 
     private void fillFaithfulness(GenerationEvalResult result, String context, String answer) {
@@ -132,7 +141,7 @@ public class GenerationEvalService {
                 %s
                 """.formatted(context == null ? "" : context, answer);
         try {
-            JudgeScoreParser.JudgeScore score = judgeScoreParser.parse(evalChatClient.judge(List.of(
+            JudgeScoreParser.JudgeScore score = judgeScoreParser.parse(evalChatClient.judgeFaithfulness(List.of(
                     SystemMessage.from(FAITHFULNESS_SYSTEM),
                     UserMessage.from(user))));
             result.setFaithfulness(score.score());
@@ -162,7 +171,7 @@ public class GenerationEvalService {
                 %s
                 """.formatted(query, groundTruthAnswer.trim(), answer);
         try {
-            JudgeScoreParser.JudgeScore score = judgeScoreParser.parse(evalChatClient.judge(List.of(
+            JudgeScoreParser.JudgeScore score = judgeScoreParser.parse(evalChatClient.judgeCorrectness(List.of(
                     SystemMessage.from(CORRECTNESS_SYSTEM),
                     UserMessage.from(user))));
             result.setCorrectness(score.score());

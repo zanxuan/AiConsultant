@@ -51,7 +51,8 @@ class GenerationEvalServiceTest {
         assertEquals(1.0d, result.getCorrectness());
         assertEquals("与标准答案一致。", result.getCorrectnessReason());
         assertEquals("qwen-plus", result.getGenerationModel());
-        assertEquals("qwen3.8-flash", result.getJudgeModel());
+        assertEquals("deepseek-flash", result.getFaithfulnessJudgeModel());
+        assertEquals("qwen3.8-flash", result.getCorrectnessJudgeModel());
 
         assertEquals(3, client.calls.size());
         assertEquals("generate", client.calls.get(0).kind);
@@ -60,13 +61,13 @@ class GenerationEvalServiceTest {
         assertTrue(generationText.contains("青屿空港货运枢纽的内部代号是什么？"));
         assertFalse(generationText.contains("【标准答案】"));
 
-        assertEquals("judge", client.calls.get(1).kind);
+        assertEquals("judge-faith", client.calls.get(1).kind);
         String faithfulnessText = userText(client.calls.get(1).messages);
         assertTrue(faithfulnessText.contains("【参考资料】"));
         assertTrue(faithfulnessText.contains("内部代号是 QYH-6。"));
         assertFalse(faithfulnessText.contains("【标准答案】"));
 
-        assertEquals("judge", client.calls.get(2).kind);
+        assertEquals("judge-correct", client.calls.get(2).kind);
         String correctnessText = userText(client.calls.get(2).messages);
         assertTrue(correctnessText.contains("【标准答案】"));
         assertTrue(correctnessText.contains("内部代号为 QYH-6。"));
@@ -98,7 +99,7 @@ class GenerationEvalServiceTest {
         assertEquals(GenerationEvalService.NO_REFERENCE_REASON, result.getCorrectnessReason());
         assertEquals(2, client.calls.size());
         assertEquals("generate", client.calls.get(0).kind);
-        assertEquals("judge", client.calls.get(1).kind);
+        assertEquals("judge-faith", client.calls.get(1).kind);
     }
 
     @Test
@@ -173,7 +174,12 @@ class GenerationEvalServiceTest {
         }
 
         @Override
-        public String judgeModelName() {
+        public String faithfulnessJudgeModelName() {
+            return "deepseek-flash";
+        }
+
+        @Override
+        public String correctnessJudgeModelName() {
             return "qwen3.8-flash";
         }
 
@@ -184,13 +190,15 @@ class GenerationEvalServiceTest {
         }
 
         @Override
-        public String judge(List<ChatMessage> messages) {
-            calls.add(new Call("judge", messages));
-            String text = userText(messages);
-            if (text.contains("【标准答案】")) {
-                return "{\"score\": 1, \"reason\": \"与标准答案一致。\"}";
-            }
+        public String judgeFaithfulness(List<ChatMessage> messages) {
+            calls.add(new Call("judge-faith", messages));
             return faithfulnessRaw;
+        }
+
+        @Override
+        public String judgeCorrectness(List<ChatMessage> messages) {
+            calls.add(new Call("judge-correct", messages));
+            return "{\"score\": 1, \"reason\": \"与标准答案一致。\"}";
         }
 
         private record Call(String kind, List<ChatMessage> messages) {

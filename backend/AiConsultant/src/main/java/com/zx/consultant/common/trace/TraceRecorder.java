@@ -130,6 +130,7 @@ public final class TraceRecorder {
             case "LLM Generation Node" -> "正在生成回答...";
             case "Citation Extraction Node" -> "正在整理引用...";
             case "Memory Persist" -> "正在保存对话...";
+            case "Summary Tool Select" -> "正在选择总结方式...";
             default -> "正在处理：" + nodeName;
         };
     }

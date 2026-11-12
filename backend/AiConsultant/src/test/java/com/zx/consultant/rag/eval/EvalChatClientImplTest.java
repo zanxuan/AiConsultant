@@ -18,11 +18,23 @@ class EvalChatClientImplTest {
         EvalChatClientImpl client = client(true);
 
         assertEquals("qwen-plus", client.generationModelName());
-        assertEquals("qwen3.8-flash", client.judgeModelName());
+        assertEquals("deepseek-flash", client.faithfulnessJudgeModelName());
+        assertEquals("qwen3.8-flash", client.correctnessJudgeModelName());
         assertEquals(EvalChatClientImpl.EVAL_TEMPERATURE, client.generationParameters().temperature());
-        assertEquals(EvalChatClientImpl.EVAL_TEMPERATURE, client.judgeParameters().temperature());
+        assertEquals(EvalChatClientImpl.EVAL_TEMPERATURE, client.faithfulnessParameters().temperature());
+        assertEquals(EvalChatClientImpl.EVAL_TEMPERATURE, client.correctnessParameters().temperature());
         assertEquals("qwen-plus", client.generationParameters().modelName());
-        assertEquals("qwen3.8-flash", client.judgeParameters().modelName());
+        assertEquals("deepseek-flash", client.faithfulnessParameters().modelName());
+        assertEquals("qwen3.8-flash", client.correctnessParameters().modelName());
+    }
+
+    @Test
+    void deepSeekRequestDisablesThinking() {
+        String body = ThinkingDisabledHttpClient.withThinkingDisabled("{\"model\":\"deepseek-flash\",\"temperature\":0}");
+
+        assertTrue(body.contains("\"thinking\""));
+        assertTrue(body.contains("\"disabled\""));
+        assertTrue(body.contains("\"deepseek-flash\""));
     }
 
     @Test
@@ -34,7 +46,9 @@ class EvalChatClientImplTest {
 
         assertTrue(error.getMessage().contains("generation-enabled"));
         assertThrows(IllegalStateException.class,
-                () -> client.judge(List.of(UserMessage.from("打分"))));
+                () -> client.judgeFaithfulness(List.of(UserMessage.from("打分"))));
+        assertThrows(IllegalStateException.class,
+                () -> client.judgeCorrectness(List.of(UserMessage.from("打分"))));
     }
 
     private static EvalChatClientImpl client(boolean enabled) {
@@ -45,6 +59,9 @@ class EvalChatClientImplTest {
                 "test-key",
                 "qwen3.8-flash",
                 "https://dashscope.aliyuncs.com/compatible-mode/v1",
+                "test-key",
+                "deepseek-flash",
+                "https://api.deepseek.com",
                 "test-key",
                 false,
                 false);

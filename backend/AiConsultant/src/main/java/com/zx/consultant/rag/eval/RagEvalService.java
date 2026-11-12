@@ -438,7 +438,8 @@ public class RagEvalService {
             config.put("judgePromptVersion", generationEvalService.judgePromptVersion());
             if (generationEvalService.generationEnabled()) {
                 config.put("generationModel", generationEvalService.generationModelName());
-                config.put("judgeModel", generationEvalService.judgeModelName());
+                config.put("faithfulnessJudgeModel", generationEvalService.faithfulnessJudgeModelName());
+                config.put("correctnessJudgeModel", generationEvalService.correctnessJudgeModelName());
             }
         }
         return config;
