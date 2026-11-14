@@ -17,6 +17,18 @@
 
 ---
 
+## 🖥️核心链路演示
+
+- **检索链路：**
+
+![检索链路](docs/images/gif/retrieval-trace.gif)
+
+- **评测结果：**
+
+![评测结果](docs/images/gif/rag-eval-result.gif)
+
+---
+
 ## ✨核心功能
 
 ### 1. 知识库与文档管理
