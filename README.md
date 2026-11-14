@@ -39,6 +39,8 @@
 - 切块内容附带页码等 Metadata，支持后续检索与引用定位。
 - 文档删除时同步清理数据库记录、向量索引和本地文件。
 
+![文档管理](docs/images/upload.png)
+
 ### 2. RAG 混合检索
 
 采用 **Vector Retrieval + BM25 + RRF + Rerank** 的混合检索方案：
@@ -126,6 +128,7 @@
 ---
 
 ## 🏗️系统架构
+
 ### 整体架构
 
 ```text
@@ -163,6 +166,7 @@
 ```
 
 ### RAG 核心流程
+
 ```
 User Query
     |
@@ -279,6 +283,7 @@ PendingTask 存储于 Redis，设置 TTL 为 30 分钟。用户补充信息后�
 ### 3. SSE 异步任务与流式响应
 
 采用任务提交与流式订阅分离的方式：
+
 ```
 POST /api/v1/chat
         |
@@ -301,6 +306,7 @@ GET /api/v1/chat/stream/{taskId}
 ### 4. LLM Fallback
 
 针对非流式回答生成流程实现模型降级机制：
+
 ```
 qwen-plus
     |
@@ -338,6 +344,7 @@ Return Answer
 - Trace 数据持久化至 MySQL `trace_span` 表。
 
 Trace 查询接口：
+
 ```
 GET /api/v1/traces/{traceId}
 ```
@@ -399,11 +406,13 @@ Chunk 级评测不使用文档 ID 判断命中。因此，两种粒度下的 Hit
 **用例详情**
 
 用例详情页面：
+
 ```
 /eval/runs/:runId/cases/:caseId
 ```
 
 这是前端路由，页面数据来自对应评测运行的详情接口：
+
 ```
 GET /api/v1/eval/runs/{id}
 ```
@@ -490,6 +499,7 @@ GET /api/v1/eval/runs/{id}
 ---
 
 ## 📂Project Structure
+
 ```
 AiConsultant/
 │
@@ -544,6 +554,7 @@ AiConsultant/
 - DashScope API Key
 
 ### 1. Clone the Repository
+
 ```
 git clone https://github.com/zanxuan/AiConsultant.git
 cd AiConsultant
@@ -552,16 +563,19 @@ cd AiConsultant
 ### 2. Backend Configuration
 
 进入后端目录：
+
 ```
 cd backend/AiConsultant
 ```
 
 复制环境变量模板：
+
 ```
 cp .env.example .env
 ```
 
 配置必要环境变量：
+
 ```
 API_KEY=your_dashscope_api_key
 EMBEDDING_API_KEY=your_embedding_api_key
@@ -578,6 +592,7 @@ JWT_SECRET_KEY=your_jwt_secret
 本地开发默认使用 `application.yml`，不需要设置 `SPRING_PROFILES_ACTIVE=prod`。
 
 启动后端：
+
 ```
 mvn spring-boot:run
 ```
@@ -585,16 +600,19 @@ mvn spring-boot:run
 ### 3. Frontend Configuration
 
 进入前端目录：
+
 ```
 cd frontend
 ```
 
 安装依赖：
+
 ```
 npm install
 ```
 
 启动开发服务器：
+
 ```
 npm run dev
 ```
@@ -602,6 +620,7 @@ npm run dev
 ### 4. Production Deployment
 
 生产环境通过：
+
 ```
 SPRING_PROFILES_ACTIVE=prod
 ```
@@ -677,12 +696,14 @@ GET /api/v1/eval/runs/{id}/cases/{caseId}/retrieval-trace
 ## 🗺️ Roadmap
 
 ### V1.0 — RAG 基础能力
+
 - [x] 用户认证与知识库管理
 - [x] 文档上传、解析与切块
 - [x] Embedding 与向量检索
 - [x] RAG 问答与 Citation
 
 ### V2.5 — RAG Engineering & Workflow
+
 - [x] Vector + BM25 混合检索
 - [x] 中文 BM25 检索优化
 - [x] RRF 融合排序
@@ -700,7 +721,6 @@ GET /api/v1/eval/runs/{id}/cases/{caseId}/retrieval-trace
 - [x] 用例详情与标准 Chunk 原文展示
 - [x] Badcase 诊断
 - [x] 游客浏览
-
 
 ### V3 — Planned
 
